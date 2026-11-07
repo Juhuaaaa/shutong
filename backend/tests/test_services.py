@@ -24,6 +24,15 @@ class ServicesTests(unittest.TestCase):
         self.assertIsNone(services.ai)
         self.assertEqual(services.config.ai_threshold, 0.85)
 
+    def test_metadata_sources_follow_the_setting(self):
+        self.assertEqual([source.name for source in build_services(self.db).sources.enabled], ["bangumi"])
+        self.settings.set("metadata.sources", ["anilist", "bangumi"])
+        services = build_services(self.db)
+        self.assertEqual([source.name for source in services.sources.enabled], ["anilist", "bangumi"])
+        self.settings.set("network.proxy", "http://192.168.1.2:7890")
+        services = build_services(self.db)
+        self.assertIs(services.sources.get("anilist")._opener, services.sources.get("bangumi")._opener)
+
     def test_build_services_with_ai_requires_all_fields(self):
         self.settings.set("ai.base_url", "https://api.deepseek.com/v1")
         self.settings.set("ai.api_key", "sk-x")

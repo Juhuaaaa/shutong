@@ -6,6 +6,7 @@ from urllib.request import urlopen
 
 from shutong.ai.audit import AuditedAi
 from shutong.ai.openai_compat import AiSettings, OpenAICompatProvider
+from shutong.metadata.anilist import AniListSource
 from shutong.metadata.bangumi import BangumiSettings, BangumiSource
 from shutong.metadata.registry import SourceRegistry
 from shutong.net import make_opener, parse_proxy
@@ -48,7 +49,8 @@ def build_services(db: Database, *, opener=None, sleep=time.sleep) -> Services:
         BangumiSettings(base_url=settings.get("bangumi.base_url"), token=settings.get("bangumi.token") or None),
         CacheStore(db), opener=proxied, sleep=sleep,
     )
-    sources = SourceRegistry({"bangumi": bangumi}, settings.get("metadata.sources"))
+    anilist = AniListSource(CacheStore(db), opener=proxied, sleep=sleep)
+    sources = SourceRegistry({"bangumi": bangumi, "anilist": anilist}, settings.get("metadata.sources"))
     ai = None
     base_url, api_key, model = (settings.get("ai.base_url"), settings.get("ai.api_key"), settings.get("ai.model"))
     if base_url and api_key and model:
