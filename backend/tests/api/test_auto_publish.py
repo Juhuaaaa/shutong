@@ -44,7 +44,7 @@ class AutoPublishTests(ApiCase):
                           json={"server_id": server["id"], "server_library_id": 3})
         self.zip("迷宫饭/迷宫饭 Vol.01.zip")
         self.scan()
-        self.assertEqual([call for server in FakeServer.instances for call in server.calls], [("scan", 3)])
+        self.assertEqual([call for server in FakeServer.instances for call in server.calls], [("scan", "3")])
 
     def test_scan_without_ai_is_refused(self):
         self.ai = None

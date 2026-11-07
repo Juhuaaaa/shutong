@@ -39,8 +39,8 @@ class NotifyTests(unittest.TestCase):
     def test_one_scan_per_server_library(self):
         result = self.notify([self.item(self.manga, "a"), self.item(self.manga, "b"), self.item(self.novel, "c"),
                               self.item(self.loose, "d")])
-        self.assertEqual(sorted(self.calls()), [("scan", 3), ("scan", 7)])
-        self.assertEqual(sorted(entry["library_id"] for entry in result["scanned"]), [3, 7])
+        self.assertEqual(sorted(self.calls()), [("scan", "3"), ("scan", "7")])
+        self.assertEqual(sorted(entry["library_id"] for entry in result["scanned"]), ["3", "7"])
         self.assertEqual(result["errors"], [])
 
     def test_disabled_server_is_skipped(self):
@@ -57,7 +57,7 @@ class NotifyTests(unittest.TestCase):
     def test_refresh_series_after_the_scan(self):
         item = self.item(self.manga, "a")
         result = self.notify([item], refresh_series=[(self.manga.id, "迷宫饭")])
-        self.assertEqual(self.calls(), [("scan", 3), ("refresh", 3, "迷宫饭")])
+        self.assertEqual(self.calls(), [("scan", "3"), ("refresh", "3", "迷宫饭")])
         self.assertEqual(result["refreshed"], ["迷宫饭"])
 
     def test_nothing_published_contacts_nobody(self):

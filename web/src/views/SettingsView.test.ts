@@ -146,4 +146,19 @@ describe("SettingsView", () => {
     select.vm.$emit("update:modelValue", "zh-CN");
     await vi.waitFor(() => expect(wrapper.text()).toContain("修改密码"));
   });
+
+  it("adds a Komga server, which logs in with an email", async () => {
+    const { calls } = api({ "POST /api/servers": (body: object) => ({ id: 1, enabled: true, ...body }) });
+    const { wrapper } = await mountView(SettingsView, "/settings/servers", { tab: "servers" });
+    await vi.waitFor(() => expect(document.querySelector("[data-test=server-add]")).not.toBeNull());
+    (document.querySelector("[data-test=server-add]") as HTMLElement).click();
+    await vi.waitFor(() => expect(wrapper.findComponent("[data-test=server-kind]").exists()).toBe(true));
+    const kind = wrapper.findComponent("[data-test=server-kind]") as unknown as { vm: { $emit: (name: string, value: string) => void } };
+    kind.vm.$emit("update:modelValue", "komga");
+    await vi.waitFor(() => expect(document.body.textContent).toContain("在系列标题中添加卷号"));
+    expect(document.body.textContent).toContain("邮箱");
+    (document.querySelector("[data-test=server-save]") as HTMLElement).click();
+    await vi.waitFor(() => expect(calls.some((call) => call.method === "POST")).toBe(true));
+    expect(calls.find((call) => call.method === "POST")?.body).toMatchObject({ kind: "komga" });
+  });
 });

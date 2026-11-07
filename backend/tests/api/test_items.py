@@ -87,8 +87,8 @@ class ItemRoutesTests(ApiCase):
         self.zip("迷宫饭/迷宫饭 Vol.04.zip")
         job = self.job(self.client.post("/api/libraries/{0}/scan".format(self.library["id"])))
         self.assertEqual((job["result"]["counts"]["executed"], job["result"]["counts"]["kavita"]["scanned"]),
-                         (2, [{"server": "家里", "library_id": 3}]))
-        self.assertEqual(self.server_calls(), [("scan", 3)])
+                         (2, [{"server": "家里", "library_id": "3"}]))
+        self.assertEqual(self.server_calls(), [("scan", "3")])
 
     def test_already_published_items_do_not_trigger_a_scan(self):
         item = self.items()["items"][0]
@@ -150,7 +150,7 @@ class ItemRoutesTests(ApiCase):
         item = self.items()["items"][0]
         job = self.edit({"item_ids": [item["id"]], "fields": {"summary": "迷宫里做饭"}})
         self.assertEqual(job["result"]["kavita"]["refreshed"], ["迷宫饭"])
-        self.assertEqual(self.server_calls()[0], ("scan", 3))
+        self.assertEqual(self.server_calls()[0], ("scan", "3"))
 
     def test_reorganizing_keeps_what_was_filled_in_by_hand(self):
         item = min(self.items()["items"], key=lambda item: item["id"])

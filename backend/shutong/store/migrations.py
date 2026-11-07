@@ -156,4 +156,30 @@ MIGRATIONS: tuple[str, ...] = (
     ALTER TABLE items ADD COLUMN source_root TEXT;
     ALTER TABLE items ADD COLUMN originals_kept INTEGER NOT NULL DEFAULT 0;
     """,
+    # Komga: a second server kind, and its library ids are text such as "0S5E73NR0E2MP". Dropping the old
+    # media_servers table clears libraries.server_id (ON DELETE SET NULL), so the links are kept aside first.
+    """
+    CREATE TABLE library_server_links AS
+      SELECT id, server_id, CAST(server_library_id AS TEXT) AS server_library FROM libraries;
+    CREATE TABLE media_servers_new (
+      id INTEGER PRIMARY KEY,
+      kind TEXT NOT NULL CHECK (kind IN ('kavita', 'komga')),
+      name TEXT NOT NULL UNIQUE,
+      base_url TEXT NOT NULL,
+      username TEXT NOT NULL DEFAULT '',
+      password TEXT NOT NULL DEFAULT '',
+      enabled INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL
+    );
+    INSERT INTO media_servers_new(id, kind, name, base_url, username, password, enabled, created_at)
+      SELECT id, kind, name, base_url, username, password, enabled, created_at FROM media_servers;
+    DROP TABLE media_servers;
+    ALTER TABLE media_servers_new RENAME TO media_servers;
+    ALTER TABLE libraries DROP COLUMN server_library_id;
+    ALTER TABLE libraries ADD COLUMN server_library_id TEXT;
+    UPDATE libraries SET
+      server_id = (SELECT server_id FROM library_server_links AS link WHERE link.id = libraries.id),
+      server_library_id = (SELECT server_library FROM library_server_links AS link WHERE link.id = libraries.id);
+    DROP TABLE library_server_links;
+    """,
 )

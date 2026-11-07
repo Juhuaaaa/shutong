@@ -29,7 +29,7 @@ class ServerRoutesTests(ApiCase):
     def test_connection_test(self):
         server = self.make_server()
         result = self.client.post("/api/servers/{0}/test".format(server["id"])).json()
-        self.assertEqual((result["ok"], [entry["id"] for entry in result["libraries"]]), (True, [3, 7]))
+        self.assertEqual((result["ok"], [entry["id"] for entry in result["libraries"]]), (True, ["3", "7"]))
         self.server_error = "Kavita 用户名或密码错误"
         failed = self.client.post("/api/servers/{0}/test".format(server["id"]))
         self.assertEqual((failed.status_code, failed.json()["ok"], failed.json()["error"]),
@@ -41,7 +41,7 @@ class ServerRoutesTests(ApiCase):
         library = self.make_library()
         mapped = self.client.patch("/api/libraries/{0}".format(library["id"]),
                                    json={"server_id": server["id"], "server_library_id": 3}).json()
-        self.assertEqual((mapped["server_id"], mapped["server_library_id"]), (server["id"], 3))
+        self.assertEqual((mapped["server_id"], mapped["server_library_id"]), (server["id"], "3"))
         missing = self.client.patch("/api/libraries/{0}".format(library["id"]), json={"server_id": 99})
         self.assertEqual((missing.status_code, missing.json()["detail"]), (422, "媒体服务器不存在"))
         self.client.delete("/api/servers/{0}".format(server["id"]))
@@ -50,6 +50,17 @@ class ServerRoutesTests(ApiCase):
         unmapped = self.client.patch("/api/libraries/{0}".format(library["id"]),
                                      json={"server_id": None}).json()
         self.assertIsNone(unmapped["server_id"])
+
+    def test_komga_server_and_text_library_ids(self):
+        created = self.client.post("/api/servers", json={"kind": "komga", "name": "Komga", "base_url": "http://g:25600",
+                                                         "username": "me@x.cn", "password": "pw"})
+        self.assertEqual(created.status_code, 200)
+        self.assertEqual(created.json()["kind"], "komga")
+        self.assertEqual(self.client.post("/api/servers", json={"kind": "plex", "name": "p", "base_url": "http://p"}).status_code, 422)
+        library = self.make_library()
+        mapped = self.client.patch("/api/libraries/{0}".format(library["id"]),
+                                   json={"server_id": created.json()["id"], "server_library_id": "0S5E73NR0E2MP"}).json()
+        self.assertEqual(mapped["server_library_id"], "0S5E73NR0E2MP")
 
 
 if __name__ == "__main__":

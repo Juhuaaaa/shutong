@@ -8,7 +8,7 @@
 | `backend/shutong/api` | Web API（FastAPI）：登录、后台任务、各资源接口，说明见 [api.md](api.md) |
 | `backend/shutong/store` | SQLite 存储与迁移 |
 | `backend/shutong/metadata` | Bangumi 元数据（带缓存） |
-| `backend/shutong/servers` | 媒体服务器（Kavita）：连接、发布后扫描、封面刷新 |
+| `backend/shutong/servers` | 媒体服务器（Kavita、Komga）：连接、发布后扫描、封面刷新 |
 | `web/` | Web 界面：Vue 3 + TypeScript + Naive UI，接口类型由后端 OpenAPI 生成 |
 
 ## 开发

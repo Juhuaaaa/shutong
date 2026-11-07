@@ -41,10 +41,16 @@ services:
 ```yaml
     environment:
       - HTTPS_PROXY=http://<代理地址>:<端口>
-      - NO_PROXY=<NAS 地址>,localhost,127.0.0.1    # 连 Kavita 等局域网服务不走代理
+      - NO_PROXY=<NAS 地址>,localhost,127.0.0.1    # 连 Kavita、Komga 等局域网服务不走代理
 ```
 
 连不上 Bangumi 时，新来源会停在「元数据待重试」，不会被误判成「没有匹配」；代理配好后在历史里对这些条目「重试」即可。
+
+## 联动 Kavita 或 Komga
+
+在「设置 → 媒体服务器」里添加，再在库设置里选对应的服务器库。整理进新文件后，书童会通知服务器扫描。Komga 用邮箱和密码登录。
+
+Komga 默认会把卷号拼进系列名，比如显示成「书名 (3)」。建议在 Komga 的库设置里关掉「在系列标题中添加卷号」（Append volume to series title）。
 
 ## 群晖 / 其他 Docker
 

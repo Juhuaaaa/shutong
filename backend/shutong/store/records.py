@@ -40,7 +40,7 @@ class Library:
     archive_dir: Optional[Path]
     pdf_to_cbz: bool
     server_id: Optional[int] = None  # media server notified after publishing
-    server_library_id: Optional[int] = None  # that server's library id
+    server_library_id: Optional[str] = None  # that server's library id, as text
     include_edition: bool = True  # series names carry the edition (迷宫饭[bili电子版])
     # No source dir of its own: files only come in through uploads, kept under the data dir until organized.
     source_managed: bool = False

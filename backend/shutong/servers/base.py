@@ -9,7 +9,7 @@ class ServerError(RuntimeError):
 
 @dataclass(frozen=True)
 class ServerLibrary:
-    id: int
+    id: str  # Kavita numbers are kept as text too
     name: str
 
 
@@ -18,6 +18,6 @@ class MediaServer(Protocol):
 
     def libraries(self) -> List[ServerLibrary]: ...
 
-    def scan_library(self, library_id: int) -> None: ...
+    def scan_library(self, library_id: str) -> None: ...
 
-    def refresh_series(self, library_id: int, series_name: str) -> bool: ...
+    def refresh_series(self, library_id: str, series_name: str) -> bool: ...

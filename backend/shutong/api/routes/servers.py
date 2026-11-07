@@ -20,7 +20,7 @@ def _check_url(value: Optional[str]) -> Optional[str]:
 
 
 class ServerIn(BaseModel):
-    kind: Literal["kavita"] = "kavita"
+    kind: Literal["kavita", "komga"] = "kavita"
     name: str
     base_url: str
     username: str = ""
