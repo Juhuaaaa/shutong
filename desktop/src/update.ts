@@ -1,5 +1,5 @@
 /** Tell about a new version, once a day at most; a failed check bothers nobody. Nothing is sent but the request. */
-export const RELEASES_API = "https://api.github.com/repos/Juhuaaaa/shutong-releases/releases/latest";
+export const RELEASES_API = "https://api.github.com/repos/Juhuaaaa/shutong/releases/latest";
 const DAY_MS = 24 * 3600 * 1000;
 const TIMEOUT_MS = 5_000;
 

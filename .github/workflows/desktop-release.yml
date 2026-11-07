@@ -1,7 +1,7 @@
 name: desktop-release
 
 # Installers for Windows and macOS, kept as artifacts of this run. desktop/scripts/publish-draft.sh turns them
-# into a draft release of the public downloads repository. Only on demand: macOS and Windows minutes cost extra.
+# into a draft release of this repository. Runs only on demand.
 on:
   push:
     tags: ["desktop-v*"]
