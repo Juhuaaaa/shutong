@@ -989,7 +989,7 @@
           "server_library_id": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -1093,7 +1093,7 @@
           "server_library_id": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -1245,7 +1245,7 @@
           "server_library_id": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -1959,8 +1959,11 @@
             "type": "string"
           },
           "kind": {
-            "const": "kavita",
             "default": "kavita",
+            "enum": [
+              "kavita",
+              "komga"
+            ],
             "title": "Kind",
             "type": "string"
           },
@@ -1990,7 +1993,7 @@
         "properties": {
           "id": {
             "title": "Id",
-            "type": "integer"
+            "type": "string"
           },
           "name": {
             "title": "Name",

@@ -34,7 +34,7 @@ class ServerStoreTests(unittest.TestCase):
         self.assertEqual((library.server_id, library.server_library_id), (None, None))
         server = self.store.create("kavita", "家里", "http://kavita:5000", "user", "pw")
         mapped = self.libraries.update(library.id, server_id=server.id, server_library_id=3)
-        self.assertEqual((mapped.server_id, mapped.server_library_id), (server.id, 3))
+        self.assertEqual((mapped.server_id, mapped.server_library_id), (server.id, "3"))
         self.store.delete(server.id)
         self.assertIsNone(self.libraries.get(library.id).server_id)
 

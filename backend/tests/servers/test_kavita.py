@@ -94,7 +94,7 @@ class KavitaServerTests(unittest.TestCase):
                                  "/api/Library/libraries": [{"id": 3, "name": "漫画"}, {"id": 7, "name": "轻小说"}]})
         server = KavitaServer(record(), opener=opener)
         server.test()
-        self.assertEqual([(entry.id, entry.name) for entry in server.libraries()], [(3, "漫画"), (7, "轻小说")])
+        self.assertEqual([(entry.id, entry.name) for entry in server.libraries()], [("3", "漫画"), ("7", "轻小说")])
         server.scan_library(3)
         self.assertIn("/api/Library/scan?libraryId=3&force=false", opener.requests[-1].full_url)
 

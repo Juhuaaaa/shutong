@@ -3,6 +3,8 @@ import { mdiDeleteOutline, mdiLanConnect, mdiPencilOutline, mdiPlus, mdiServerNe
 import { onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { servers as api, type Server } from "@/api";
+
+type ServerKind = "kavita" | "komga";
 import type { ApiError } from "@/api/client";
 import { ask } from "@/composables/confirm";
 import { notify } from "@/composables/notify";
@@ -11,7 +13,8 @@ import { MASK } from "@/composables/useSettingsForm";
 const { t } = useI18n();
 const list = ref<Server[]>([]);
 const editing = ref<Server | null | undefined>(undefined);
-const form = reactive({ name: "", base_url: "", username: "", password: "" });
+const form = reactive({ kind: "kavita" as ServerKind, name: "", base_url: "", username: "", password: "" });
+const kinds = [{ title: "Kavita", value: "kavita" }, { title: "Komga", value: "komga" }];
 const results = ref<Record<number, { ok: boolean; text: string }>>({});
 
 function failed(error: unknown) {
@@ -25,7 +28,7 @@ onMounted(() => load().catch(failed));
 
 function open(server: Server | null) {
   editing.value = server;
-  Object.assign(form, { name: server?.name ?? t("settings.serverDefaultName"), base_url: server?.base_url ?? "http://",
+  Object.assign(form, { kind: (server?.kind ?? "kavita") as ServerKind, name: server?.name ?? t("settings.serverDefaultName"), base_url: server?.base_url ?? "http://",
     username: server?.username ?? "", password: "" });
 }
 
@@ -35,7 +38,7 @@ async function save() {
       await api.update(editing.value.id, { name: form.name, base_url: form.base_url, username: form.username,
         password: form.password || MASK });
     } else {
-      await api.create({ kind: "kavita", ...form });
+      await api.create({ ...form });
     }
     editing.value = undefined;
     await load();
@@ -69,7 +72,7 @@ async function remove(server: Server) {
 <template>
   <div class="d-flex mb-4">
     <VSpacer />
-    <VBtn color="primary" :prepend-icon="mdiPlus" @click="open(null)">{{ t("settings.serverAdd") }}</VBtn>
+    <VBtn color="primary" :prepend-icon="mdiPlus" data-test="server-add" @click="open(null)">{{ t("settings.serverAdd") }}</VBtn>
   </div>
   <div class="servers">
     <VCard v-for="server in list" :key="server.id" class="pa-4 st-flat server" variant="outlined">
@@ -97,16 +100,20 @@ async function remove(server: Server) {
     <VCard class="pa-2">
       <VCardTitle>{{ editing ? editing.name : t("settings.serverAdd") }}</VCardTitle>
       <VCardText class="d-flex flex-column ga-1">
+        <VSelect v-model="form.kind" :items="kinds" :label="t('settings.serverKind')" :disabled="!!editing" data-test="server-kind" />
         <VTextField v-model="form.name" :label="t('library.name')" />
         <VTextField v-model="form.base_url" :label="t('settings.serverUrl')" placeholder="http://192.168.1.10:5000" />
-        <VTextField v-model="form.username" :label="t('settings.serverUser')" />
+        <VTextField v-model="form.username" :label="form.kind === 'komga' ? t('settings.serverEmail') : t('settings.serverUser')" />
         <VTextField v-model="form.password" :label="t('settings.serverPassword')" type="password" autocomplete="off"
           :placeholder="editing?.password ? MASK : ''" persistent-placeholder />
+        <VAlert v-if="form.kind === 'komga'" type="info" variant="tonal" density="compact" rounded="lg">
+          {{ t("settings.serverKomgaTip") }}
+        </VAlert>
       </VCardText>
       <VCardActions>
         <VSpacer />
         <VBtn variant="text" @click="editing = undefined">{{ t("common.cancel") }}</VBtn>
-        <VBtn color="primary" variant="flat" @click="save">{{ t("common.save") }}</VBtn>
+        <VBtn color="primary" variant="flat" data-test="server-save" @click="save">{{ t("common.save") }}</VBtn>
       </VCardActions>
     </VCard>
   </VDialog>

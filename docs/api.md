@@ -59,7 +59,7 @@ uv run shutong --data <数据目录> serve --host 0.0.0.0 --port 8080 [--web ../
 | 元数据 | `GET /api/metadata/search?q=&kind=`、`GET /api/metadata/subjects/{id}` |
 | 设置 | `GET/PATCH /api/settings`、`POST /api/settings/ai-test` |
 | AI 记录 | `GET /api/ai/calls` |
-| 媒体服务器 | `GET/POST /api/servers`、`PATCH/DELETE /api/servers/{id}`、`POST /api/servers/{id}/test`（返回连接结果和 Kavita 库列表） |
+| 媒体服务器 | `GET/POST /api/servers`、`PATCH/DELETE /api/servers/{id}`、`POST /api/servers/{id}/test`（返回连接结果和媒体服务器的库列表；库 id 一律是字符串） |
 | 上传 | `POST /api/libraries/{id}/upload`（`multipart/form-data`，多个 `files`） |
 
 ### 复核确认会做什么
@@ -74,9 +74,9 @@ uv run shutong --data <数据目录> serve --host 0.0.0.0 --port 8080 [--web ../
 
 `POST /api/items/reorganize` 只处理已整理的条目：先直接删除库里的旧文件（不可恢复），再按新的选择重新规划并入库。来源文件已经不在或变了的条目会跳过，旧文件保留。
 
-### Kavita 联动
+### 媒体服务器联动（Kavita / Komga）
 
-库可以关联一个媒体服务器和它的库 id（`PATCH /api/libraries/{id} {"server_id", "server_library_id"}`）。每次任务整理进了新文件后，同一个 Kavita 库只扫描一次；重新整理过的系列再刷新封面（文件名不变时 Kavita 不会换封面）。通知结果在任务 `result.kavita` 里：`{"scanned": [...], "refreshed": [...], "errors": [...]}`；Kavita 连不上或密码错误只记进 `errors`，不影响已整理的文件和任务状态。
+库可以关联一个媒体服务器和它的库 id（`PATCH /api/libraries/{id} {"server_id", "server_library_id"}`）。每次任务整理进了新文件后，同一个服务器库只扫描一次；重新整理过的系列再刷新（Kavita 文件名不变时不会换封面；Komga 扫描时会自己更新，再刷新一次系列元数据）。通知结果在任务 `result.kavita` 里：`{"scanned": [...], "refreshed": [...], "errors": [...]}`；服务器连不上或密码错误只记进 `errors`，不影响已整理的文件和任务状态。
 
 ### 上传
 

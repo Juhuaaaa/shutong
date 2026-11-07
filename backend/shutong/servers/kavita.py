@@ -9,6 +9,7 @@ from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 from shutong.servers.base import MediaServer, ServerError, ServerLibrary
+from shutong.servers.komga import KomgaServer
 
 
 class KavitaClient:
@@ -107,12 +108,13 @@ class KavitaServer:
         self._call(self.client.login)
 
     def libraries(self) -> List[ServerLibrary]:
-        return [ServerLibrary(int(entry["id"]), str(entry.get("name", ""))) for entry in self._call(self.client.libraries)]
+        return [ServerLibrary(str(entry["id"]), str(entry.get("name", ""))) for entry in self._call(self.client.libraries)]
 
-    def scan_library(self, library_id: int) -> None:
-        self._call(self.client.scan_library, library_id)
+    def scan_library(self, library_id: str) -> None:
+        self._call(self.client.scan_library, int(library_id))
 
-    def refresh_series(self, library_id: int, series_name: str) -> bool:
+    def refresh_series(self, library_id: str, series_name: str) -> bool:
+        library_id = int(library_id)
         for series in self._call(self.client.search_series, series_name) or []:
             names = {series.get("name"), series.get("localizedName"), series.get("originalName")}
             if series_name in names and series.get("libraryId") == library_id:
@@ -136,4 +138,6 @@ class KavitaServer:
 def server_for(record) -> MediaServer:
     if record.kind == "kavita":
         return KavitaServer(record)
+    if record.kind == "komga":
+        return KomgaServer(record)
     raise ServerError("不支持的媒体服务器：{0}".format(record.kind))

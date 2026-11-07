@@ -1,9 +1,9 @@
 import json
 from pathlib import Path
-from typing import List, Literal, Optional
+from typing import Annotated, Any, List, Literal, Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
-from pydantic import BaseModel
+from pydantic import BaseModel, BeforeValidator
 
 from shutong.api.auth import require_login
 from shutong.api.routes.items import Publishing, planned_ids, require_ai
@@ -21,6 +21,14 @@ Policy = Literal["keep", "archive", "delete"]
 Overwrite = Literal["never", "always", "larger", "newer"]
 
 
+def _as_text(value: Any) -> Any:
+    """Kavita library ids used to be numbers; Komga's are text. Both are stored as text."""
+    return str(value) if isinstance(value, int) and not isinstance(value, bool) else value
+
+
+ServerLibraryRef = Annotated[Optional[str], BeforeValidator(_as_text)]
+
+
 class LibraryIn(BaseModel):
     name: str
     kind: Kind
@@ -34,7 +42,7 @@ class LibraryIn(BaseModel):
     overwrite_policy: Overwrite = "never"
     rename_files: bool = True
     server_id: Optional[int] = None
-    server_library_id: Optional[int] = None
+    server_library_id: ServerLibraryRef = None
     watch: bool = False
 
 
@@ -50,7 +58,7 @@ class LibraryPatch(BaseModel):
     overwrite_policy: Optional[Overwrite] = None
     rename_files: Optional[bool] = None
     server_id: Optional[int] = None
-    server_library_id: Optional[int] = None
+    server_library_id: ServerLibraryRef = None
     watch: Optional[bool] = None
 
 

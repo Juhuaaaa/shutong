@@ -23,7 +23,7 @@ class LibraryOut(BaseModel):
     rename_files: bool
     available: bool
     server_id: Optional[int]
-    server_library_id: Optional[int]
+    server_library_id: Optional[str]
     watch: bool
 
 
@@ -194,7 +194,7 @@ class ServerOut(BaseModel):
 
 
 class ServerLibraryOut(BaseModel):
-    id: int
+    id: str
     name: str
 
 

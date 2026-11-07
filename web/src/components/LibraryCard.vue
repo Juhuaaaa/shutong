@@ -46,7 +46,7 @@ const initial = {
   watch: props.library?.watch ?? false,
 };
 const form = reactive({ ...initial });
-const serverLibraries = ref<{ title: string; value: number }[]>([]);
+const serverLibraries = ref<{ title: string; value: string }[]>([]);
 const serverError = ref("");
 const templateError = ref("");
 const examples = ref<{ source: string; target: string }[]>([]);

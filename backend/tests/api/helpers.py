@@ -40,7 +40,7 @@ class FakeServer:
 
     def libraries(self):
         self._maybe_fail()
-        return [ServerLibrary(3, "漫画"), ServerLibrary(7, "轻小说")]
+        return [ServerLibrary("3", "漫画"), ServerLibrary("7", "轻小说")]
 
     def scan_library(self, library_id):
         self.calls.append(("scan", library_id))

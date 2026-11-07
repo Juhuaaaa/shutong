@@ -140,6 +140,25 @@ class DatabaseTests(unittest.TestCase):
         self.assertEqual(settings, {"ai.threshold": "0.85", "ai.model": '"m"'})
         self.assertFalse({"rules", "trash"} & tables)
 
+    def test_migration_twelve_allows_komga_and_keeps_library_links_as_text(self):
+        self._migrate_to(11)
+        with self.db.connect() as connection:
+            connection.execute("INSERT INTO media_servers(id, kind, name, base_url, created_at)"
+                               " VALUES (5, 'kavita', '家里', 'http://k', 't')")
+            connection.execute("INSERT INTO libraries(id, name, kind, source_dir, library_dir, created_at, server_id,"
+                               " server_library_id) VALUES (1, '漫画', 'manga', '/s', '/l', 't', 5, 3)")
+        self.db.migrate()
+        with self.db.connect() as connection:
+            row = connection.execute("SELECT server_id, server_library_id, typeof(server_library_id) FROM libraries").fetchone()
+            connection.execute("INSERT INTO media_servers(kind, name, base_url, created_at)"
+                               " VALUES ('komga', 'Komga', 'http://g', 't')")
+            connection.execute("UPDATE libraries SET server_library_id = '0S5E73NR0E2MP'")
+            kept = connection.execute("SELECT server_library_id FROM libraries").fetchone()[0]
+            problems = connection.execute("PRAGMA foreign_key_check").fetchall()
+        self.assertEqual(tuple(row), (5, "3", "text"))
+        self.assertEqual(kept, "0S5E73NR0E2MP")
+        self.assertEqual(problems, [])
+
 
 if __name__ == "__main__":
     unittest.main()

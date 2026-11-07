@@ -1223,7 +1223,7 @@ export interface components {
             /** Server Id */
             server_id?: number | null;
             /** Server Library Id */
-            server_library_id?: number | null;
+            server_library_id?: string | null;
             /**
              * Source Dir
              * @default
@@ -1268,7 +1268,7 @@ export interface components {
             /** Server Id */
             server_id: number | null;
             /** Server Library Id */
-            server_library_id: number | null;
+            server_library_id: string | null;
             /** Source Dir */
             source_dir: string;
             /** Source Policy */
@@ -1297,7 +1297,7 @@ export interface components {
             /** Server Id */
             server_id?: number | null;
             /** Server Library Id */
-            server_library_id?: number | null;
+            server_library_id?: string | null;
             /** Source Dir */
             source_dir?: string | null;
             /** Source Policy */
@@ -1527,9 +1527,9 @@ export interface components {
             /**
              * Kind
              * @default kavita
-             * @constant
+             * @enum {string}
              */
-            kind: "kavita";
+            kind: "kavita" | "komga";
             /** Name */
             name: string;
             /**
@@ -1546,7 +1546,7 @@ export interface components {
         /** ServerLibraryOut */
         ServerLibraryOut: {
             /** Id */
-            id: number;
+            id: string;
             /** Name */
             name: string;
         };
