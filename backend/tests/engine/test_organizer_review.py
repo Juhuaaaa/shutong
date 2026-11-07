@@ -1,6 +1,8 @@
 from pathlib import Path
 import unittest
 
+from shutong.metadata.base import SubjectRef
+
 from shutong.engine.ai_recognize import BATCH_SIZE
 from shutong.engine.states import ItemStatus, ReviewReason
 from shutong.store.records import LibraryStore
@@ -23,16 +25,16 @@ class OrganizerReviewTests(OrganizerFixture):
 
     def test_confirm_keeps_the_choice_on_the_item_and_replans(self):
         organizer, item = self.reviewed("[]/Vol.01.zip")
-        result = organizer.confirm([item.id], title="迷宫饭", edition=None, bgm=133315)
+        result = organizer.confirm([item.id], title="迷宫饭", edition=None, subject=SubjectRef("bangumi", "133315"))
         item = self.items.get(item.id)
         self.assertEqual(item.status, ItemStatus.PLANNED)
         self.assertEqual(item.target_path.as_posix(), "迷宫饭/迷宫饭 Vol.01.cbz")
-        self.assertEqual(item.overrides, {"title": "迷宫饭", "bgm": 133315})
+        self.assertEqual(item.overrides, {"title": "迷宫饭", "subject": {"source": "bangumi", "id": "133315"}})
         self.assertEqual(result, {"replanned": 1, "skipped": 0})
 
     def test_confirmed_item_keeps_its_choice_when_read_again(self):
         organizer, item = self.reviewed("[]/Vol.01.zip")
-        organizer.confirm([item.id], title="迷宫饭", edition=None, bgm=133315)
+        organizer.confirm([item.id], title="迷宫饭", edition=None, subject=SubjectRef("bangumi", "133315"))
         with self.db.connect() as connection:
             connection.execute("UPDATE items SET status = 'needs_review', review_reason = 'metadata' WHERE id = ?",
                                (item.id,))
@@ -56,7 +58,7 @@ class OrganizerReviewTests(OrganizerFixture):
         with self.db.connect() as connection:
             connection.execute("UPDATE items SET status = 'needs_review', review_reason = 'metadata' WHERE id = ?",
                                (item.id,))
-        organizer.confirm([item.id], bgm=133315)
+        organizer.confirm([item.id], subject=SubjectRef("bangumi", "133315"))
         item = self.items.get(item.id)
         self.assertEqual((item.status, item.subject_id), (ItemStatus.PLANNED, "133315"))
         self.assertNotIn("no_metadata", item.overrides)
@@ -64,7 +66,7 @@ class OrganizerReviewTests(OrganizerFixture):
     def test_confirm_volume_override(self):
         organizer, item = self.reviewed("迷宫饭/迷宫饭 番外.zip", unsure={"迷宫饭 番外.zip"})
         self.assertEqual(item.review_reason, ReviewReason.VOLUME)
-        organizer.confirm([item.id], title=None, edition=None, bgm=None, volumes={item.id: "SP1"})
+        organizer.confirm([item.id], title=None, edition=None, volumes={item.id: "SP1"})
         item = self.items.get(item.id)
         self.assertEqual(item.status, ItemStatus.PLANNED)
         self.assertIn("SP", item.target_path.name)
@@ -82,7 +84,7 @@ class OrganizerReviewTests(OrganizerFixture):
 
     def test_reorganize_deletes_old_target_then_replans(self):
         organizer, item, target = self.published()
-        result = organizer.reorganize([item.id], title="迷宫饭 新", bgm=133315)
+        result = organizer.reorganize([item.id], title="迷宫饭 新", subject=SubjectRef("bangumi", "133315"))
         item = self.items.get(item.id)
         self.assertFalse(target.exists())
         self.assertFalse((self.library_dir / ".shutong" / "trash").exists())
@@ -106,7 +108,7 @@ class OrganizerReviewTests(OrganizerFixture):
 
     def test_cancel(self):
         organizer, item, target = self.published()
-        organizer.reorganize([item.id], title="迷宫饭 新", bgm=133315)
+        organizer.reorganize([item.id], title="迷宫饭 新", subject=SubjectRef("bangumi", "133315"))
         self.assertEqual(organizer.cancel([item.id])["cancelled"], 1)
         self.assertEqual(self.items.get(item.id).status, ItemStatus.CANCELLED)
 
@@ -116,7 +118,7 @@ class OrganizerReviewTests(OrganizerFixture):
                                                     source_policy="archive", archive_dir=archive)
         organizer, item, target = self.published()
         self.assertFalse(self.items.get(item.id).source_path.exists())  # moved to the archive dir
-        result = organizer.reorganize([item.id], title="迷宫饭 新", bgm=133315)
+        result = organizer.reorganize([item.id], title="迷宫饭 新", subject=SubjectRef("bangumi", "133315"))
         self.assertEqual((result["deleted"], result["skipped"]), (0, 1))
         self.assertTrue(target.exists())
         self.assertEqual(self.items.get(item.id).status, ItemStatus.PUBLISHED)
@@ -139,7 +141,7 @@ class OrganizerReviewTests(OrganizerFixture):
     def test_confirm_with_only_a_subject_names_the_series(self):
         organizer, item = self.reviewed("[]/Vol.01.zip")
         self.assertEqual(item.review_reason, ReviewReason.NAMING)
-        organizer.confirm([item.id], bgm=133315)
+        organizer.confirm([item.id], subject=SubjectRef("bangumi", "133315"))
         item = self.items.get(item.id)
         self.assertEqual((item.status, item.target_path.as_posix()), (ItemStatus.PLANNED, "迷宫饭/迷宫饭 Vol.01.cbz"))
 
@@ -167,7 +169,7 @@ class NovelReviewTests(OrganizerFixture):
         organizer.scan(self.library.id)
         [item] = self.all_items()
         self.assertEqual(item.status, ItemStatus.NEEDS_REVIEW)
-        organizer.confirm([item.id], title="某暗部的少女共栖", bgm=439286, volumes={item.id: "2"})
+        organizer.confirm([item.id], title="某暗部的少女共栖", subject=SubjectRef("bangumi", "439286"), volumes={item.id: "2"})
         item = self.items.get(item.id)
         self.assertEqual((item.status, item.error), (ItemStatus.PLANNED, None))
         self.assertEqual(item.target_path, Path("某暗部的少女共栖/某暗部的少女共栖 Vol.02.epub"))

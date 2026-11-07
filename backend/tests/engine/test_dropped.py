@@ -6,6 +6,7 @@ import zipfile
 from shutong.engine.dropped import resolve_drops
 from shutong.engine.kinds.manga.adapter import MangaAdapter
 from shutong.engine.kinds.novel.adapter import NovelAdapter
+from shutong.metadata.base import SubjectRef
 from shutong.engine.organizer import Organizer
 from shutong.engine.states import ItemStatus
 from shutong.store.records import LibraryStore
@@ -206,7 +207,7 @@ class ScanPathsTests(DropFixture):
         item = self.all_items()[0]
         self.assertEqual(item.status, ItemStatus.NEEDS_REVIEW)
         organizer = self.organizer()
-        organizer.confirm([item.id], title="迷宫饭", bgm=133315)
+        organizer.confirm([item.id], title="迷宫饭", subject=SubjectRef("bangumi", "133315"))
         self.assertNotEqual(self.items.get(item.id).status, ItemStatus.FAILED)
 
     def test_reorganize_after_drop_keeps_the_original(self):

@@ -27,7 +27,8 @@ def subject(subject_id, name_cn, platform, total):
 
 
 class FakeSource:
-    name = "fake"
+    name = "bangumi"
+    label = "Bangumi"
 
     def __init__(self):
         self.subjects = [subject(279379, "间谍过家家", "漫画", 12), subject(219247, "86", "小说", 13)]

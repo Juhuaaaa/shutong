@@ -1,6 +1,8 @@
 from pathlib import Path
 import tempfile
 import unittest
+
+from shutong.metadata.base import SubjectRef
 from unittest import mock
 import zipfile
 
@@ -342,7 +344,7 @@ class OrganizerScanTests(OrganizerFixture):
     def test_a_title_chosen_in_review_is_not_treated_as_a_sub_series(self):
         item = self.sub_series(self.source, choose=0, choose_confidence=0.3)
         organizer = self.organizer(ai=ReaderAi(series={"迷宫饭 外传": {"base_title": "迷宫饭"}}))
-        organizer.confirm([item.id], title="迷宫饭 外传", bgm=133315)
+        organizer.confirm([item.id], title="迷宫饭 外传", subject=SubjectRef("bangumi", "133315"))
         after = self.items.get(item.id)
         self.assertEqual((after.status, after.target_path.parent.name), (ItemStatus.PLANNED, "迷宫饭 外传"))
         self.assertEqual(after.target_path.name, "迷宫饭 外传 Vol.01.cbz")
@@ -469,7 +471,7 @@ class OrganizerScanTests(OrganizerFixture):
         self.assertEqual((item.status, item.review_reason), (ItemStatus.NEEDS_REVIEW, ReviewReason.METADATA))
         self.assertNotIn("no_metadata", [event.kind for event in self.items.events(item.id)])
         review = [event for event in self.items.events(item.id) if event.kind == "review"][-1]
-        self.assertEqual(review.detail["candidates"], ["9"])
+        self.assertEqual(review.detail["candidates"], [{"source": "bangumi", "id": "9"}])
 
     def test_unsure_that_nothing_fits_goes_to_review(self):
         other = subject(9, "完全不同的名字")

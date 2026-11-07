@@ -64,7 +64,7 @@ def selected(body: Selection) -> List[int]:
 
 def check_choices(body) -> None:
     try:
-        validate_choices(title=body.title or None, edition=body.edition or None, bgm=body.bgm, volumes=body.volumes)
+        validate_choices(title=body.title or None, edition=body.edition or None, subject=_bgm_ref(body.bgm), volumes=body.volumes)
     except ValueError as error:
         raise HTTPException(422, str(error))
 
@@ -189,7 +189,7 @@ def reorganize(body: Reorganize, request: Request) -> JobRef:
     check_choices(body)
 
     def work(organizer: Organizer) -> dict:
-        counts = organizer.reorganize(ids, title=body.title or None, edition=body.edition or None, bgm=body.bgm,
+        counts = organizer.reorganize(ids, title=body.title or None, edition=body.edition or None, subject=_bgm_ref(body.bgm),
                                       volumes=body.volumes)
         return auto_execute(request.app, organizer, counts, planned_ids(request.app, ids))
 
@@ -211,7 +211,7 @@ def edit_metadata(body: EditMetadata, request: Request) -> JobRef:
     app = request.app
 
     def work(organizer: Organizer) -> dict:
-        counts = organizer.edit_metadata(ids, bgm=body.bgm, manual=manual)
+        counts = organizer.edit_metadata(ids, subject=_bgm_ref(body.bgm), manual=manual)
         series, edited = counts.pop("series"), counts.pop("ids")
         counts["kavita"] = notify_published(app.state.db, edited, server_factory=app.state.server_factory,
                                             refresh_series=series)
@@ -316,3 +316,8 @@ def refresh_metadata(body: RefreshMetadata, request: Request) -> JobRef:
 def cancel(body: Selection, request: Request) -> dict:
     organizer = Organizer(request.app.state.services_factory(request.app.state.db))
     return organizer.cancel(selected(body))
+
+
+def _bgm_ref(bgm):  # bridge until the API takes {source, id}
+    from shutong.metadata.base import SubjectRef
+    return SubjectRef("bangumi", str(bgm)) if bgm is not None else None

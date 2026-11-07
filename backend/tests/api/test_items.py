@@ -140,7 +140,7 @@ class ItemRoutesTests(ApiCase):
         self.assertEqual(job["result"]["edited"], 2, job)
         for item_id in ids:
             detail = self.client.get("/api/items/{0}".format(item_id)).json()
-            self.assertEqual((detail["subject_id"], detail["overrides"]["bgm"]), ("302561", "302561"))
+            self.assertEqual((detail["subject_id"], detail["overrides"]["subject"]), ("302561", {"source": "bangumi", "id": "302561"}))
             info = read_comic_info(self.root / "library" / detail["target_path"])
             self.assertEqual((info["Web"], info["LocalizedSeries"], info["Series"]),
                              ("https://bgm.tv/subject/302561", "我独自升级", "迷宫饭"))

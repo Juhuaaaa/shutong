@@ -105,7 +105,7 @@ def confirm(body: Confirm, request: Request) -> JobRef:
     check_choices(body)
 
     def work(organizer: Organizer) -> dict:
-        counts = organizer.confirm(ids, title=body.title or None, edition=body.edition or None, bgm=body.bgm,
+        counts = organizer.confirm(ids, title=body.title or None, edition=body.edition or None, subject=_bgm_ref(body.bgm),
                                    volumes=body.volumes, skip_metadata=body.skip_metadata)
         return auto_execute(request.app, organizer, counts, planned_ids(request.app, ids))
 
@@ -130,3 +130,8 @@ def reidentify(body: Reidentify, request: Request) -> JobRef:
         return auto_execute(request.app, organizer, organizer.reidentify(ids), planned_ids(request.app, ids))
 
     return submit(request, "reidentify", work, library_id=library_id)
+
+
+def _bgm_ref(bgm):  # bridge until the API takes {source, id}
+    from shutong.metadata.base import SubjectRef
+    return SubjectRef("bangumi", str(bgm)) if bgm is not None else None

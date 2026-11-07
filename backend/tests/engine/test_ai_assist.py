@@ -38,6 +38,25 @@ def context(**overrides):
     return SourceContext(**values)
 
 
+class SubjectIdTextTests(unittest.TestCase):
+    def test_ai_answer_accepts_string_or_int_id(self):
+        for answer in (30002, "30002", " 30002 "):
+            with self.subTest(answer=answer):
+                ai = FakeAi({"subject_id": answer, "confidence": 0.98, "reason": "就是它"})
+                result = choose_subject(ai, context(), [candidate("30002", source="anilist")], 0.85, kind="manga",
+                                        source_label="AniList")
+                self.assertEqual((result.subject_id, result.meets_threshold), ("30002", True))
+                self.assertIn("AniList candidate", ai.requests[0]["system"])
+                self.assertEqual(ai.requests[0]["payload"]["candidates"][0]["subject_id"], "30002")
+
+    def test_other_names_are_offered_when_there_are_some(self):
+        ai = FakeAi({"subject_id": None, "confidence": 0.9, "reason": "无"})
+        choose_subject(ai, context(), [candidate("1", aliases=("Berserk",)), candidate("2")], 0.85, kind="manga")
+        offered = ai.requests[0]["payload"]["candidates"]
+        self.assertEqual(offered[0]["other_names"], ["Berserk"])
+        self.assertNotIn("other_names", offered[1])
+
+
 class ChooseOwnEntryTests(unittest.TestCase):
     def ask(self, answer, threshold=0.85):
         ai = FakeAi(answer)
