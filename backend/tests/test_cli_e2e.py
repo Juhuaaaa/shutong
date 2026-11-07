@@ -35,8 +35,8 @@ class FakeSource:
     def search(self, query, kind):
         return tuple(self.subjects)
 
-    def get(self, subject_id):
-        return next(s for s in self.subjects if s.subject_id == subject_id)
+    def get(self, subject_id, *, fresh=False):
+        return next(s for s in self.subjects if s.subject_id == str(subject_id))
 
 
 class CliEndToEndTests(unittest.TestCase):

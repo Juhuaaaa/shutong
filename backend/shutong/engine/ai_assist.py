@@ -37,7 +37,7 @@ class SourceContext:
 
 @dataclass(frozen=True)
 class AiSuggestion:
-    subject_id: Optional[int] = None
+    subject_id: Optional[str] = None
     title: Optional[str] = None
     edition: Optional[str] = None
     confidence: float = 0.0
@@ -49,24 +49,25 @@ class AiSuggestion:
 
 
 def choose_subject(ai, context: SourceContext, candidates: Sequence[Subject], threshold: float, *,
-                   kind: str, item_id: Optional[int] = None) -> AiSuggestion:
+                   kind: str, item_id: Optional[int] = None, source_label: str = "Bangumi") -> AiSuggestion:
     system = (
-        "You are a precise {0} metadata matcher. Select exactly one supplied Bangumi candidate "
+        "You are a precise {0} metadata matcher. Select exactly one supplied {1} candidate "
         "or null. Return only JSON with subject_id, confidence, and reason."
-    ).format(_KIND_LABELS.get(kind, kind))
+    ).format(_KIND_LABELS.get(kind, kind), source_label)
     return _choose(ai, context, candidates, threshold, system, {}, item_id)
 
 
 def choose_own_entry(ai, context: SourceContext, candidates: Sequence[Subject], threshold: float, *,
-                     base_title: str, kind: str, item_id: Optional[int] = None) -> AiSuggestion:
+                     base_title: str, kind: str, item_id: Optional[int] = None,
+                     source_label: str = "Bangumi") -> AiSuggestion:
     """Does this sub-series have a Bangumi entry of its own? ``none_found``: confidently not."""
     system = (
         "You are a precise {0} metadata matcher. The files are a sub-series of the work named in base_title "
         "(a later part, a spin-off, a side story); normalized_title is the sub-series. Select the supplied "
-        "Bangumi candidate that is this very sub-series. The entry of the original work or of another part "
+        "{1} candidate that is this very sub-series. The entry of the original work or of another part "
         "does not count, however closely its name matches: answer null then. confidence is how sure you are "
         "of your answer, null included. Return only JSON with subject_id, confidence, and reason."
-    ).format(_KIND_LABELS.get(kind, kind))
+    ).format(_KIND_LABELS.get(kind, kind), source_label)
     suggestion = _choose(ai, context, candidates, threshold, system, {"base_title": _bounded(base_title)}, item_id)
     if suggestion.problem is None and suggestion.subject_id is None \
             and suggestion.confidence >= _effective_threshold(threshold):
@@ -83,16 +84,7 @@ def _choose(ai, context: SourceContext, candidates: Sequence[Subject], threshold
         return AiSuggestion(problem="没有候选条目")
     payload = context.payload()
     payload.update(extra)
-    payload["candidates"] = [
-        {
-            "subject_id": candidate.subject_id,
-            "name": _bounded(candidate.name),
-            "name_cn": _bounded(candidate.name_cn),
-            "writers": [_bounded(writer) for writer in candidate.writers[:_WRITER_LIMIT]],
-            "publisher": _bounded(candidate.publisher),
-        }
-        for candidate in unique.values()
-    ]
+    payload["candidates"] = [_candidate_json(candidate) for candidate in unique.values()]
     response, call_id, problem = _ask(ai, "choose_subject", system, payload, item_id)
     if problem:
         return AiSuggestion(call_id=call_id, problem=problem)
@@ -102,8 +94,9 @@ def _choose(ai, context: SourceContext, candidates: Sequence[Subject], threshold
         confidence = _validate_confidence(response["confidence"])
         reason = _validate_reason(response["reason"])
         if subject_id is not None:
-            if isinstance(subject_id, bool) or not isinstance(subject_id, int):
-                raise ValueError("subject_id must be an integer or null")
+            if isinstance(subject_id, bool) or not isinstance(subject_id, (int, str)):
+                raise ValueError("subject_id must be one of the candidates' ids or null")
+            subject_id = str(subject_id).strip()
             if subject_id not in unique:
                 raise ValueError("subject_id is not present in candidates")
     except ValueError as error:
@@ -111,6 +104,19 @@ def _choose(ai, context: SourceContext, candidates: Sequence[Subject], threshold
     meets = subject_id is not None and confidence >= _effective_threshold(threshold)
     return AiSuggestion(subject_id=subject_id, confidence=confidence, reason=reason,
                         meets_threshold=meets, call_id=call_id)
+
+
+def _candidate_json(candidate: Subject) -> Dict[str, Any]:
+    entry = {
+        "subject_id": candidate.subject_id,
+        "name": _bounded(candidate.name),
+        "name_cn": _bounded(candidate.name_cn),
+        "writers": [_bounded(writer) for writer in candidate.writers[:_WRITER_LIMIT]],
+        "publisher": _bounded(candidate.publisher),
+    }
+    if candidate.aliases:  # sources without Chinese names: English and romanized names help
+        entry["other_names"] = [_bounded(name) for name in candidate.aliases[:_WRITER_LIMIT]]
+    return entry
 
 
 def _ask(ai, purpose, system, payload, item_id):

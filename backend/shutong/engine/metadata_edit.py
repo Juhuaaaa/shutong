@@ -12,7 +12,8 @@ import zipfile
 from shutong.engine.kinds.manga.cbz import verify_cbz
 from shutong.engine.kinds.manga.comicinfo import ComicMetadata, build_comic_info
 from shutong.engine.kinds.novel.epub import KavitaMetadata, write_metadata
-from shutong.engine.metadata_build import normalize_release_date, select_genres
+from shutong.engine.metadata_build import (comic_subject_id, comic_web_url, normalize_release_date,
+                                           select_genres)
 from shutong.metadata.base import Subject
 
 Metadata = Union[ComicMetadata, KavitaMetadata]
@@ -102,7 +103,8 @@ def apply_manual(metadata: Metadata, manual: ManualMetadata) -> Metadata:
 def apply_subject(metadata: Metadata, subject: Subject) -> Metadata:
     """Everything a Bangumi subject knows, as organizing would have written it."""
     if isinstance(metadata, ComicMetadata):
-        return replace(metadata, subject_id=subject.subject_id, localized_series=subject.display_title,
+        return replace(metadata, subject_id=comic_subject_id(subject), web_url=comic_web_url(subject),
+                       localized_series=subject.display_title,
                        summary=subject.summary, writers=tuple(subject.writers), publisher=subject.publisher,
                        release_date=subject.release_date, genres=tuple(subject.genres),
                        completed=subject.completed, total_volumes=subject.total_volumes)

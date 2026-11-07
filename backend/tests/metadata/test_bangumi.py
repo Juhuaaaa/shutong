@@ -56,7 +56,7 @@ class BangumiTests(unittest.TestCase):
             ],
         })
 
-        self.assertEqual(subject.subject_id, 279379)
+        self.assertEqual(subject.subject_id, "279379")
         self.assertEqual(subject.display_title, "间谍过家家")
         self.assertIsNone(subject.release_date)
         self.assertEqual(subject.writers, ("远藤达哉",))
@@ -88,7 +88,7 @@ class BangumiTests(unittest.TestCase):
             second = client.search("间谍过家家", "manga")
 
         self.assertEqual(first, second)
-        self.assertEqual(first[0].subject_id, 279379)
+        self.assertEqual(first[0].subject_id, "279379")
         self.assertEqual(len(calls), 1)
         request, timeout = calls[0]
         self.assertEqual(timeout, 60)
@@ -120,7 +120,7 @@ class BangumiTests(unittest.TestCase):
                 client.search("间谍过家家", "manga")
             subjects = client.search("间谍过家家", "manga")
 
-        self.assertEqual(subjects[0].subject_id, 279379)
+        self.assertEqual(subjects[0].subject_id, "279379")
         self.assertEqual(len(attempts), 2)
 
     def test_get_subject_omits_authorization_without_token(self):
@@ -138,7 +138,7 @@ class BangumiTests(unittest.TestCase):
             )
             subject = client.get(279379)
 
-        self.assertEqual(subject.subject_id, 279379)
+        self.assertEqual(subject.subject_id, "279379")
         self.assertIsNone(calls[0][0].get_header("Authorization"))
 
     def test_retries_retryable_http_and_socket_failures_at_most_three_attempts(self):
@@ -163,7 +163,7 @@ class BangumiTests(unittest.TestCase):
             )
             subject = client.get(279379)
 
-        self.assertEqual(subject.subject_id, 279379)
+        self.assertEqual(subject.subject_id, "279379")
         self.assertEqual(delays, [1, 2])
         self.assertEqual(outcomes, [])
 
@@ -187,7 +187,7 @@ class BangumiTests(unittest.TestCase):
             )
             subject = client.get(279379)
 
-        self.assertEqual(subject.subject_id, 279379)
+        self.assertEqual(subject.subject_id, "279379")
 
     def test_retries_wrapped_transient_socket_oserror(self):
         outcomes = [
@@ -214,7 +214,7 @@ class BangumiTests(unittest.TestCase):
             )
             subject = client.get(279379)
 
-        self.assertEqual(subject.subject_id, 279379)
+        self.assertEqual(subject.subject_id, "279379")
         self.assertEqual(outcomes, [])
 
     def test_rejects_nested_nonfinite_number_without_caching(self):
@@ -241,7 +241,7 @@ class BangumiTests(unittest.TestCase):
                 client.search("间谍过家家", "manga")
             subjects = client.search("间谍过家家", "manga")
 
-        self.assertEqual(subjects[0].subject_id, 279379)
+        self.assertEqual(subjects[0].subject_id, "279379")
         self.assertEqual(len(attempts), 2)
 
     def test_stops_after_three_retryable_failures(self):
@@ -312,7 +312,7 @@ class BangumiTests(unittest.TestCase):
                 raise AssertionError("must be served from cache")
 
             client = BangumiSource(make_settings(Path(directory)), cache, opener=open_request)
-            self.assertEqual(client.search(" 间谍过家家 ", "novel")[0].subject_id, 7)
+            self.assertEqual(client.search(" 间谍过家家 ", "novel")[0].subject_id, "7")
             self.assertEqual(client.get(7).name, "缓存")
 
     def test_once_unreachable_later_requests_fail_fast_but_cache_still_answers(self):
@@ -363,7 +363,7 @@ class BangumiTests(unittest.TestCase):
                 with tempfile.TemporaryDirectory() as directory:
                     client = BangumiSource(make_settings(Path(directory)), make_cache(Path(directory)),
                                            opener=open_request, sleep=lambda delay: None)
-                    self.assertEqual(client.get(279379).subject_id, 279379)
+                    self.assertEqual(client.get(279379).subject_id, "279379")
 
                 def always_fail(request, timeout):
                     raise failure

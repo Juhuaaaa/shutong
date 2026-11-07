@@ -39,6 +39,15 @@ class SettingsRoutesTests(ApiCase):
             with self.subTest(body=body):
                 self.assertEqual(self.client.patch("/api/settings", json=body).status_code, 422)
 
+    def test_metadata_sources_are_validated(self):
+        for bad in ([], ["bangumi", "bangumi"], ["douban"], "bangumi", [1]):
+            with self.subTest(bad=bad):
+                self.assertEqual(self.client.patch("/api/settings", json={"metadata.sources": bad}).status_code, 422)
+        self.assertEqual(self.client.get("/api/settings").json()["metadata.sources"], ["bangumi"])
+        ok = self.client.patch("/api/settings", json={"metadata.sources": ["anilist", "bangumi"]})
+        self.assertEqual(ok.status_code, 200)
+        self.assertEqual(self.client.get("/api/settings").json()["metadata.sources"], ["anilist", "bangumi"])
+
     def test_proxy_is_validated(self):
         bad = self.client.patch("/api/settings", json={"network.proxy": "192.168.1.2:7890"})
         self.assertEqual(bad.status_code, 422)

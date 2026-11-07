@@ -123,7 +123,7 @@ class RefreshMetadataTests(OrganizerFixture):
         self.source.subjects[133315] = self.changed_subject()
         result = organizer.refresh_metadata([item.id])
         self.assertEqual((result["refreshed"], result["unchanged"], result["skipped"], result["failed"]), (1, 0, 0, 0))
-        self.assertEqual(self.source.gets[-1], (133315, True))
+        self.assertEqual(self.source.gets[-1], ("133315", True))
         fields = read_comic_info(self.library_dir / item.target_path)
         self.assertEqual((fields["Summary"], fields["Publisher"]), ("新的简介", "新出版社"))
         self.assertEqual(self.items.get(item.id).plan["metadata"]["publisher"], "新出版社")
@@ -142,7 +142,7 @@ class RefreshMetadataTests(OrganizerFixture):
         organizer, items = self.published("迷宫饭/迷宫饭 Vol.01.zip", "迷宫饭/迷宫饭 Vol.02.zip")
         self.source.gets.clear()
         organizer.refresh_metadata([item.id for item in items])
-        self.assertEqual(self.source.gets, [(133315, True)])
+        self.assertEqual(self.source.gets, [("133315", True)])
 
     def test_what_a_person_filled_in_stays(self):
         organizer, [item] = self.published("迷宫饭/迷宫饭 Vol.01.zip")

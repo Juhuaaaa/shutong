@@ -55,13 +55,15 @@ def _serve(args, db) -> int:
     factory = services_factory
     if args.offline_metadata:
         from shutong.metadata.offline import OfflineSource
+        from shutong.metadata.registry import SourceRegistry
 
         path = Path(args.offline_metadata)
         if not path.is_file():
             print("错误：离线元数据文件不存在：{0}".format(path), file=sys.stderr)
             return EXIT_USAGE
         source = OfflineSource(path)
-        factory = lambda database: dataclasses.replace(services_factory(database), source=source)  # noqa: E731
+        factory = lambda database: dataclasses.replace(services_factory(database),
+                                                                 sources=SourceRegistry.single(source))  # noqa: E731
     web = Path(args.web) if args.web else (Path(os.environ["SHUTONG_WEB"]) if os.environ.get("SHUTONG_WEB")
                                             else default_web_dir())
     app = create_app(Path(args.data).expanduser(), services_factory=factory, web_dist=web, log_console=True)

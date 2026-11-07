@@ -20,7 +20,7 @@ class ServicesTests(unittest.TestCase):
 
     def test_build_services_without_ai(self):
         services = build_services(self.db)
-        self.assertIsInstance(services.source, BangumiSource)
+        self.assertIsInstance(services.sources.primary, BangumiSource)
         self.assertIsNone(services.ai)
         self.assertEqual(services.config.ai_threshold, 0.85)
 
@@ -40,26 +40,26 @@ class ServicesTests(unittest.TestCase):
 
     def test_proxy_is_for_bangumi_and_ai_only_when_switched_on(self):
         self._enable_ai()
-        self.assertIs(build_services(self.db).source._opener, urlopen)
+        self.assertIs(build_services(self.db).sources.primary._opener, urlopen)
         self.settings.set("network.proxy", "http://192.168.1.2:7890")
         services = build_services(self.db)
-        self.assertIsNot(services.source._opener, urlopen)
+        self.assertIsNot(services.sources.primary._opener, urlopen)
         self.assertIs(services.ai.provider._opener, urlopen)
         self.settings.set("ai.use_proxy", True)
         services = build_services(self.db)
-        self.assertIs(services.ai.provider._opener.__self__, services.source._opener.__self__)
+        self.assertIs(services.ai.provider._opener.__self__, services.sources.primary._opener.__self__)
 
     def test_explicit_opener_wins(self):
         self._enable_ai()
         self.settings.set("network.proxy", "http://192.168.1.2:7890")
         opener = lambda request, timeout: None  # noqa: E731
         services = build_services(self.db, opener=opener)
-        self.assertIs(services.source._opener, opener)
+        self.assertIs(services.sources.primary._opener, opener)
         self.assertIs(services.ai.provider._opener, opener)
 
     def test_bangumi_settings_are_used(self):
         self.settings.set("bangumi.token", "bgm-token")
-        source = build_services(self.db).source
+        source = build_services(self.db).sources.primary
         self.assertEqual(source.settings.token, "bgm-token")
 
 

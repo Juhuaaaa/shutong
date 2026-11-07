@@ -306,7 +306,7 @@ class Organizer:
             items.append(item)
         if title is None and bgm is not None and any(item.review_reason is ReviewReason.NAMING for item in items):
             # Picking a subject for a folder whose name could not be read: the subject names the series.
-            title = self.services.source.get(bgm).display_title
+            title = self.services.sources.primary.get(bgm).display_title
             validate_choices(title=title, edition=edition, bgm=bgm, volumes={})
         chosen = {key: value for key, value in (("title", title), ("edition", edition), ("bgm", bgm))
                   if value not in (None, "")}
@@ -380,7 +380,7 @@ class Organizer:
         """
         if (bgm is None) == (manual is None):
             raise ValueError("要选一个 Bangumi 条目或手填元数据")
-        subject = self.services.source.get(bgm) if bgm is not None else None
+        subject = self.services.sources.primary.get(bgm) if bgm is not None else None
         counts: Dict[str, object] = {"edited": 0, "skipped": 0, "failed": 0, "ids": [], "series": []}
         for item_id in item_ids:
             item = self.items.get(item_id)
@@ -441,7 +441,7 @@ class Organizer:
                 continue
             try:
                 if item.subject_id not in subjects:
-                    subjects[item.subject_id] = self.services.source.get(item.subject_id, fresh=True)
+                    subjects[item.subject_id] = self.services.sources.primary.get(item.subject_id, fresh=True)
                 library = self.libraries.get(item.library_id)
                 before = metadata_from_json(library.kind, item.plan["metadata"])
                 after = apply_subject(before, subjects[item.subject_id])
@@ -679,7 +679,7 @@ class Organizer:
         config = self.services.config
         base_title = reading.series.base_title
         own = find_own_entry(
-            self.services.source, kind=library.kind, title=parse.title_hint, base_title=base_title,
+            self.services.sources.primary, kind=library.kind, title=parse.title_hint, base_title=base_title,
             search_titles=parse.search_titles,
             context=SourceContext(source_folder=entry.series_folder, names=(entry.path.name,),
                                   title_hint=parse.title_hint),
@@ -723,7 +723,7 @@ class Organizer:
         config = self.services.config
         parse = recognition.parse
         result = match_subject(
-            self.services.source, kind=library.kind, title_hint=parse.title_hint, forced_bgm=bgm,
+            self.services.sources.primary, kind=library.kind, title_hint=parse.title_hint, forced_bgm=bgm,
             search_titles=parse.search_titles,
             context=SourceContext(source_folder=entry.series_folder, names=(entry.path.name,),
                                   title_hint=parse.title_hint),

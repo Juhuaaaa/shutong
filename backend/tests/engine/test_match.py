@@ -32,6 +32,7 @@ class FakeSource:
 
     def get(self, subject_id, *, fresh=False):
         self.gets.append((subject_id, fresh))
+        subject_id = int(subject_id) if str(subject_id).isdigit() else subject_id  # tests key subjects by number
         if self.error:
             raise self.error
         return self.subjects[subject_id]
@@ -54,13 +55,13 @@ class MatchTests(unittest.TestCase):
     def test_forced_bgm_skips_search(self):
         source = FakeSource(subjects={133315: subject(133315, "迷宫饭")})
         result = match_subject(source, kind="manga", title_hint="迷宫饭", forced_bgm=133315)
-        self.assertEqual((result.subject.subject_id, result.method, source.searches), (133315, "rule", []))
+        self.assertEqual((result.subject.subject_id, result.method, source.searches), ("133315", "rule", []))
 
     def test_auto_pick(self):
         source = FakeSource([subject(1, "迷宫饭 外传"), subject(2, "迷宫饭", total=14)])
         result = match_subject(source, kind="manga", title_hint="迷宫饭", forced_bgm=None)
-        self.assertEqual((result.subject.subject_id, result.method, result.retry), (2, "auto", False))
-        self.assertEqual([s.subject.subject_id for s in result.candidates], [2, 1])
+        self.assertEqual((result.subject.subject_id, result.method, result.retry), ("2", "auto", False))
+        self.assertEqual([s.subject.subject_id for s in result.candidates], ["2", "1"])
         self.assertEqual(source.searches, [("迷宫饭", "manga")])
 
     def test_a_namesake_in_the_other_kind_leads_to_the_right_entry(self):
@@ -71,7 +72,7 @@ class MatchTests(unittest.TestCase):
         source = ByQuery({"我的女友是老师": (manga, other), "僕のカノジョ先生": (novel, manga)})
         result = match_subject(source, kind="novel", title_hint="我的女友是老师", forced_bgm=None, context=CONTEXT,
                                ai=FakeAi({"subject_id": None, "confidence": 0.99, "reason": "不是"}))
-        self.assertEqual((result.subject.subject_id, result.method), (276153, "auto"))
+        self.assertEqual((result.subject.subject_id, result.method), ("276153", "auto"))
         self.assertEqual([query for query, _ in source.searches], ["我的女友是老师", "僕のカノジョ先生"])
 
     def test_a_namesake_with_another_title_leads_nowhere(self):
@@ -84,20 +85,20 @@ class MatchTests(unittest.TestCase):
         source = FakeSource([subject(1, "完全不同"), subject(2, "也不同")])
         ai = FakeAi({"subject_id": 2, "confidence": 0.99, "reason": "作者一致"})
         result = match_subject(source, kind="manga", title_hint="迷宫饭", forced_bgm=None, context=CONTEXT, ai=ai)
-        self.assertEqual((result.subject.subject_id, result.method, result.suggestion.reason), (2, "ai", "作者一致"))
-        self.assertEqual({c["subject_id"] for c in ai.requests[0]["payload"]["candidates"]}, {1, 2})
+        self.assertEqual((result.subject.subject_id, result.method, result.suggestion.reason), ("2", "ai", "作者一致"))
+        self.assertEqual({c["subject_id"] for c in ai.requests[0]["payload"]["candidates"]}, {"1", "2"})
 
     def test_ai_below_threshold_returns_suggestion_only(self):
         source = FakeSource([subject(1, "完全不同")])
         ai = FakeAi({"subject_id": 1, "confidence": 0.5, "reason": "不确定"})
         result = match_subject(source, kind="manga", title_hint="迷宫饭", forced_bgm=None, context=CONTEXT, ai=ai)
-        self.assertEqual((result.subject, result.method, result.suggestion.subject_id), (None, "none", 1))
+        self.assertEqual((result.subject, result.method, result.suggestion.subject_id), (None, "none", "1"))
 
     def test_ai_receives_kind_filtered_candidates_when_any(self):
         source = FakeSource([subject(1, "迷宫", platform="漫画"), subject(2, "迷宫", platform="小说")])
         ai = FakeAi({"subject_id": None, "confidence": 0.1, "reason": "x"})
         match_subject(source, kind="manga", title_hint="迷宫饭的日常", forced_bgm=None, context=CONTEXT, ai=ai)
-        self.assertEqual([c["subject_id"] for c in ai.requests[0]["payload"]["candidates"]], [1])
+        self.assertEqual([c["subject_id"] for c in ai.requests[0]["payload"]["candidates"]], ["1"])
 
     def test_single_volume_entries_are_never_offered(self):
         # 天鹅绒之吻: Bangumi only returned volume 1 (the series is hidden from anonymous calls).

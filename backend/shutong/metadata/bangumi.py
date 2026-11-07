@@ -27,6 +27,7 @@ _RETRYABLE_HTTP_CODES = {429, 500, 502, 503, 504}
 _RETRY_DELAYS = (1, 2, 4)
 _MAX_ATTEMPTS = 3
 _DOWN_SECONDS = 300  # after giving up, later requests fail at once for this long (the cache still answers)
+_IMAGE_URL = "https://api.bgm.tv/v0/subjects/{0}/image?type=common"
 _SEARCH_CACHE_TTL_SECONDS = 24 * 60 * 60
 _SUBJECT_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60
 
@@ -41,6 +42,7 @@ class BangumiSource:
     """Bangumi book subjects with responses cached in the metadata_cache table."""
 
     name = "bangumi"
+    label = "Bangumi"
 
     def __init__(
         self,
@@ -77,22 +79,25 @@ class BangumiSource:
             return subjects
         return _normalize_search_response(response)
 
-    def get(self, subject_id: int, *, fresh: bool = False) -> Subject:
+    def get(self, subject_id, *, fresh: bool = False) -> Subject:
         """``fresh`` asks Bangumi again instead of answering from the cache (and updates the cache)."""
-        _require_positive_integer(subject_id, "subject id")
+        text = str(subject_id).strip()
+        if isinstance(subject_id, bool) or not text.isdigit() or int(text) <= 0:
+            raise ValueError("subject id must be a positive integer")
+        subject_id = int(text)
         cache_key = "bangumi:subject:{0}".format(subject_id)
         response = None if fresh else self.cache.get(cache_key)
         if response is None:
             response = self._request_json("/v0/subjects/{0}".format(subject_id))
             subject = normalize_subject(response)
-            if subject.subject_id != subject_id:
+            if subject.subject_id != str(subject_id):
                 raise ValueError("Bangumi subject id does not match request")
             self.cache.put(
                 cache_key, response, ttl_seconds=_SUBJECT_CACHE_TTL_SECONDS
             )
             return subject
         subject = normalize_subject(response)
-        if subject.subject_id != subject_id:
+        if subject.subject_id != str(subject_id):
             raise ValueError("Bangumi subject id does not match request")
         return subject
 
@@ -187,6 +192,7 @@ def normalize_subject(value: Any) -> Subject:
         total_volumes=total_volumes,
         platform=_text(value.get("platform")),
         series=value.get("series") if isinstance(value.get("series"), bool) else None,
+        image=_IMAGE_URL.format(subject_id),
     )
 
 

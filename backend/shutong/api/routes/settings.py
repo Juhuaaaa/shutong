@@ -7,6 +7,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Request
 from shutong.api.auth import require_login
 from shutong.api.schemas import AiTestResult, ProxyTestIn, ProxyTestResult
 from shutong.metadata.bangumi import USER_AGENT
+from shutong.metadata.registry import KNOWN_SOURCES
 from shutong.logs import LEVELS, set_level
 from shutong.net import make_opener, parse_proxy
 from shutong.store.settings import DEFAULTS, SECRET_KEYS, SettingsStore
@@ -31,6 +32,8 @@ def _check(key: str, value: Any) -> None:
     default = DEFAULTS[key]
     if key in _STRING_KEYS:
         ok = value is None or isinstance(value, str)
+    elif isinstance(default, list):
+        ok = isinstance(value, list)
     elif isinstance(default, bool):
         ok = isinstance(value, bool)
     elif isinstance(default, int):
@@ -47,6 +50,10 @@ def _check(key: str, value: Any) -> None:
             raise HTTPException(422, "设置 {0} 必须在 {1} 到 {2} 之间".format(key, low, high))
     if key == "log.level" and value not in LEVELS:
         raise HTTPException(422, "日志级别只能是 {0}".format("、".join(LEVELS)))
+    if key == "metadata.sources":
+        if not value or len(set(map(repr, value))) != len(value) \
+                or not all(isinstance(name, str) and name in KNOWN_SOURCES for name in value):
+            raise HTTPException(422, "数据源至少开一个，不能重复，只能是：{0}".format("、".join(KNOWN_SOURCES)))
     if key == "network.proxy":
         try:
             parse_proxy(value or "")

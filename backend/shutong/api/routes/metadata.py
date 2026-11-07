@@ -10,7 +10,7 @@ router = APIRouter(prefix="/api/metadata", tags=["metadata"], dependencies=[Depe
 
 
 def _source(request: Request):
-    return request.app.state.services_factory(request.app.state.db).source
+    return request.app.state.services_factory(request.app.state.db).sources.primary
 
 
 @router.get("/search", response_model=List[SubjectOut])
@@ -24,7 +24,7 @@ def search(q: str, request: Request, kind: Literal["manga", "novel"] = "manga") 
 
 
 @router.get("/subjects/{subject_id}", response_model=SubjectOut)
-def subject(subject_id: int, request: Request) -> dict:
+def subject(subject_id: str, request: Request) -> dict:
     try:
         return subject_out(_source(request).get(subject_id))
     except MetadataUnavailable:

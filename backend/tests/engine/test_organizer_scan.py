@@ -78,7 +78,7 @@ class OrganizerScanTests(OrganizerFixture):
         items = self.all_items()
         self.assertEqual([item.status for item in items], [ItemStatus.PLANNED, ItemStatus.PLANNED])
         self.assertEqual(items[0].target_path, Path("迷宫饭/迷宫饭 Vol.01.cbz"))
-        self.assertEqual(items[0].subject_id, 133315)
+        self.assertEqual(items[0].subject_id, "133315")
         self.assertEqual(items[0].plan["metadata"]["series_name"], "迷宫饭")
         self.assertEqual(items[0].parsed["title_hint"], "迷宫饭")
         self.assertEqual(items[0].parsed["ai"]["confidence"], 0.97)
@@ -163,7 +163,7 @@ class OrganizerScanTests(OrganizerFixture):
         self.zip("[九井谅子][迷宫饭][Vol.01-Vol.14][完结][bili]/Vol.01.zip")
         self.organizer(ai=ai).scan(self.library.id)
         [item] = self.all_items()
-        self.assertEqual((item.status, item.subject_id), (ItemStatus.PLANNED, 133315))
+        self.assertEqual((item.status, item.subject_id), (ItemStatus.PLANNED, "133315"))
         self.assertEqual(item.target_path, Path("迷宫饭[bili电子版]/迷宫饭[bili电子版] Vol.01.cbz"))
 
     def test_original_title_finds_the_subject(self):
@@ -174,7 +174,7 @@ class OrganizerScanTests(OrganizerFixture):
         self.zip("辣妹与我的第一次/Vol.01.zip")
         self.organizer(ai=ai, source=source).scan(self.library.id)
         [item] = self.all_items()
-        self.assertEqual((item.status, item.subject_id), (ItemStatus.PLANNED, 7))
+        self.assertEqual((item.status, item.subject_id), (ItemStatus.PLANNED, "7"))
         self.assertEqual(source.searches, [("辣妹与我的第一次", "manga"), ("はじめてのギャル", "manga")])
         self.assertEqual(item.target_path, Path("辣妹与我的第一次/辣妹与我的第一次 Vol.01.cbz"))
 
@@ -306,12 +306,12 @@ class OrganizerScanTests(OrganizerFixture):
     def test_sub_series_with_its_own_entry_stays_separate(self):
         own = subject(200, "迷宫饭 外传", total=1)
         item = self.sub_series(FakeSource([DUNGEON, own], subjects={133315: DUNGEON, 200: own}), choose=200)
-        self.assertEqual((item.status, item.subject_id), (ItemStatus.PLANNED, 200))
+        self.assertEqual((item.status, item.subject_id), (ItemStatus.PLANNED, "200"))
         self.assertEqual(item.target_path.parent.name, "迷宫饭 外传")
 
     def test_a_clear_search_winner_for_the_original_does_not_count_as_its_own_entry(self):
         item = self.sub_series(self.source, choose=0, choose_confidence=0.95)
-        self.assertEqual((item.status, item.subject_id), (ItemStatus.PLANNED, 133315))
+        self.assertEqual((item.status, item.subject_id), (ItemStatus.PLANNED, "133315"))
         self.assertEqual(item.target_path.parent.name, "迷宫饭")
         self.assertEqual(item.target_path.name, "迷宫饭 SP01 外传 1.cbz")
         self.assertIn("merged_into_original", [event.kind for event in self.items.events(item.id)])
@@ -468,7 +468,7 @@ class OrganizerScanTests(OrganizerFixture):
         self.assertEqual((item.status, item.review_reason), (ItemStatus.NEEDS_REVIEW, ReviewReason.METADATA))
         self.assertNotIn("no_metadata", [event.kind for event in self.items.events(item.id)])
         review = [event for event in self.items.events(item.id) if event.kind == "review"][-1]
-        self.assertEqual(review.detail["candidates"], [9])
+        self.assertEqual(review.detail["candidates"], ["9"])
 
     def test_unsure_that_nothing_fits_goes_to_review(self):
         other = subject(9, "完全不同的名字")
@@ -504,7 +504,7 @@ class OrganizerScanTests(OrganizerFixture):
         self.zip("迷宫饭/迷宫饭 Vol.01.zip")
         self.organizer(source=source).scan(self.library.id)
         [item] = self.all_items()
-        self.assertEqual((item.status, item.subject_id), (ItemStatus.PLANNED, 9))
+        self.assertEqual((item.status, item.subject_id), (ItemStatus.PLANNED, "9"))
         self.assertIn("ai_adopted", [event.kind for event in self.items.events(item.id)])
 
     def test_metadata_unavailable_parks_items_and_replan_recovers(self):

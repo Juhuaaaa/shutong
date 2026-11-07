@@ -58,7 +58,7 @@ class OrganizerReviewTests(OrganizerFixture):
                                (item.id,))
         organizer.confirm([item.id], bgm=133315)
         item = self.items.get(item.id)
-        self.assertEqual((item.status, item.subject_id), (ItemStatus.PLANNED, 133315))
+        self.assertEqual((item.status, item.subject_id), (ItemStatus.PLANNED, "133315"))
         self.assertNotIn("no_metadata", item.overrides)
 
     def test_confirm_volume_override(self):

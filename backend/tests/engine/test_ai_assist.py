@@ -47,7 +47,7 @@ class ChooseOwnEntryTests(unittest.TestCase):
 
     def test_tells_the_ai_what_counts_as_the_entry(self):
         ai, result = self.ask({"subject_id": 279379, "confidence": 0.98, "reason": "就是它"})
-        self.assertEqual((result.subject_id, result.meets_threshold, result.none_found), (279379, True, False))
+        self.assertEqual((result.subject_id, result.meets_threshold, result.none_found), ("279379", True, False))
         self.assertEqual(ai.requests[0]["payload"]["base_title"], "间谍过家家")
         self.assertIn("original work", ai.requests[0]["system"])
 
@@ -70,7 +70,7 @@ class ChooseSubjectTests(unittest.TestCase):
         ai = FakeAi({"subject_id": 279379, "confidence": 0.98, "reason": "title and author"})
         result = choose_subject(ai, context(), [candidate()], 0.95, kind="manga", item_id=7)
         self.assertEqual((result.subject_id, result.meets_threshold, result.call_id, result.problem),
-                         (279379, True, 41, None))
+                         ("279379", True, 41, None))
         self.assertEqual(ai.requests[0]["item_id"], 7)
 
     def test_payload_contains_only_basenames_and_compact_candidates(self):

@@ -15,6 +15,7 @@ _DEFAULTS = {"name": "", "name_cn": "", "summary": "", "release_date": None, "wr
 
 class OfflineSource:
     name = "offline"
+    label = "离线"
 
     def __init__(self, path: Path) -> None:
         entries = json.loads(Path(path).read_text(encoding="utf-8"))
@@ -23,12 +24,13 @@ class OfflineSource:
             values = dict(_DEFAULTS, **entry)
             values["writers"] = tuple(values["writers"])
             values["genres"] = tuple(values["genres"])
-            self.subjects[int(values["subject_id"])] = Subject(**values)
+            subject = Subject(**values)
+            self.subjects[subject.subject_id] = subject
 
     def search(self, query: str, kind: str) -> Tuple[Subject, ...]:
         needle = query.strip().casefold()
         return tuple(subject for subject in self.subjects.values()
                      if needle and (needle in subject.name.casefold() or needle in subject.name_cn.casefold()))
 
-    def get(self, subject_id: int, *, fresh: bool = False) -> Subject:
-        return self.subjects[int(subject_id)]
+    def get(self, subject_id, *, fresh: bool = False) -> Subject:
+        return self.subjects[str(subject_id)]

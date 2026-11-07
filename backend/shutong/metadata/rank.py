@@ -80,8 +80,8 @@ def rank(title_hint: str, candidates: Sequence[Subject], kind: str) -> Tuple[Sco
     for candidate in candidates:
         if not fits_kind(candidate, kind):
             continue
-        score = max(similarity(hint, match_key(candidate.name_cn)),
-                    similarity(hint, match_key(candidate.name)))
+        score = max(similarity(hint, match_key(name))
+                    for name in (candidate.name_cn, candidate.name) + tuple(candidate.aliases))
         if score > 0:
             scored.append(Scored(candidate, score))
     scored.sort(key=lambda item: (item.score, item.subject.total_volumes or 0), reverse=True)

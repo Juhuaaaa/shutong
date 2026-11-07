@@ -56,7 +56,7 @@ class ItemOut(BaseModel):
     source_path: str
     source_name: str
     parsed: dict
-    subject_id: Optional[int]
+    subject_id: Optional[str]
     target_path: Optional[str]
     plan: dict
     error: Optional[str]

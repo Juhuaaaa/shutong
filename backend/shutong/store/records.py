@@ -60,7 +60,7 @@ class Item:
     status: ItemStatus
     review_reason: Optional[ReviewReason]
     parsed: dict
-    subject_id: Optional[int]
+    subject_id: Optional[str]
     plan: dict
     target_path: Optional[Path]
     error: Optional[str]
@@ -553,7 +553,7 @@ def _item(row: sqlite3.Row) -> Item:
         status=ItemStatus(row["status"]),
         review_reason=ReviewReason(row["review_reason"]) if row["review_reason"] else None,
         parsed=json.loads(row["parsed"]),
-        subject_id=row["subject_id"],
+        subject_id=None if row["subject_id"] is None else str(row["subject_id"]),
         plan=json.loads(row["plan"]),
         target_path=Path(row["target_path"]) if row["target_path"] is not None else None,
         error=row["error"],
