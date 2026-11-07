@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 from shutong.api.auth import require_login
 from shutong.api.routes.jobs import JobOut
+from shutong.api.schemas import cover_url
 from shutong.store.records import LibraryStore
 
 router = APIRouter(prefix="/api", tags=["dashboard"], dependencies=[Depends(require_login)])
@@ -34,7 +35,8 @@ class RecentGroup(BaseModel):
     library_id: int
     group_key: str
     series: Optional[str]
-    subject_id: Optional[int]
+    subject_id: Optional[str]
+    subject_source: Optional[str]
     image: Optional[str]
     published: int
     at: str
@@ -110,10 +112,15 @@ def _add_storage(storage: list, devices: set, directory: Path) -> None:
 
 
 def _recent(connection, row) -> dict:
-    published, series, subject_id = connection.execute(
-        "SELECT count(*), max(json_extract(plan, '$.series')), max(subject_id) FROM items"
+    published, series = connection.execute(
+        "SELECT count(*), max(json_extract(plan, '$.series')) FROM items"
         " WHERE library_id = ? AND group_key = ? AND status = 'published'",
         (row["library_id"], row["group_key"])).fetchone()
-    image = "https://api.bgm.tv/v0/subjects/{0}/image?type=common".format(subject_id) if subject_id else None
+    named = connection.execute(
+        "SELECT subject_id, coalesce(subject_source, 'bangumi') FROM items WHERE library_id = ? AND group_key = ?"
+        " AND status = 'published' AND subject_id IS NOT NULL ORDER BY id DESC LIMIT 1",
+        (row["library_id"], row["group_key"])).fetchone()
+    subject_id, source = (named[0], named[1]) if named else (None, None)
     return {"library_id": row["library_id"], "group_key": row["group_key"], "series": series,
-            "subject_id": subject_id, "image": image, "published": published, "at": row["at"]}
+            "subject_id": subject_id, "subject_source": source, "image": cover_url(source, subject_id),
+            "published": published, "at": row["at"]}

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from pydantic import BaseModel
 
 from shutong.api.auth import require_login
-from shutong.api.schemas import CancelResult, ItemDetail, ItemPage, JobRef, ai_call_out, item_out
+from shutong.api.schemas import CancelResult, ItemDetail, ItemPage, JobRef, SubjectRefIn, ai_call_out, item_out
 from shutong.engine import covers
 from shutong.engine.metadata_edit import ManualMetadata
 from shutong.engine.organizer import Organizer, validate_choices
@@ -23,12 +23,12 @@ class Selection(BaseModel):
 class Reorganize(Selection):
     title: Optional[str] = None
     edition: Optional[str] = None
-    bgm: Optional[int] = None
+    subject: Optional[SubjectRefIn] = None
     volumes: Dict[int, str] = {}
 
 
 class EditMetadata(Selection):
-    bgm: Optional[int] = None
+    subject: Optional[SubjectRefIn] = None
     fields: Optional[Dict[str, Any]] = None
 
 
@@ -62,11 +62,16 @@ def selected(body: Selection) -> List[int]:
     return list(dict.fromkeys(body.item_ids))
 
 
-def check_choices(body) -> None:
+def check_choices(body, request: Request):
+    """The chosen subject as a ``SubjectRef``, after checking every choice; 422 for a bad one."""
+    sources = request.app.state.services_factory(request.app.state.db).sources.names
     try:
-        validate_choices(title=body.title or None, edition=body.edition or None, subject=_bgm_ref(body.bgm), volumes=body.volumes)
+        subject = body.subject.ref() if body.subject is not None else None
+        validate_choices(title=body.title or None, edition=body.edition or None, subject=subject,
+                         volumes=body.volumes, sources=sources)
     except ValueError as error:
         raise HTTPException(422, str(error))
+    return subject
 
 
 def require_ai(request: Request) -> None:
@@ -186,10 +191,10 @@ def retry(body: Selection, request: Request) -> JobRef:
 @router.post("/reorganize", response_model=JobRef)
 def reorganize(body: Reorganize, request: Request) -> JobRef:
     ids = selected(body)
-    check_choices(body)
+    subject = check_choices(body, request)
 
     def work(organizer: Organizer) -> dict:
-        counts = organizer.reorganize(ids, title=body.title or None, edition=body.edition or None, subject=_bgm_ref(body.bgm),
+        counts = organizer.reorganize(ids, title=body.title or None, edition=body.edition or None, subject=subject,
                                       volumes=body.volumes)
         return auto_execute(request.app, organizer, counts, planned_ids(request.app, ids))
 
@@ -200,10 +205,15 @@ def reorganize(body: Reorganize, request: Request) -> JobRef:
 def edit_metadata(body: EditMetadata, request: Request) -> JobRef:
     """Rewrite the metadata inside organized files, then have Kavita read them again."""
     ids = selected(body)
-    if (body.bgm is None) == (body.fields is None):
-        raise HTTPException(422, "要选一个 Bangumi 条目或手填元数据")
-    if body.bgm is not None and body.bgm <= 0:
-        raise HTTPException(422, "Bangumi 条目号要是正整数")
+    if (body.subject is None) == (body.fields is None):
+        raise HTTPException(422, "要选一个条目或手填元数据")
+    sources = request.app.state.services_factory(request.app.state.db).sources.names
+    try:
+        subject = body.subject.ref() if body.subject is not None else None
+        if subject is not None:
+            validate_choices(subject=subject, sources=sources)
+    except ValueError as error:
+        raise HTTPException(422, str(error))
     try:
         manual = ManualMetadata.from_json(body.fields) if body.fields is not None else None
     except ValueError as error:
@@ -211,7 +221,7 @@ def edit_metadata(body: EditMetadata, request: Request) -> JobRef:
     app = request.app
 
     def work(organizer: Organizer) -> dict:
-        counts = organizer.edit_metadata(ids, subject=_bgm_ref(body.bgm), manual=manual)
+        counts = organizer.edit_metadata(ids, subject=subject, manual=manual)
         series, edited = counts.pop("series"), counts.pop("ids")
         counts["kavita"] = notify_published(app.state.db, edited, server_factory=app.state.server_factory,
                                             refresh_series=series)
@@ -317,7 +327,3 @@ def cancel(body: Selection, request: Request) -> dict:
     organizer = Organizer(request.app.state.services_factory(request.app.state.db))
     return organizer.cancel(selected(body))
 
-
-def _bgm_ref(bgm):  # bridge until the API takes {source, id}
-    from shutong.metadata.base import SubjectRef
-    return SubjectRef("bangumi", str(bgm)) if bgm is not None else None

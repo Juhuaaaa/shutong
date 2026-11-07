@@ -29,7 +29,7 @@ uv run shutong --data <数据目录> serve --host 0.0.0.0 --port 8080 [--web ../
 
 ## 错误
 
-错误响应统一是 `{"detail": "中文说明"}`；参数校验失败是 422，资源不存在 404，状态冲突 409，Bangumi 不可用 503。
+错误响应统一是 `{"detail": "中文说明"}`；参数校验失败是 422，资源不存在 404，状态冲突 409，元数据源暂时不可用 503。
 
 ## 后台任务
 
@@ -56,7 +56,7 @@ uv run shutong --data <数据目录> serve --host 0.0.0.0 --port 8080 [--web ../
 | 库 | `GET/POST /api/libraries`、`GET/PATCH /api/libraries/{id}`、`POST /api/libraries/{id}/scan`、`GET /api/libraries/{id}/runs`、`GET /api/libraries/{id}/summary`、`POST /api/libraries/{id}/template-preview` |
 | 条目（预览 / 历史） | `GET /api/items`（按库、状态、复核原因、关键词筛选，分页）、`GET /api/items/{id}`（含事件时间线和 AI 记录）、`POST /api/items/execute`、`POST /api/items/retry`、`POST /api/items/reorganize`、`POST /api/items/cancel` |
 | 复核 | `GET /api/review/groups`（按来源目录分组）、`POST /api/review/confirm`、`POST /api/review/reidentify` |
-| 元数据 | `GET /api/metadata/search?q=&kind=`、`GET /api/metadata/subjects/{id}` |
+| 元数据 | `GET /api/metadata/sources`、`GET /api/metadata/search?q=&kind=&source=`、`GET /api/metadata/subjects/{source}/{id}` |
 | 设置 | `GET/PATCH /api/settings`、`POST /api/settings/ai-test` |
 | AI 记录 | `GET /api/ai/calls` |
 | 媒体服务器 | `GET/POST /api/servers`、`PATCH/DELETE /api/servers/{id}`、`POST /api/servers/{id}/test`（返回连接结果和媒体服务器的库列表；库 id 一律是字符串） |
@@ -64,11 +64,13 @@ uv run shutong --data <数据目录> serve --host 0.0.0.0 --port 8080 [--web ../
 
 ### 复核确认会做什么
 
-`POST /api/review/confirm` 把选定的系列名 / 版本 / Bangumi 条目和按条目指定的卷号（`volumes`：`13`、`1.5`、`01-05`、`SP1`）记在这些条目上（`overrides`），以后重新识别也沿用；然后重新规划，规划好的直接入库。
+`POST /api/review/confirm` 把选定的系列名 / 版本 / 条目（`subject: {"source": "bangumi", "id": "123"}`）和按条目指定的卷号（`volumes`：`13`、`1.5`、`01-05`、`SP1`）记在这些条目上（`overrides`），以后重新识别也沿用；然后重新规划，规划好的直接入库。
+
+元数据源在设置 `metadata.sources` 里排序（只含开启的源，默认 `["bangumi"]`，可加 `"anilist"`）。整理时按顺序查，前一个源确定没有这部作品才查下一个；某个源暂时连不上时条目留待下次重试，不改用下一个源。同一来源目录已经从某个源整理过的，后续文件沿用这个源。条目的 `subject_id` 是文本，`subject_source` 标明来源。
 
 ### 识别
 
-扫描和重新识别都要先配置 AI，没配时接口返回 409。同一来源目录的文件名每批最多 60 个一起交给 AI，AI 返回系列名、版本、用来搜 Bangumi 的其他名称（原文名等）以及每个文件的卷号 / 话号 / 番外序号和把握程度。把握低于 `ai.threshold`（默认 0.85，最低 0.8）的进复核；AI 连不上的条目停在「待识别」，下次扫描再试。
+扫描和重新识别都要先配置 AI，没配时接口返回 409。同一来源目录的文件名每批最多 60 个一起交给 AI，AI 返回系列名、版本、用来搜元数据源的其他名称（原文名等）以及每个文件的卷号 / 话号 / 番外序号和把握程度。把握低于 `ai.threshold`（默认 0.85，最低 0.8）的进复核；AI 连不上的条目停在「待识别」，下次扫描再试。
 
 ### 重新整理会做什么
 

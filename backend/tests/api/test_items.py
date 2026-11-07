@@ -60,7 +60,7 @@ class ItemRoutesTests(ApiCase):
         item = min(self.items()["items"], key=lambda item: item["id"])
         old = self.root / "library" / item["target_path"]
         job = self.job(self.client.post("/api/items/reorganize",
-                                        json={"item_ids": [item["id"]], "title": "迷宫饭 新", "bgm": 133315}))
+                                        json={"item_ids": [item["id"]], "title": "迷宫饭 新", "subject": {"source": "bangumi", "id": "133315"}}))
         self.assertEqual((job["state"], job["result"]["deleted"], job["result"]["executed"]), ("done", 1, 1))
         self.assertFalse(old.exists())
         self.assertFalse((self.root / "library" / ".shutong" / "trash").exists())
@@ -136,7 +136,7 @@ class ItemRoutesTests(ApiCase):
     def test_picking_a_subject_rewrites_the_files_with_it(self):
         self.source.subjects[302561] = subject(302561, "我独自升级", total=14)
         ids = [item["id"] for item in self.items()["items"]]
-        job = self.edit({"item_ids": ids, "bgm": 302561})
+        job = self.edit({"item_ids": ids, "subject": {"source": "bangumi", "id": "302561"}})
         self.assertEqual(job["result"]["edited"], 2, job)
         for item_id in ids:
             detail = self.client.get("/api/items/{0}".format(item_id)).json()
@@ -240,7 +240,7 @@ class ItemRoutesTests(ApiCase):
 
     def test_metadata_edit_checks_its_input_and_skips_what_is_not_organized(self):
         item = self.items()["items"][0]
-        for body, message in (({}, "Bangumi 条目或手填"), ({"bgm": 1, "fields": {"summary": "x"}}, "Bangumi 条目或手填"),
+        for body, message in (({}, "条目或手填"), ({"subject": {"source": "bangumi", "id": "1"}, "fields": {"summary": "x"}}, "条目或手填"),
                               ({"fields": {"release_date": "明年"}}, "发售日期"), ({"fields": {}}, "至少填一项")):
             with self.subTest(body=body):
                 response = self.client.post("/api/items/metadata", json=dict(body, item_ids=[item["id"]]))

@@ -70,7 +70,7 @@ class AutoPublishTests(ApiCase):
         self.zip("[]/Vol.01.zip")
         self.scan()
         ids = [item["id"] for item in self.client.get("/api/items", params={"library_id": self.library["id"]}).json()["items"]]
-        job = self.job(self.client.post("/api/review/confirm", json={"item_ids": ids, "title": "迷宫饭", "bgm": 133315}))
+        job = self.job(self.client.post("/api/review/confirm", json={"item_ids": ids, "title": "迷宫饭", "subject": {"source": "bangumi", "id": "133315"}}))
         self.assertEqual(self.statuses(), [("Vol.01.zip", "published")])
         self.assertEqual(job["result"]["executed"], 1)
 

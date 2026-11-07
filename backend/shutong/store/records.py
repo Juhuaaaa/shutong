@@ -396,7 +396,7 @@ class ItemStore:
                 # Records imported from the old tool have no plan: the folder in the library names the series.
                 named = connection.execute(
                     "SELECT coalesce(json_extract(plan, '$.series'), CASE WHEN instr(target_path, '/') > 1"
-                    " THEN substr(target_path, 1, instr(target_path, '/') - 1) END) AS series, subject_id"
+                    " THEN substr(target_path, 1, instr(target_path, '/') - 1) END) AS series, subject_id, subject_source"
                     " FROM items WHERE library_id = ? AND group_key IS ?"
                     " AND (json_extract(plan, '$.series') IS NOT NULL OR subject_id IS NOT NULL"
                     " OR instr(target_path, '/') > 1)"
@@ -404,7 +404,9 @@ class ItemStore:
                     (row["library_id"], row["group_key"])).fetchone()
                 groups.append({"library_id": row["library_id"], "group_key": row["group_key"],
                                "folder": row["group_key"], "series": named[0] if named else None,
-                               "subject_id": named[1] if named else None, "counts": counts,
+                               "subject_id": named[1] if named else None,
+                               "subject_source": (named[2] or "bangumi") if named and named[1] else None,
+                               "counts": counts,
                                "total": row["total"], "updated_at": row["updated_at"], "item_ids": ids,
                                "missing_metadata": row["missing"]})
         return groups, total

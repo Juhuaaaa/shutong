@@ -1,7 +1,46 @@
 """Response models: the OpenAPI schema generated from these is the contract with the web UI."""
-from typing import Dict, List, Optional
+from typing import Annotated, Dict, List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, BeforeValidator
+
+from shutong.metadata.base import SubjectRef
+
+_BANGUMI_IMAGE = "https://api.bgm.tv/v0/subjects/{0}/image?type=common"
+
+
+def _as_text(value):
+    return str(value).strip() if isinstance(value, int) and not isinstance(value, bool) else value
+
+
+class SubjectRefIn(BaseModel):
+    """A subject chosen by hand: which source, and its id there (numbers are accepted and kept as text)."""
+    source: str
+    id: Annotated[str, BeforeValidator(_as_text)]
+
+    def ref(self) -> SubjectRef:
+        return SubjectRef.from_json({"source": self.source, "id": self.id})
+
+
+class SubjectRefOut(BaseModel):
+    source: str
+    id: str
+
+
+def ref_out(value) -> Optional[dict]:
+    """A stored candidate: ``{source, id}``, or a bare Bangumi number from before there were other sources."""
+    if isinstance(value, dict):
+        try:
+            return SubjectRef.from_json(value).to_json()
+        except ValueError:
+            return None
+    if isinstance(value, (int, str)) and not isinstance(value, bool) and str(value).strip():
+        return SubjectRef("bangumi", str(value).strip()).to_json()
+    return None
+
+
+def cover_url(source: Optional[str], subject_id: Optional[str]) -> Optional[str]:
+    """A cover found from the id alone: only Bangumi has one."""
+    return _BANGUMI_IMAGE.format(subject_id) if source == "bangumi" and subject_id else None
 
 
 class JobRef(BaseModel):
@@ -57,6 +96,7 @@ class ItemOut(BaseModel):
     source_name: str
     parsed: dict
     subject_id: Optional[str]
+    subject_source: Optional[str]
     target_path: Optional[str]
     plan: dict
     error: Optional[str]
@@ -74,7 +114,8 @@ class HistoryGroup(BaseModel):
     group_key: str
     folder: str
     series: Optional[str]
-    subject_id: Optional[int]
+    subject_id: Optional[str]
+    subject_source: Optional[str]
     counts: Dict[str, int]
     total: int
     updated_at: str
@@ -120,7 +161,7 @@ def item_out(item) -> dict:
         "id": item.id, "library_id": item.library_id, "status": item.status.value,
         "review_reason": item.review_reason.value if item.review_reason else None,
         "source_path": str(item.source_path), "source_name": item.source_path.name, "parsed": item.parsed,
-        "subject_id": item.subject_id,
+        "subject_id": item.subject_id, "subject_source": item.subject_source,
         "target_path": item.target_path.as_posix() if item.target_path is not None else None,
         "plan": item.plan, "error": item.error, "overrides": item.overrides or {}, "updated_at": item.updated_at,
     }
@@ -142,12 +183,15 @@ class ReviewGroup(BaseModel):
     count: int
     item_ids: List[int]
     sample_names: List[str]
-    candidates: List[int]
+    candidates: List[SubjectRefOut]
     ai_suggestion: Optional[dict]
 
 
 class SubjectOut(BaseModel):
-    subject_id: int
+    subject_id: str
+    source: str
+    web_url: str
+    aliases: List[str]
     name: str
     name_cn: str
     summary: str
@@ -160,12 +204,12 @@ class SubjectOut(BaseModel):
 
 
 def subject_out(subject) -> dict:
-    return {"subject_id": subject.subject_id, "name": subject.name, "name_cn": subject.name_cn,
+    return {"subject_id": subject.subject_id, "source": subject.source, "web_url": subject.web_url,
+            "aliases": list(subject.aliases), "name": subject.name, "name_cn": subject.name_cn,
             "summary": subject.summary, "writers": list(subject.writers), "publisher": subject.publisher,
             "platform": subject.platform, "release_date": subject.release_date,
             "total_volumes": subject.total_volumes,
-            "image": "https://api.bgm.tv/v0/subjects/{0}/image?type=common".format(subject.subject_id)
-            if subject.source == "bangumi" else None}
+            "image": subject.image or cover_url(subject.source, subject.subject_id)}
 
 
 class AiTestResult(BaseModel):

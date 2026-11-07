@@ -32,7 +32,8 @@ class ReviewRoutesTests(ApiCase):
     def test_confirm_one_group(self):
         group = self.groups()[0]
         response = self.client.post("/api/review/confirm",
-                                    json={"item_ids": group["item_ids"], "title": "迷宫饭", "bgm": 133315})
+                                    json={"item_ids": group["item_ids"], "title": "迷宫饭",
+                                          "subject": {"source": "bangumi", "id": 133315}})
         job = self.client.get("/api/jobs/{0}".format(response.json()["job_id"])).json()
         self.assertEqual((job["state"], job["result"]["replanned"], job["result"]["executed"]), ("done", 2, 2))
         self.assertEqual([group["folder"] for group in self.groups()], ["[]a"])
@@ -53,7 +54,8 @@ class ReviewRoutesTests(ApiCase):
     def test_skip_metadata_publishes_under_the_title(self):
         group = self.groups()[0]
         missing = self.client.post("/api/review/confirm", json={"item_ids": group["item_ids"], "volumes": {},
-                                                                "bgm": 133315, "skip_metadata": True})
+                                                                "subject": {"source": "bangumi", "id": "133315"},
+                                                                "skip_metadata": True})
         self.assertEqual((missing.status_code, missing.json()["detail"]), (422, "直接整理要先填书名"))
         response = self.client.post("/api/review/confirm",
                                     json={"item_ids": group["item_ids"], "title": "天鹅绒之吻", "skip_metadata": True})
@@ -65,7 +67,7 @@ class ReviewRoutesTests(ApiCase):
         group = self.groups()[0]
         response = self.client.post("/api/review/confirm", json={"item_ids": group["item_ids"]})
         self.assertEqual((response.status_code, response.json()["detail"]),
-                         (422, "至少要指定系列名、Bangumi 条目或卷号"))
+                         (422, "至少要指定系列名、条目或卷号"))
 
     def test_bad_volume_rejected(self):
         group = self.groups()[1]
@@ -87,9 +89,11 @@ class ReviewRoutesTests(ApiCase):
 
     def test_metadata_search(self):
         results = self.client.get("/api/metadata/search", params={"q": "迷宫饭"}).json()
-        self.assertEqual([(entry["subject_id"], entry["name_cn"]) for entry in results], [(133315, "迷宫饭")])
+        self.assertEqual([(entry["subject_id"], entry["source"], entry["name_cn"]) for entry in results],
+                         [("133315", "bangumi", "迷宫饭")])
+        self.assertEqual(results[0]["web_url"], "https://bgm.tv/subject/133315")
         self.assertIn("/v0/subjects/133315/image", results[0]["image"])
-        subject = self.client.get("/api/metadata/subjects/133315").json()
+        subject = self.client.get("/api/metadata/subjects/bangumi/133315").json()
         self.assertEqual(subject["name_cn"], "迷宫饭")
 
     def test_metadata_unavailable(self):
