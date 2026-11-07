@@ -79,6 +79,7 @@ class OrganizerScanTests(OrganizerFixture):
         self.assertEqual([item.status for item in items], [ItemStatus.PLANNED, ItemStatus.PLANNED])
         self.assertEqual(items[0].target_path, Path("迷宫饭/迷宫饭 Vol.01.cbz"))
         self.assertEqual(items[0].subject_id, "133315")
+        self.assertEqual(items[0].subject_source, "bangumi")
         self.assertEqual(items[0].plan["metadata"]["series_name"], "迷宫饭")
         self.assertEqual(items[0].parsed["title_hint"], "迷宫饭")
         self.assertEqual(items[0].parsed["ai"]["confidence"], 0.97)

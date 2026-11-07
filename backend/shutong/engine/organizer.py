@@ -412,6 +412,7 @@ class Organizer:
             fields = {"plan": plan}
             if subject is not None:
                 fields["subject_id"] = subject.subject_id
+                fields["subject_source"] = subject.source
             detail = {"bgm": subject.subject_id} if subject is not None else {"fields": manual.to_json()}
             self.items.update(item.id, event="metadata_edited", detail=detail, **fields)
             counts["edited"] += 1
@@ -658,7 +659,8 @@ class Organizer:
         if overrides.get("no_metadata"):
             # Chosen in review: organize under the title, no Bangumi lookup.
             self.items.transition(item_id, ItemStatus.MATCHED, event="no_metadata",
-                                  detail={"title": parse.title_hint, "chosen": True}, subject_id=None)
+                                  detail={"title": parse.title_hint, "chosen": True}, subject_id=None,
+                                  subject_source=None)
             subject = Subject.unlisted(parse.title_hint)
         elif series is not None and series.base_title and not overrides.get("title") and not bgm:
             organized = self._match_sub_series(item_id, library, adapter, parse, reading, entry, "volume" in overrides)
@@ -744,7 +746,7 @@ class Organizer:
             self.items.transition(item_id, ItemStatus.MATCHED, event="matched",
                                   detail={"method": result.method, "subject_id": result.subject.subject_id,
                                           "title": result.subject.display_title},
-                                  subject_id=result.subject.subject_id)
+                                  subject_id=result.subject.subject_id, subject_source=result.subject.source)
             return result.subject
         if result.suggestion is not None:
             self.items.add_event(item_id, "ai_suggestion", _suggestion_json(result.suggestion))

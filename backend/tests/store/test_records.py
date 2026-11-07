@@ -34,6 +34,30 @@ class RecordStoreTests(unittest.TestCase):
         item = self.items.create(self.lib.id, Path("/s/a.zip"), "v1:aa", run_id=run_id)
         self.assertEqual(item.run_id, run_id)
 
+    def test_subject_source_is_stored_with_the_id(self):
+        item = self.items.create(self.lib.id, Path("/s/a.zip"), "v1:aa")
+        self.items.transition(item.id, ItemStatus.PARSED, event="parsed", parsed={})
+        item = self.items.transition(item.id, ItemStatus.MATCHED, event="matched", subject_id="30002",
+                                     subject_source="anilist")
+        self.assertEqual((item.subject_id, item.subject_source), ("30002", "anilist"))
+        self.assertEqual(item.subject_ref.key, "anilist:30002")
+        other = self.items.create(self.lib.id, Path("/s/b.zip"), "v1:bb")
+        self.assertIsNone(other.subject_ref)
+
+    def test_subject_sources_by_folder(self):
+        root = Path("/s")
+        for name, path, source in (("a", "甲/1.cbz", "anilist"), ("b", "乙/1.cbz", "bangumi"),
+                                   ("c", "散.cbz", "anilist"), ("d", "甲/2.cbz", "bangumi"),
+                                   ("e", "パ/1.cbz", "anilist"), ("f", "丙/1.cbz", None)):
+            item = self.items.create(self.lib.id, root / path, "v1:" + name)
+            self.items.transition(item.id, ItemStatus.PARSED, event="parsed", parsed={})
+            if source:
+                self.items.transition(item.id, ItemStatus.MATCHED, event="matched", subject_id="1",
+                                      subject_source=source)
+        found = self.items.subject_sources_by_folder(self.lib.id, root)
+        self.assertEqual(found, {"甲": "anilist", "乙": "bangumi", "パ": "anilist"})
+        self.assertEqual(self.items.subject_sources_by_folder(self.lib.id, Path("/elsewhere")), {})
+
     def test_create_item_records_discovered_event(self):
         item = self.items.create(self.lib.id, Path("/s/a.zip"), "v1:aa")
         self.assertEqual(item.status, ItemStatus.DISCOVERED)

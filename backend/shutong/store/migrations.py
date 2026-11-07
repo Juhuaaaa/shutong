@@ -182,4 +182,18 @@ MIGRATIONS: tuple[str, ...] = (
       server_library_id = (SELECT server_library FROM library_server_links AS link WHERE link.id = libraries.id);
     DROP TABLE library_server_links;
     """,
+    # Metadata from more than one source: an item keeps which source its subject comes from, and ids are text
+    # (some sources use UUIDs). Everything matched so far came from Bangumi.
+    """
+    CREATE TABLE item_subjects AS
+      SELECT id, CAST(subject_id AS TEXT) AS subject FROM items WHERE subject_id IS NOT NULL;
+    ALTER TABLE items DROP COLUMN subject_id;
+    ALTER TABLE items ADD COLUMN subject_id TEXT;
+    ALTER TABLE items ADD COLUMN subject_source TEXT;
+    UPDATE items SET
+      subject_id = (SELECT subject FROM item_subjects AS kept WHERE kept.id = items.id),
+      subject_source = 'bangumi'
+      WHERE id IN (SELECT id FROM item_subjects);
+    DROP TABLE item_subjects;
+    """,
 )

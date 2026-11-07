@@ -6,13 +6,15 @@ import logging
 from pathlib import Path
 import sqlite3
 from typing import Any, Callable, Dict, List, Optional, Tuple
+import unicodedata
 
 from shutong.labels import note
+from shutong.metadata.base import SubjectRef
 from shutong.engine.states import ItemStatus, ReviewReason, check_transition
 
 from .db import Database
 
-_TRANSITION_FIELDS = frozenset({"parsed", "subject_id", "plan", "target_path", "error", "source_path", "group_key",
+_TRANSITION_FIELDS = frozenset({"parsed", "subject_id", "subject_source", "plan", "target_path", "error", "source_path", "group_key",
                                 "source_root", "originals_kept"})
 _JSON_FIELDS = frozenset({"parsed", "plan"})
 
@@ -61,6 +63,7 @@ class Item:
     review_reason: Optional[ReviewReason]
     parsed: dict
     subject_id: Optional[str]
+    subject_source: Optional[str]
     plan: dict
     target_path: Optional[Path]
     error: Optional[str]
@@ -70,6 +73,12 @@ class Item:
     group_key: Optional[str] = None  # the source folder a review or history record covers
     source_root: Optional[Path] = None  # set for files dropped in from elsewhere: relative paths start here
     originals_kept: bool = False  # the user chose to leave this dropped file's original alone
+
+    @property
+    def subject_ref(self) -> Optional[SubjectRef]:
+        if not self.subject_id:
+            return None
+        return SubjectRef(self.subject_source or "bangumi", self.subject_id)
 
 
 @dataclass(frozen=True)
@@ -252,6 +261,22 @@ class ItemStore:
             ).lastrowid
             _insert_event(connection, item_id, "discovered", None)
         return self.get(item_id)
+
+    def subject_sources_by_folder(self, library_id: int, root: Path) -> Dict[str, str]:
+        """The metadata source each first-level folder under ``root`` was matched from, earliest item first."""
+        with self.db.connect() as connection:
+            rows = connection.execute(
+                "SELECT source_path, subject_source FROM items WHERE library_id = ? AND subject_source IS NOT NULL"
+                " ORDER BY id", (library_id,)).fetchall()
+        found: Dict[str, str] = {}
+        for row in rows:
+            try:
+                parts = Path(row["source_path"]).relative_to(root).parts
+            except ValueError:
+                continue
+            if len(parts) > 1:
+                found.setdefault(unicodedata.normalize("NFC", parts[0]), row["subject_source"])
+        return found
 
     def import_published(self, library_id: int, source_path: Path, fingerprint: str, target_path: Path, *,
                          parsed: dict, detail: dict) -> Item:
@@ -554,6 +579,7 @@ def _item(row: sqlite3.Row) -> Item:
         review_reason=ReviewReason(row["review_reason"]) if row["review_reason"] else None,
         parsed=json.loads(row["parsed"]),
         subject_id=None if row["subject_id"] is None else str(row["subject_id"]),
+        subject_source=row["subject_source"],
         plan=json.loads(row["plan"]),
         target_path=Path(row["target_path"]) if row["target_path"] is not None else None,
         error=row["error"],

@@ -159,6 +159,28 @@ class DatabaseTests(unittest.TestCase):
         self.assertEqual(kept, "0S5E73NR0E2MP")
         self.assertEqual(problems, [])
 
+    def test_migration_13_keeps_bangumi_ids(self):
+        self._migrate_to(12)
+        with self.db.connect() as connection:
+            connection.execute("INSERT INTO libraries(id, name, kind, source_dir, library_dir, created_at)"
+                               " VALUES (1, '漫画', 'manga', '/s', '/l', 't')")
+            connection.execute("INSERT INTO items(id, library_id, source_path, fingerprint, status, subject_id,"
+                               " created_at, updated_at) VALUES (1, 1, '/s/a.zip', 'f1', 'published', 439286, 't', 't')")
+            connection.execute("INSERT INTO items(id, library_id, source_path, fingerprint, status,"
+                               " created_at, updated_at) VALUES (2, 1, '/s/b.zip', 'f2', 'parsed', 't', 't')")
+            connection.execute("INSERT INTO item_events(item_id, kind, at) VALUES (1, 'x', 't')")
+        self.db.migrate()
+        with self.db.connect() as connection:
+            rows = [tuple(row) for row in connection.execute(
+                "SELECT subject_id, typeof(subject_id), subject_source FROM items ORDER BY id")]
+            events = connection.execute("SELECT count(*) FROM item_events").fetchone()[0]
+            problems = connection.execute("PRAGMA foreign_key_check").fetchall()
+            integrity = connection.execute("PRAGMA integrity_check").fetchone()[0]
+        self.assertEqual(rows, [("439286", "text", "bangumi"), (None, "null", None)])
+        self.assertEqual(events, 1)
+        self.assertEqual(problems, [])
+        self.assertEqual(integrity, "ok")
+
 
 if __name__ == "__main__":
     unittest.main()
