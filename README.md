@@ -8,7 +8,28 @@
 
 **需要准备：** 一个兼容 OpenAI 的 AI 接口（自己申请，会产生少量费用）。没有它就不能整理。
 
-## 下载
+## Docker 部署（NAS）
+
+```yaml
+services:
+  shutong:
+    image: ah4o/shutong:latest
+    container_name: shutong
+    restart: unless-stopped
+    ports:
+      - "8899:8899"
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./config:/config
+      - /path/to/media:/data
+```
+
+运行 `docker compose up -d` 后打开 `http://<NAS 地址>:8899`，第一次会让你设置登录密码。然后在「设置 → AI」配好接口，在「库」里新建库，目录填容器里的路径，例如 `/data/manga`。
+
+来源、媒体库和原档目录要放在同一个挂载里，否则移动文件会变成复制再删除。代理、权限和升级见[完整部署说明](docs/deploy.md)。
+
+## 桌面版下载
 
 到 [Releases](https://github.com/Juhuaaaa/shutong/releases/latest) 下载：
 
@@ -92,10 +113,6 @@ Windows 卸载后还会留下一份安装缓存（约 145 MB），可以直接�
 ## 遇到问题
 
 到 [Issues](https://github.com/Juhuaaaa/shutong/issues) 提问。菜单「帮助 → 打开日志目录」里有日志，提问时请附上，但先检查有没有你不想公开的文件名。
-
-## NAS（Docker）版
-
-想在 NAS 上长期运行的话，见 [Docker 部署说明](docs/deploy.md)。
 
 ## 开发
 
