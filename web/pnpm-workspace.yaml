@@ -1,0 +1,2 @@
+allowBuilds:
+  '@parcel/watcher': false # sass's optional file watcher; only used by sass --watch, not by vite builds

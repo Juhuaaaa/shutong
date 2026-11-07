@@ -1,0 +1,26 @@
+// Flat, soft surfaces in the spirit of MoviePilot: one light shadow, generous radius.
+:root {
+  --st-radius-card: 16px;
+  --st-radius-control: 10px;
+  --st-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  --st-gap: 20px;
+}
+
+html, body { margin: 0; }
+body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, "Segoe UI", sans-serif; }
+
+.v-card { border-radius: var(--st-radius-card); box-shadow: var(--st-shadow); }
+.v-theme--dark .v-card { box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35); }
+.v-card.st-flat { box-shadow: none; }
+
+.st-page { display: flex; flex-direction: column; gap: var(--st-gap); }
+.st-page-title { font-size: 1.375rem; font-weight: 600; margin: 0; }
+.st-muted { color: rgba(var(--v-theme-on-surface), 0.6); }
+.st-grid { display: grid; gap: var(--st-gap); grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+
+@media (max-width: 599px) {
+  :root { --st-gap: 14px; }
+}
+
+// A lone checkbox in a row should take its own width, not stretch across the row.
+.v-checkbox-btn { flex: none; }

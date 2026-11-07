@@ -1,0 +1,149 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { ask } from "@/composables/confirm";
+import { fakeApi } from "@/test-utils";
+import { mountView } from "@/test-mount";
+import SettingsView from "./SettingsView.vue";
+
+vi.mock("@/composables/confirm", () => ({ ask: vi.fn().mockResolvedValue(true) }));
+
+const settings = {
+  "bangumi.base_url": "https://api.bgm.tv", "bangumi.token": "", "ai.base_url": "https://api.deepseek.com/v1",
+  "ai.api_key": "已设置", "ai.model": "deepseek-chat", "ai.threshold": 0.95, "network.proxy": "", "ai.use_proxy": false,
+};
+
+function api(extra: Record<string, unknown> = {}) {
+  return fakeApi({
+    "GET /api/libraries": [], "GET /api/settings": settings, "PATCH /api/settings": (body: object) => ({ ...settings, ...body }),
+    "GET /api/ai/calls": [], "GET /api/servers": [], ...extra,
+  });
+}
+
+function input(selector: string) {
+  return document.querySelector(`[data-test=${selector}] input`) as HTMLInputElement;
+}
+
+async function type(selector: string, value: string) {
+  const element = input(selector);
+  element.value = value;
+  element.dispatchEvent(new Event("input"));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+describe("SettingsView", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    document.body.innerHTML = "";
+  });
+
+  it("sends only what changed and leaves the untouched key alone", async () => {
+    const { calls } = api();
+    await mountView(SettingsView, "/settings/ai");
+    await vi.waitFor(() => expect(input("ai-threshold")?.value).toBe("0.95"));
+    await type("ai-threshold", "0.9");
+    input("ai-threshold").dispatchEvent(new Event("blur"));
+    (document.querySelector("[data-test=save-ai]") as HTMLElement).click();
+    await vi.waitFor(() => expect(calls.some((call) => call.method === "PATCH")).toBe(true));
+    expect(calls.find((call) => call.method === "PATCH")?.body).toEqual({ "ai.threshold": 0.9 });
+  });
+
+  it("opens on the AI tab, which says scanning needs it", async () => {
+    api();
+    await mountView(SettingsView, "/settings");
+    await vi.waitFor(() => expect(document.querySelector("[data-test=ai-required]")).not.toBeNull());
+    expect(document.body.textContent).toContain("填好接口地址、API Key 和模型后才能扫描");
+    for (const gone of ["回收目录", "识别出来就直接入库", "自动采纳", "启用 AI"]) {
+      expect(document.body.textContent).not.toContain(gone);
+    }
+  });
+
+  it("has no daily limit and sends the AI proxy switch", async () => {
+    const { calls } = api();
+    await mountView(SettingsView, "/settings/ai");
+    await vi.waitFor(() => expect(input("ai-use-proxy")).not.toBeNull());
+    expect(document.body.textContent).not.toContain("每日");
+    input("ai-use-proxy").click();
+    (document.querySelector("[data-test=save-ai]") as HTMLElement).click();
+    await vi.waitFor(() => expect(calls.some((call) => call.method === "PATCH")).toBe(true));
+    expect(calls.find((call) => call.method === "PATCH")?.body).toEqual({ "ai.use_proxy": true });
+  });
+
+  it("checks the proxy address and tests it", async () => {
+    const { calls } = api({ "POST /api/settings/proxy-test": { ok: true, error: null, elapsed_ms: 321 } });
+    await mountView(SettingsView, "/settings/network");
+    await vi.waitFor(() => expect(calls.some((call) => call.path === "/api/settings")).toBe(true));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await type("proxy", "192.168.1.2:7890");
+    await vi.waitFor(() => expect(document.body.textContent).toContain("代理地址格式不对"));
+    expect((document.querySelector("[data-test=save-network]") as HTMLButtonElement).disabled).toBe(true);
+    await type("proxy", "socks5://192.168.1.2:7891");
+    (document.querySelector("[data-test=test-proxy]") as HTMLElement).click();
+    await vi.waitFor(() => expect(document.body.textContent).toContain("321 ms"));
+    expect(calls.find((call) => call.path === "/api/settings/proxy-test")?.body).toEqual({ proxy: "socks5://192.168.1.2:7891" });
+  });
+
+  it("keeps unsaved edits when switching tabs", async () => {
+    const { calls } = api();
+    const { router } = await mountView(SettingsView, "/settings/network");
+    await vi.waitFor(() => expect(calls.some((call) => call.path === "/api/settings")).toBe(true));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await type("proxy", "http://192.168.1.2:7890");
+    await router.replace({ name: "settings", params: { tab: "ai" } });
+    await vi.waitFor(() => expect(input("ai-threshold")).not.toBeNull());
+    await router.replace({ name: "settings", params: { tab: "network" } });
+    await vi.waitFor(() => expect(input("proxy")?.value).toBe("http://192.168.1.2:7890"));
+  });
+
+  it("asks before changing the password", async () => {
+    const { calls } = api({ "POST /api/auth/password": { ok: true } });
+    vi.mocked(ask).mockClear();
+    await mountView(SettingsView, "/settings/account");
+    await vi.waitFor(() => expect(input("old-password")).not.toBeNull());
+    await type("old-password", "old password");
+    await type("new-password", "new password 1");
+    await type("repeat-password", "new password 1");
+    (document.querySelector("[data-test=change-password]") as HTMLElement).click();
+    await vi.waitFor(() => expect(calls.some((call) => call.path === "/api/auth/password")).toBe(true));
+    expect(ask).toHaveBeenCalledTimes(1);
+  });
+
+  it("stops showing a cleared key as set", async () => {
+    let stored = { ...settings };
+    api({ "GET /api/settings": () => stored, "PATCH /api/settings": (body: object) => (stored = { ...stored, ...body }) });
+    await mountView(SettingsView, "/settings/ai");
+    await vi.waitFor(() => expect(document.querySelector("[data-test=clear-ai-key]")).not.toBeNull());
+    (document.querySelector("[data-test=clear-ai-key]") as HTMLElement).click();
+    await vi.waitFor(() => expect(document.querySelector("[data-test=clear-ai-key]")).toBeNull());
+  });
+
+  it("clears a stored key only through its own button", async () => {
+    const { calls } = api();
+    await mountView(SettingsView, "/settings/ai");
+    await vi.waitFor(() => expect(document.querySelector("[data-test=clear-ai-key]")).not.toBeNull());
+    (document.querySelector("[data-test=clear-ai-key]") as HTMLElement).click();
+    await vi.waitFor(() => expect(calls.some((call) => call.method === "PATCH")).toBe(true));
+    expect(calls.find((call) => call.method === "PATCH")?.body).toEqual({ "ai.api_key": "" });
+  });
+
+  it("does not send a password change when the two entries differ", async () => {
+    const { calls } = api();
+    await mountView(SettingsView, "/settings/account");
+    await vi.waitFor(() => expect(input("old-password")).not.toBeNull());
+    await type("old-password", "old password");
+    await type("new-password", "new password 1");
+    await type("repeat-password", "new password 2");
+    (document.querySelector("[data-test=change-password]") as HTMLElement).click();
+    await vi.waitFor(() => expect(document.body.textContent).toContain("两次输入的新密码不一致"));
+    expect(calls.some((call) => call.path === "/api/auth/password")).toBe(false);
+  });
+
+  it("switches the interface language on the account tab", async () => {
+    fakeApi({ "GET /api/settings": {} });
+    const { wrapper } = await mountView(SettingsView, "/settings/account", { tab: "account" });
+    await vi.waitFor(() => expect(wrapper.find("[data-test=language]").exists()).toBe(true));
+    const select = wrapper.findComponent("[data-test=language]") as unknown as { vm: { $emit: (name: string, value: string) => void } };
+    select.vm.$emit("update:modelValue", "en");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Change password"));
+    select.vm.$emit("update:modelValue", "zh-CN");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("修改密码"));
+  });
+});

@@ -1,0 +1,24 @@
+{
+  "name": "shutong-desktop",
+  "productName": "shutong",
+  "version": "0.1.0",
+  "private": true,
+  "description": "漫画与轻小说整理",
+  "author": "Shutong",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc && node -e \"require('fs').copyFileSync('src/loading.html','dist/loading.html')\"",
+    "dev": "npm run build && SHUTONG_DEV_BACKEND=1 electron .",
+    "test": "vitest run",
+    "check": "tsc --noEmit",
+    "backend": "node scripts/build-backend.mjs",
+    "dist": "npm run build && npm run backend && electron-builder --config electron-builder.yml"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "electron": "^45.2.3",
+    "electron-builder": "^26.18.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.12"
+  }
+}

@@ -1,0 +1,74 @@
+name: test
+
+# Private repo: Actions minutes are billed, macOS at 10x and Windows at 2x.
+# Linux runs on every push / PR; macOS and Windows only when triggered by hand or on a v* tag.
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv python install 3.12
+      - run: uv sync
+      - run: uv run python -m unittest discover -s tests -t .
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - uses: astral-sh/setup-uv@v6
+      - run: uv python install 3.12
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm build
+      # The checked-in API types must match the backend.
+      - run: pnpm check-api
+
+  docker:
+    # Image build + smoke test: on main, on release tags, or by hand.
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f docker/Dockerfile -t shutong:ci .
+      - run: docker/smoke.sh shutong:ci
+
+  cross-platform:
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv python install 3.12
+      - run: uv sync
+      - name: all tests
+        run: uv run python -m unittest discover -s tests -t .

@@ -1,0 +1,79 @@
+name: desktop-release
+
+# Installers for Windows and macOS, kept as artifacts of this run. desktop/scripts/publish-draft.sh turns them
+# into a draft release of the public downloads repository. Only on demand: macOS and Windows minutes cost extra.
+on:
+  push:
+    tags: ["desktop-v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        # A tag ending in -win builds Windows alone: macOS minutes cost ten times as much.
+        include: ${{ fromJSON(endsWith(github.ref_name, '-win') && '[{"os":"windows-latest","name":"windows-x64"}]' || '[{"os":"windows-latest","name":"windows-x64"},{"os":"macos-latest","name":"mac-arm64"},{"os":"macos-15-intel","name":"mac-x64"}]') }}
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv python install 3.12
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: msys2/setup-msys2@v2
+        if: runner.os == 'Windows'
+        with:
+          msystem: UCRT64
+          install: mingw-w64-ucrt-x86_64-libarchive
+      - name: libarchive for Windows
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: desktop/scripts/collect-libarchive-windows.sh
+      - name: backend tests
+        working-directory: backend
+        env:
+          PYTHONUTF8: "1"
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then export LIBARCHIVE="$(cygpath -w "$GITHUB_WORKSPACE/desktop/vendor/libarchive/libarchive-13.dll")"; fi
+          uv sync
+          uv run python -m unittest discover -s tests -t .
+      - name: web
+        working-directory: web
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+      - name: desktop tests
+        working-directory: desktop
+        run: |
+          npm ci
+          npm test
+      - name: installer
+        working-directory: desktop
+        run: npm run dist
+      - name: smoke test
+        working-directory: desktop
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            node scripts/smoke.mjs release/win-unpacked/resources/backend/shutong-backend.exe "$(cygpath -w "$PWD/vendor/libarchive/libarchive-13.dll")"
+          else
+            node scripts/smoke.mjs release/mac*/*.app/Contents/Resources/backend/shutong-backend
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: |
+            desktop/release/Shutong-*.dmg
+            desktop/release/Shutong-*.exe
+          if-no-files-found: error
+          compression-level: 0

@@ -1,0 +1,4890 @@
+{
+  "components": {
+    "schemas": {
+      "AiCallOut": {
+        "properties": {
+          "adopted": {
+            "title": "Adopted",
+            "type": "boolean"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "duration_ms": {
+            "title": "Duration Ms",
+            "type": "integer"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "item_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item Id"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "purpose": {
+            "title": "Purpose",
+            "type": "string"
+          },
+          "response_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Text"
+          }
+        },
+        "required": [
+          "id",
+          "item_id",
+          "purpose",
+          "model",
+          "response_text",
+          "error",
+          "duration_ms",
+          "adopted",
+          "created_at"
+        ],
+        "title": "AiCallOut",
+        "type": "object"
+      },
+      "AiTestResult": {
+        "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok",
+          "error"
+        ],
+        "title": "AiTestResult",
+        "type": "object"
+      },
+      "AuthStatus": {
+        "properties": {
+          "configured": {
+            "title": "Configured",
+            "type": "boolean"
+          },
+          "desktop": {
+            "default": false,
+            "title": "Desktop",
+            "type": "boolean"
+          },
+          "logged_in": {
+            "title": "Logged In",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "configured",
+          "logged_in"
+        ],
+        "title": "AuthStatus",
+        "type": "object"
+      },
+      "Body_upload_api_libraries__library_id__upload_post": {
+        "properties": {
+          "files": {
+            "items": {
+              "contentMediaType": "application/octet-stream",
+              "type": "string"
+            },
+            "title": "Files",
+            "type": "array"
+          }
+        },
+        "required": [
+          "files"
+        ],
+        "title": "Body_upload_api_libraries__library_id__upload_post",
+        "type": "object"
+      },
+      "CancelResult": {
+        "properties": {
+          "cancelled": {
+            "title": "Cancelled",
+            "type": "integer"
+          },
+          "skipped": {
+            "title": "Skipped",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "cancelled",
+          "skipped"
+        ],
+        "title": "CancelResult",
+        "type": "object"
+      },
+      "ChooseCover": {
+        "properties": {
+          "left": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Left"
+          },
+          "page": {
+            "title": "Page",
+            "type": "string"
+          },
+          "right": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Right"
+          }
+        },
+        "required": [
+          "page"
+        ],
+        "title": "ChooseCover",
+        "type": "object"
+      },
+      "Confirm": {
+        "properties": {
+          "bgm": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bgm"
+          },
+          "edition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Edition"
+          },
+          "item_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Item Ids",
+            "type": "array"
+          },
+          "skip_metadata": {
+            "default": false,
+            "title": "Skip Metadata",
+            "type": "boolean"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "volumes": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "default": {},
+            "title": "Volumes",
+            "type": "object"
+          }
+        },
+        "required": [
+          "item_ids"
+        ],
+        "title": "Confirm",
+        "type": "object"
+      },
+      "CoverOptionsOut": {
+        "properties": {
+          "added": {
+            "title": "Added",
+            "type": "boolean"
+          },
+          "current": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current"
+          },
+          "jacket": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JacketOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pages": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Pages",
+            "type": "array"
+          }
+        },
+        "required": [
+          "pages",
+          "current",
+          "added",
+          "jacket"
+        ],
+        "title": "CoverOptionsOut",
+        "type": "object"
+      },
+      "Dashboard": {
+        "properties": {
+          "jobs": {
+            "items": {
+              "$ref": "#/components/schemas/JobOut"
+            },
+            "title": "Jobs",
+            "type": "array"
+          },
+          "libraries": {
+            "items": {
+              "$ref": "#/components/schemas/LibraryStats"
+            },
+            "title": "Libraries",
+            "type": "array"
+          },
+          "recent": {
+            "items": {
+              "$ref": "#/components/schemas/RecentGroup"
+            },
+            "title": "Recent",
+            "type": "array"
+          },
+          "storage": {
+            "items": {
+              "$ref": "#/components/schemas/Storage"
+            },
+            "title": "Storage",
+            "type": "array"
+          }
+        },
+        "required": [
+          "libraries",
+          "recent",
+          "jobs",
+          "storage"
+        ],
+        "title": "Dashboard",
+        "type": "object"
+      },
+      "EditMetadata": {
+        "properties": {
+          "bgm": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bgm"
+          },
+          "fields": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fields"
+          },
+          "item_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Item Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "item_ids"
+        ],
+        "title": "EditMetadata",
+        "type": "object"
+      },
+      "EventOut": {
+        "properties": {
+          "at": {
+            "title": "At",
+            "type": "string"
+          },
+          "detail": {
+            "additionalProperties": true,
+            "title": "Detail",
+            "type": "object"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "at",
+          "kind",
+          "detail"
+        ],
+        "title": "EventOut",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HistoryGroup": {
+        "properties": {
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Counts",
+            "type": "object"
+          },
+          "folder": {
+            "title": "Folder",
+            "type": "string"
+          },
+          "group_key": {
+            "title": "Group Key",
+            "type": "string"
+          },
+          "item_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Item Ids",
+            "type": "array"
+          },
+          "library_id": {
+            "title": "Library Id",
+            "type": "integer"
+          },
+          "missing_metadata": {
+            "default": 0,
+            "title": "Missing Metadata",
+            "type": "integer"
+          },
+          "series": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Series"
+          },
+          "subject_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject Id"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "library_id",
+          "group_key",
+          "folder",
+          "series",
+          "subject_id",
+          "counts",
+          "total",
+          "updated_at",
+          "item_ids"
+        ],
+        "title": "HistoryGroup",
+        "type": "object"
+      },
+      "HistoryPage": {
+        "properties": {
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/HistoryGroup"
+            },
+            "title": "Groups",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "groups",
+          "total"
+        ],
+        "title": "HistoryPage",
+        "type": "object"
+      },
+      "ItemDetail": {
+        "properties": {
+          "ai_calls": {
+            "items": {
+              "$ref": "#/components/schemas/AiCallOut"
+            },
+            "title": "Ai Calls",
+            "type": "array"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/EventOut"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "library_id": {
+            "title": "Library Id",
+            "type": "integer"
+          },
+          "overrides": {
+            "additionalProperties": true,
+            "title": "Overrides",
+            "type": "object"
+          },
+          "parsed": {
+            "additionalProperties": true,
+            "title": "Parsed",
+            "type": "object"
+          },
+          "plan": {
+            "additionalProperties": true,
+            "title": "Plan",
+            "type": "object"
+          },
+          "review_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Reason"
+          },
+          "source_name": {
+            "title": "Source Name",
+            "type": "string"
+          },
+          "source_path": {
+            "title": "Source Path",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "subject_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject Id"
+          },
+          "target_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Path"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "library_id",
+          "status",
+          "review_reason",
+          "source_path",
+          "source_name",
+          "parsed",
+          "subject_id",
+          "target_path",
+          "plan",
+          "error",
+          "overrides",
+          "updated_at",
+          "events",
+          "ai_calls"
+        ],
+        "title": "ItemDetail",
+        "type": "object"
+      },
+      "ItemIds": {
+        "properties": {
+          "ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "title": "ItemIds",
+        "type": "object"
+      },
+      "ItemOut": {
+        "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "library_id": {
+            "title": "Library Id",
+            "type": "integer"
+          },
+          "overrides": {
+            "additionalProperties": true,
+            "title": "Overrides",
+            "type": "object"
+          },
+          "parsed": {
+            "additionalProperties": true,
+            "title": "Parsed",
+            "type": "object"
+          },
+          "plan": {
+            "additionalProperties": true,
+            "title": "Plan",
+            "type": "object"
+          },
+          "review_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Reason"
+          },
+          "source_name": {
+            "title": "Source Name",
+            "type": "string"
+          },
+          "source_path": {
+            "title": "Source Path",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "subject_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject Id"
+          },
+          "target_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Path"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "library_id",
+          "status",
+          "review_reason",
+          "source_path",
+          "source_name",
+          "parsed",
+          "subject_id",
+          "target_path",
+          "plan",
+          "error",
+          "overrides",
+          "updated_at"
+        ],
+        "title": "ItemOut",
+        "type": "object"
+      },
+      "ItemPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ItemOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "ItemPage",
+        "type": "object"
+      },
+      "ItemStatus": {
+        "enum": [
+          "discovered",
+          "parsed",
+          "matched",
+          "planned",
+          "needs_review",
+          "ready",
+          "building",
+          "published",
+          "failed",
+          "duplicate",
+          "cancelled"
+        ],
+        "title": "ItemStatus",
+        "type": "string"
+      },
+      "JacketOut": {
+        "properties": {
+          "left": {
+            "title": "Left",
+            "type": "number"
+          },
+          "page": {
+            "title": "Page",
+            "type": "string"
+          },
+          "right": {
+            "title": "Right",
+            "type": "number"
+          }
+        },
+        "required": [
+          "page",
+          "left",
+          "right"
+        ],
+        "title": "JacketOut",
+        "type": "object"
+      },
+      "JobOut": {
+        "properties": {
+          "cancelling": {
+            "default": false,
+            "title": "Cancelling",
+            "type": "boolean"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "library_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Library Id"
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress"
+          },
+          "result": {
+            "additionalProperties": true,
+            "title": "Result",
+            "type": "object"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "library_id",
+          "state",
+          "result",
+          "error",
+          "created_at",
+          "finished_at"
+        ],
+        "title": "JobOut",
+        "type": "object"
+      },
+      "JobRef": {
+        "properties": {
+          "job_id": {
+            "title": "Job Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "job_id"
+        ],
+        "title": "JobRef",
+        "type": "object"
+      },
+      "LibraryIn": {
+        "properties": {
+          "archive_dir": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archive Dir"
+          },
+          "include_edition": {
+            "default": true,
+            "title": "Include Edition",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "manga",
+              "novel"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "library_dir": {
+            "title": "Library Dir",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "naming_template": {
+            "default": "",
+            "title": "Naming Template",
+            "type": "string"
+          },
+          "overwrite_policy": {
+            "default": "never",
+            "enum": [
+              "never",
+              "always",
+              "larger",
+              "newer"
+            ],
+            "title": "Overwrite Policy",
+            "type": "string"
+          },
+          "pdf_to_cbz": {
+            "default": true,
+            "title": "Pdf To Cbz",
+            "type": "boolean"
+          },
+          "rename_files": {
+            "default": true,
+            "title": "Rename Files",
+            "type": "boolean"
+          },
+          "server_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Id"
+          },
+          "server_library_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Library Id"
+          },
+          "source_dir": {
+            "default": "",
+            "title": "Source Dir",
+            "type": "string"
+          },
+          "source_policy": {
+            "default": "keep",
+            "enum": [
+              "keep",
+              "archive",
+              "delete"
+            ],
+            "title": "Source Policy",
+            "type": "string"
+          },
+          "watch": {
+            "default": false,
+            "title": "Watch",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "kind",
+          "library_dir"
+        ],
+        "title": "LibraryIn",
+        "type": "object"
+      },
+      "LibraryOut": {
+        "properties": {
+          "archive_dir": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archive Dir"
+          },
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "include_edition": {
+            "title": "Include Edition",
+            "type": "boolean"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "library_dir": {
+            "title": "Library Dir",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "naming_template": {
+            "title": "Naming Template",
+            "type": "string"
+          },
+          "overwrite_policy": {
+            "title": "Overwrite Policy",
+            "type": "string"
+          },
+          "pdf_to_cbz": {
+            "title": "Pdf To Cbz",
+            "type": "boolean"
+          },
+          "rename_files": {
+            "title": "Rename Files",
+            "type": "boolean"
+          },
+          "server_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Id"
+          },
+          "server_library_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Library Id"
+          },
+          "source_dir": {
+            "title": "Source Dir",
+            "type": "string"
+          },
+          "source_policy": {
+            "title": "Source Policy",
+            "type": "string"
+          },
+          "watch": {
+            "title": "Watch",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "source_dir",
+          "library_dir",
+          "naming_template",
+          "source_policy",
+          "archive_dir",
+          "pdf_to_cbz",
+          "include_edition",
+          "overwrite_policy",
+          "rename_files",
+          "available",
+          "server_id",
+          "server_library_id",
+          "watch"
+        ],
+        "title": "LibraryOut",
+        "type": "object"
+      },
+      "LibraryPatch": {
+        "properties": {
+          "archive_dir": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archive Dir"
+          },
+          "include_edition": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Include Edition"
+          },
+          "library_dir": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Library Dir"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "naming_template": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Naming Template"
+          },
+          "overwrite_policy": {
+            "anyOf": [
+              {
+                "enum": [
+                  "never",
+                  "always",
+                  "larger",
+                  "newer"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overwrite Policy"
+          },
+          "pdf_to_cbz": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pdf To Cbz"
+          },
+          "rename_files": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rename Files"
+          },
+          "server_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Id"
+          },
+          "server_library_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Library Id"
+          },
+          "source_dir": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Dir"
+          },
+          "source_policy": {
+            "anyOf": [
+              {
+                "enum": [
+                  "keep",
+                  "archive",
+                  "delete"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Policy"
+          },
+          "watch": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Watch"
+          }
+        },
+        "title": "LibraryPatch",
+        "type": "object"
+      },
+      "LibraryStats": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "failed": {
+            "title": "Failed",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "month_new": {
+            "title": "Month New",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "needs_review": {
+            "title": "Needs Review",
+            "type": "integer"
+          },
+          "planned": {
+            "title": "Planned",
+            "type": "integer"
+          },
+          "series": {
+            "title": "Series",
+            "type": "integer"
+          },
+          "volumes": {
+            "title": "Volumes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "series",
+          "volumes",
+          "month_new",
+          "planned",
+          "needs_review",
+          "failed",
+          "available"
+        ],
+        "title": "LibraryStats",
+        "type": "object"
+      },
+      "LogEntry": {
+        "properties": {
+          "at": {
+            "title": "At",
+            "type": "string"
+          },
+          "level": {
+            "title": "Level",
+            "type": "string"
+          },
+          "logger": {
+            "title": "Logger",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "seq": {
+            "title": "Seq",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "seq",
+          "at",
+          "level",
+          "logger",
+          "message"
+        ],
+        "title": "LogEntry",
+        "type": "object"
+      },
+      "LogPage": {
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/LogEntry"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "last_seq": {
+            "title": "Last Seq",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "entries",
+          "last_seq"
+        ],
+        "title": "LogPage",
+        "type": "object"
+      },
+      "Ok": {
+        "properties": {
+          "ok": {
+            "default": true,
+            "title": "Ok",
+            "type": "boolean"
+          }
+        },
+        "title": "Ok",
+        "type": "object"
+      },
+      "OriginalOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "library_id": {
+            "title": "Library Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "library_id",
+          "path",
+          "name"
+        ],
+        "title": "OriginalOut",
+        "type": "object"
+      },
+      "OriginalsOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OriginalOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "OriginalsOut",
+        "type": "object"
+      },
+      "Password": {
+        "properties": {
+          "password": {
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "password"
+        ],
+        "title": "Password",
+        "type": "object"
+      },
+      "PasswordChange": {
+        "properties": {
+          "new": {
+            "title": "New",
+            "type": "string"
+          },
+          "old": {
+            "title": "Old",
+            "type": "string"
+          }
+        },
+        "required": [
+          "old",
+          "new"
+        ],
+        "title": "PasswordChange",
+        "type": "object"
+      },
+      "ProxyTestIn": {
+        "properties": {
+          "proxy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proxy"
+          }
+        },
+        "title": "ProxyTestIn",
+        "type": "object"
+      },
+      "ProxyTestResult": {
+        "properties": {
+          "elapsed_ms": {
+            "title": "Elapsed Ms",
+            "type": "integer"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok",
+          "error",
+          "elapsed_ms"
+        ],
+        "title": "ProxyTestResult",
+        "type": "object"
+      },
+      "RecentGroup": {
+        "properties": {
+          "at": {
+            "title": "At",
+            "type": "string"
+          },
+          "group_key": {
+            "title": "Group Key",
+            "type": "string"
+          },
+          "image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image"
+          },
+          "library_id": {
+            "title": "Library Id",
+            "type": "integer"
+          },
+          "published": {
+            "title": "Published",
+            "type": "integer"
+          },
+          "series": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Series"
+          },
+          "subject_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject Id"
+          }
+        },
+        "required": [
+          "library_id",
+          "group_key",
+          "series",
+          "subject_id",
+          "image",
+          "published",
+          "at"
+        ],
+        "title": "RecentGroup",
+        "type": "object"
+      },
+      "RefreshMetadata": {
+        "properties": {
+          "item_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item Ids"
+          },
+          "library_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Library Id"
+          }
+        },
+        "title": "RefreshMetadata",
+        "type": "object"
+      },
+      "Reidentify": {
+        "properties": {
+          "item_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item Ids"
+          },
+          "library_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Library Id"
+          }
+        },
+        "title": "Reidentify",
+        "type": "object"
+      },
+      "Reorganize": {
+        "properties": {
+          "bgm": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bgm"
+          },
+          "edition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Edition"
+          },
+          "item_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Item Ids",
+            "type": "array"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "volumes": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "default": {},
+            "title": "Volumes",
+            "type": "object"
+          }
+        },
+        "required": [
+          "item_ids"
+        ],
+        "title": "Reorganize",
+        "type": "object"
+      },
+      "ReviewGroup": {
+        "properties": {
+          "ai_suggestion": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Suggestion"
+          },
+          "candidates": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Candidates",
+            "type": "array"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "edition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Edition"
+          },
+          "folder": {
+            "title": "Folder",
+            "type": "string"
+          },
+          "item_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Item Ids",
+            "type": "array"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "library_id": {
+            "title": "Library Id",
+            "type": "integer"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "sample_names": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sample Names",
+            "type": "array"
+          },
+          "title_hint": {
+            "title": "Title Hint",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "library_id",
+          "folder",
+          "reasons",
+          "title_hint",
+          "edition",
+          "count",
+          "item_ids",
+          "sample_names",
+          "candidates",
+          "ai_suggestion"
+        ],
+        "title": "ReviewGroup",
+        "type": "object"
+      },
+      "ReviewReason": {
+        "enum": [
+          "naming",
+          "volume",
+          "metadata",
+          "conflict"
+        ],
+        "title": "ReviewReason",
+        "type": "string"
+      },
+      "RunOut": {
+        "properties": {
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Counts",
+            "type": "object"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "started_at": {
+            "title": "Started At",
+            "type": "string"
+          },
+          "trigger": {
+            "title": "Trigger",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "trigger",
+          "started_at",
+          "finished_at",
+          "counts"
+        ],
+        "title": "RunOut",
+        "type": "object"
+      },
+      "SavedFile": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "path"
+        ],
+        "title": "SavedFile",
+        "type": "object"
+      },
+      "ScanPathsIn": {
+        "properties": {
+          "paths": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Paths",
+            "type": "array"
+          }
+        },
+        "required": [
+          "paths"
+        ],
+        "title": "ScanPathsIn",
+        "type": "object"
+      },
+      "ScanPathsOut": {
+        "properties": {
+          "job_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Id"
+          },
+          "rejected": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Rejected",
+            "type": "array"
+          },
+          "skipped": {
+            "items": {
+              "$ref": "#/components/schemas/SkippedPath"
+            },
+            "title": "Skipped",
+            "type": "array"
+          }
+        },
+        "required": [
+          "job_id",
+          "skipped",
+          "rejected"
+        ],
+        "title": "ScanPathsOut",
+        "type": "object"
+      },
+      "Selection": {
+        "properties": {
+          "item_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Item Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "item_ids"
+        ],
+        "title": "Selection",
+        "type": "object"
+      },
+      "ServerIn": {
+        "properties": {
+          "base_url": {
+            "title": "Base Url",
+            "type": "string"
+          },
+          "kind": {
+            "const": "kavita",
+            "default": "kavita",
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "password": {
+            "default": "",
+            "title": "Password",
+            "type": "string"
+          },
+          "username": {
+            "default": "",
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "base_url"
+        ],
+        "title": "ServerIn",
+        "type": "object"
+      },
+      "ServerLibraryOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "ServerLibraryOut",
+        "type": "object"
+      },
+      "ServerOut": {
+        "properties": {
+          "base_url": {
+            "title": "Base Url",
+            "type": "string"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "password": {
+            "title": "Password",
+            "type": "string"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "base_url",
+          "username",
+          "password",
+          "enabled"
+        ],
+        "title": "ServerOut",
+        "type": "object"
+      },
+      "ServerPatch": {
+        "properties": {
+          "base_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Url"
+          },
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "password": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username"
+          }
+        },
+        "title": "ServerPatch",
+        "type": "object"
+      },
+      "ServerTestOut": {
+        "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "libraries": {
+            "items": {
+              "$ref": "#/components/schemas/ServerLibraryOut"
+            },
+            "title": "Libraries",
+            "type": "array"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok",
+          "error",
+          "libraries"
+        ],
+        "title": "ServerTestOut",
+        "type": "object"
+      },
+      "SkippedPath": {
+        "properties": {
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "reason"
+        ],
+        "title": "SkippedPath",
+        "type": "object"
+      },
+      "Storage": {
+        "properties": {
+          "free": {
+            "title": "Free",
+            "type": "integer"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "used": {
+            "title": "Used",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "path",
+          "total",
+          "used",
+          "free"
+        ],
+        "title": "Storage",
+        "type": "object"
+      },
+      "SubjectOut": {
+        "properties": {
+          "image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "name_cn": {
+            "title": "Name Cn",
+            "type": "string"
+          },
+          "platform": {
+            "title": "Platform",
+            "type": "string"
+          },
+          "publisher": {
+            "title": "Publisher",
+            "type": "string"
+          },
+          "release_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Date"
+          },
+          "subject_id": {
+            "title": "Subject Id",
+            "type": "integer"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "total_volumes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Volumes"
+          },
+          "writers": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Writers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "subject_id",
+          "name",
+          "name_cn",
+          "summary",
+          "writers",
+          "publisher",
+          "platform",
+          "release_date",
+          "total_volumes",
+          "image"
+        ],
+        "title": "SubjectOut",
+        "type": "object"
+      },
+      "Summary": {
+        "properties": {
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Counts",
+            "type": "object"
+          }
+        },
+        "required": [
+          "counts"
+        ],
+        "title": "Summary",
+        "type": "object"
+      },
+      "TemplateExample": {
+        "properties": {
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "target": {
+            "title": "Target",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "target"
+        ],
+        "title": "TemplateExample",
+        "type": "object"
+      },
+      "TemplateIn": {
+        "properties": {
+          "template": {
+            "title": "Template",
+            "type": "string"
+          }
+        },
+        "required": [
+          "template"
+        ],
+        "title": "TemplateIn",
+        "type": "object"
+      },
+      "TemplatePreview": {
+        "properties": {
+          "examples": {
+            "items": {
+              "$ref": "#/components/schemas/TemplateExample"
+            },
+            "title": "Examples",
+            "type": "array"
+          }
+        },
+        "required": [
+          "examples"
+        ],
+        "title": "TemplatePreview",
+        "type": "object"
+      },
+      "TrashedOut": {
+        "properties": {
+          "empty_dirs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Empty Dirs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "empty_dirs"
+        ],
+        "title": "TrashedOut",
+        "type": "object"
+      },
+      "UploadResult": {
+        "properties": {
+          "saved": {
+            "items": {
+              "$ref": "#/components/schemas/SavedFile"
+            },
+            "title": "Saved",
+            "type": "array"
+          },
+          "skipped": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Skipped",
+            "type": "array"
+          }
+        },
+        "required": [
+          "saved",
+          "skipped"
+        ],
+        "title": "UploadResult",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "书童 Shutong",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/ai/calls": {
+      "get": {
+        "operationId": "list_calls_api_ai_calls_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "item_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Item Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AiCallOut"
+                  },
+                  "title": "Response List Calls Api Ai Calls Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Calls",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "operationId": "login_api_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Password"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ok"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Login",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "operationId": "logout_api_auth_logout_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ok"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Logout",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/password": {
+      "post": {
+        "operationId": "change_password_api_auth_password_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ok"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Password",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/setup": {
+      "post": {
+        "operationId": "setup_api_auth_setup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Password"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ok"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Setup",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/status": {
+      "get": {
+        "operationId": "status_api_auth_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Status",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/dashboard": {
+      "get": {
+        "operationId": "dashboard_api_dashboard_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dashboard"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Dashboard",
+        "tags": [
+          "dashboard"
+        ]
+      }
+    },
+    "/api/desktop/originals": {
+      "get": {
+        "description": "Dropped files that are safely in the library and can go, if the user says so.",
+        "operationId": "originals_api_desktop_originals_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OriginalsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Originals",
+        "tags": [
+          "desktop"
+        ]
+      }
+    },
+    "/api/desktop/originals/keep": {
+      "post": {
+        "operationId": "keep_originals_api_desktop_originals_keep_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemIds"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ok"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Keep Originals",
+        "tags": [
+          "desktop"
+        ]
+      }
+    },
+    "/api/desktop/originals/trashed": {
+      "post": {
+        "description": "Electron moved these to the trash. Answers which folders only junk is left in, for it to trash as well.",
+        "operationId": "originals_trashed_api_desktop_originals_trashed_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemIds"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrashedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Originals Trashed",
+        "tags": [
+          "desktop"
+        ]
+      }
+    },
+    "/api/history/groups": {
+      "get": {
+        "operationId": "groups_api_history_groups_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "library_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Library Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ItemStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "missing_metadata",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Missing Metadata",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Groups",
+        "tags": [
+          "history"
+        ]
+      }
+    },
+    "/api/history/groups/{library_id}/{group_key}": {
+      "get": {
+        "operationId": "group_items_api_history_groups__library_id___group_key__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "library_id",
+            "required": true,
+            "schema": {
+              "title": "Library Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "group_key",
+            "required": true,
+            "schema": {
+              "title": "Group Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ItemStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ItemOut"
+                  },
+                  "title": "Response Group Items Api History Groups  Library Id   Group Key  Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Group Items",
+        "tags": [
+          "history"
+        ]
+      }
+    },
+    "/api/items": {
+      "get": {
+        "operationId": "list_items_api_items_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "library_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Library Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ItemStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "review_reason",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ReviewReason"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Review Reason"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Items",
+        "tags": [
+          "items"
+        ]
+      }
+    },
+    "/api/items/cancel": {
+      "post": {
+        "operationId": "cancel_api_items_cancel_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Selection"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel",
+        "tags": [
+          "items"
+        ]
+      }
+    },
+    "/api/items/crop-jackets": {
+      "post": {
+        "description": "Crop the front out of every selected volume that starts with a whole dust jacket.",
+        "operationId": "crop_jackets_api_items_crop_jackets_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Selection"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRef"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Crop Jackets",
+        "tags": [
+          "items"
+        ]
+      }
+    },
+    "/api/items/execute": {
+      "post": {
+        "operationId": "execute_api_items_execute_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Selection"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRef"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Execute",
+        "tags": [
+          "items"
+        ]
+      }
+    },
+    "/api/items/metadata": {
+      "post": {
+        "description": "Rewrite the metadata inside organized files, then have Kavita read them again.",
+        "operationId": "edit_metadata_api_items_metadata_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditMetadata"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRef"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Edit Metadata",
+        "tags": [
+          "items"
+        ]
+      }
+    },
+    "/api/items/refresh-metadata": {
+      "post": {
+        "description": "Ask Bangumi again about organized files (the given ones, or a whole library's) and write back what changed.",
+        "operationId": "refresh_metadata_api_items_refresh_metadata_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshMetadata"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRef"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Refresh Metadata",
+        "tags": [
+          "items"
+        ]
+      }
+    },
+    "/api/items/reorganize": {
+      "post": {
+        "operationId": "reorganize_api_items_reorganize_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Reorganize"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRef"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reorganize",
+        "tags": [
+          "items"
+        ]
+      }
+    },
+    "/api/items/retry": {
+      "post": {
+        "operationId": "retry_api_items_retry_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Selection"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRef"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Retry",
+        "tags": [
+          "items"
+        ]
+      }
+    },
+    "/api/items/{item_id}": {
+      "get": {
+        "operationId": "read_item_api_items__item_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "title": "Item Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Item",
+        "tags": [
+          "items"
+        ]
+      }
+    },
+    "/api/items/{item_id}/cover": {
+      "post": {
+        "operationId": "choose_cover_api_items__item_id__cover_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "title": "Item Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChooseCover"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRef"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Choose Cover",
+        "tags": [
+          "items"
+        ]
+      }
+    },
+    "/api/items/{item_id}/cover-image": {
+      "get": {
+        "description": "The file's cover, or the given page, as a JPEG ``w`` wide; browsers keep it until the address changes.",
+        "operationId": "cover_image_api_items__item_id__cover_image_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "title": "Item Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Page"
+            }
+          },
+          {
+            "in": "query",
+            "name": "w",
+            "required": false,
+            "schema": {
+              "default": 240,
+              "maximum": 1600,
+              "minimum": 60,
+              "title": "W",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cover Image",
+        "tags": [
+          "items"
+        ]
+      }
+    },
+    "/api/items/{item_id}/cover-options": {
+      "get": {
+        "operationId": "cover_options_api_items__item_id__cover_options_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "title": "Item Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoverOptionsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cover Options",
+        "tags": [
+          "items"
+        ]
+      }
+    },
+    "/api/jobs": {
+      "get": {
+        "operationId": "list_jobs_api_jobs_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/JobOut"
+                  },
+                  "title": "Response List Jobs Api Jobs Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Jobs",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/api/jobs/{job_id}": {
+      "get": {
+        "operationId": "get_job_api_jobs__job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Job",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/api/jobs/{job_id}/cancel": {
+      "post": {
+        "operationId": "cancel_job_api_jobs__job_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Job",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/api/libraries": {
+      "get": {
+        "operationId": "list_libraries_api_libraries_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LibraryOut"
+                  },
+                  "title": "Response List Libraries Api Libraries Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Libraries",
+        "tags": [
+          "libraries"
+        ]
+      },
+      "post": {
+        "operationId": "create_library_api_libraries_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LibraryIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Library",
+        "tags": [
+          "libraries"
+        ]
+      }
+    },
+    "/api/libraries/{library_id}": {
+      "get": {
+        "operationId": "read_library_api_libraries__library_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "library_id",
+            "required": true,
+            "schema": {
+              "title": "Library Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Library",
+        "tags": [
+          "libraries"
+        ]
+      },
+      "patch": {
+        "operationId": "update_library_api_libraries__library_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "library_id",
+            "required": true,
+            "schema": {
+              "title": "Library Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LibraryPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Library",
+        "tags": [
+          "libraries"
+        ]
+      }
+    },
+    "/api/libraries/{library_id}/runs": {
+      "get": {
+        "operationId": "list_runs_api_libraries__library_id__runs_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "library_id",
+            "required": true,
+            "schema": {
+              "title": "Library Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RunOut"
+                  },
+                  "title": "Response List Runs Api Libraries  Library Id  Runs Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Runs",
+        "tags": [
+          "libraries"
+        ]
+      }
+    },
+    "/api/libraries/{library_id}/scan": {
+      "post": {
+        "operationId": "scan_library_api_libraries__library_id__scan_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "library_id",
+            "required": true,
+            "schema": {
+              "title": "Library Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRef"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Scan Library",
+        "tags": [
+          "libraries"
+        ]
+      }
+    },
+    "/api/libraries/{library_id}/scan-paths": {
+      "post": {
+        "operationId": "scan_paths_api_libraries__library_id__scan_paths_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "library_id",
+            "required": true,
+            "schema": {
+              "title": "Library Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScanPathsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanPathsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Scan Paths",
+        "tags": [
+          "desktop"
+        ]
+      }
+    },
+    "/api/libraries/{library_id}/series": {
+      "get": {
+        "description": "Series folders already in the media library (first level, hidden ones left out).",
+        "operationId": "series_directories_api_libraries__library_id__series_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "library_id",
+            "required": true,
+            "schema": {
+              "title": "Library Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Response Series Directories Api Libraries  Library Id  Series Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Series Directories",
+        "tags": [
+          "libraries"
+        ]
+      }
+    },
+    "/api/libraries/{library_id}/summary": {
+      "get": {
+        "operationId": "summary_api_libraries__library_id__summary_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "library_id",
+            "required": true,
+            "schema": {
+              "title": "Library Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Summary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Summary",
+        "tags": [
+          "libraries"
+        ]
+      }
+    },
+    "/api/libraries/{library_id}/template-preview": {
+      "post": {
+        "operationId": "template_preview_api_libraries__library_id__template_preview_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "library_id",
+            "required": true,
+            "schema": {
+              "title": "Library Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TemplateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplatePreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Template Preview",
+        "tags": [
+          "libraries"
+        ]
+      }
+    },
+    "/api/libraries/{library_id}/upload": {
+      "post": {
+        "description": "Save files into the source directory by their relative path; scanning is a separate step.",
+        "operationId": "upload_api_libraries__library_id__upload_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "library_id",
+            "required": true,
+            "schema": {
+              "title": "Library Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_api_libraries__library_id__upload_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload",
+        "tags": [
+          "libraries"
+        ]
+      }
+    },
+    "/api/logs": {
+      "get": {
+        "operationId": "read_logs_api_logs_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "After",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "level",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Level"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 500,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Logs",
+        "tags": [
+          "logs"
+        ]
+      }
+    },
+    "/api/logs/download": {
+      "get": {
+        "operationId": "download_api_logs_download_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Download",
+        "tags": [
+          "logs"
+        ]
+      }
+    },
+    "/api/metadata/search": {
+      "get": {
+        "operationId": "search_api_metadata_search_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "default": "manga",
+              "enum": [
+                "manga",
+                "novel"
+              ],
+              "title": "Kind",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SubjectOut"
+                  },
+                  "title": "Response Search Api Metadata Search Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Search",
+        "tags": [
+          "metadata"
+        ]
+      }
+    },
+    "/api/metadata/subjects/{subject_id}": {
+      "get": {
+        "operationId": "subject_api_metadata_subjects__subject_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "subject_id",
+            "required": true,
+            "schema": {
+              "title": "Subject Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Subject",
+        "tags": [
+          "metadata"
+        ]
+      }
+    },
+    "/api/review/confirm": {
+      "post": {
+        "operationId": "confirm_api_review_confirm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Confirm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRef"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirm",
+        "tags": [
+          "review"
+        ]
+      }
+    },
+    "/api/review/groups": {
+      "get": {
+        "description": "Items waiting for review, one group per source folder; a fixed handful of queries in one connection.",
+        "operationId": "groups_api_review_groups_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "library_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Library Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "reason",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ReviewReason"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Reason"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReviewGroup"
+                  },
+                  "title": "Response Groups Api Review Groups Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Groups",
+        "tags": [
+          "review"
+        ]
+      }
+    },
+    "/api/review/reidentify": {
+      "post": {
+        "description": "Ask the AI again about review items: the given ones, or every one of a library.",
+        "operationId": "reidentify_api_review_reidentify_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Reidentify"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRef"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reidentify",
+        "tags": [
+          "review"
+        ]
+      }
+    },
+    "/api/servers": {
+      "get": {
+        "operationId": "list_servers_api_servers_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ServerOut"
+                  },
+                  "title": "Response List Servers Api Servers Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Servers",
+        "tags": [
+          "servers"
+        ]
+      },
+      "post": {
+        "operationId": "create_server_api_servers_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServerIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Server",
+        "tags": [
+          "servers"
+        ]
+      }
+    },
+    "/api/servers/{server_id}": {
+      "delete": {
+        "operationId": "delete_server_api_servers__server_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "server_id",
+            "required": true,
+            "schema": {
+              "title": "Server Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Delete Server Api Servers  Server Id  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Server",
+        "tags": [
+          "servers"
+        ]
+      },
+      "patch": {
+        "operationId": "update_server_api_servers__server_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "server_id",
+            "required": true,
+            "schema": {
+              "title": "Server Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServerPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Server",
+        "tags": [
+          "servers"
+        ]
+      }
+    },
+    "/api/servers/{server_id}/test": {
+      "post": {
+        "operationId": "test_server_api_servers__server_id__test_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "server_id",
+            "required": true,
+            "schema": {
+              "title": "Server Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerTestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Test Server",
+        "tags": [
+          "servers"
+        ]
+      }
+    },
+    "/api/settings": {
+      "get": {
+        "operationId": "read_settings_api_settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Read Settings Api Settings Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Read Settings",
+        "tags": [
+          "settings"
+        ]
+      },
+      "patch": {
+        "operationId": "update_settings_api_settings_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "title": "Changes",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Update Settings Api Settings Patch",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Settings",
+        "tags": [
+          "settings"
+        ]
+      }
+    },
+    "/api/settings/ai-test": {
+      "post": {
+        "operationId": "ai_test_api_settings_ai_test_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiTestResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Ai Test",
+        "tags": [
+          "settings"
+        ]
+      }
+    },
+    "/api/settings/proxy-test": {
+      "post": {
+        "description": "One Bangumi request through the given proxy (or the saved one when omitted).",
+        "operationId": "proxy_test_api_settings_proxy_test_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProxyTestIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProxyTestResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Proxy Test",
+        "tags": [
+          "settings"
+        ]
+      }
+    }
+  }
+}

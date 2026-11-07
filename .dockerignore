@@ -1,0 +1,15 @@
+.git
+.github
+.superpowers
+**/__pycache__
+**/*.pyc
+backend/.venv
+backend/tests
+web/node_modules
+web/dist
+web/test-results
+web/e2e
+docs
+*.md
+!web/**/*.md
+desktop

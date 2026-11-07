@@ -1,0 +1,16 @@
+# 书童 Shutong — docker compose example.
+# Put the source, library and archive folders under ONE mount so moves stay on the same filesystem.
+services:
+  shutong:
+    image: ah4o/shutong:latest       # or a locally built shutong:latest
+    container_name: shutong
+    restart: unless-stopped
+    ports:
+      - "8899:8899"
+    environment:
+      - TZ=Asia/Shanghai
+      # - PUID=1000                  # optional: run as this user instead of root
+      # - PGID=1000
+    volumes:
+      - ./config:/config             # database and settings
+      - /path/to/media:/data         # sources, libraries and archives under one mount

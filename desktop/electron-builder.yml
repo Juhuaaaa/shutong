@@ -1,0 +1,40 @@
+appId: io.github.juhuaaaa.shutong
+productName: shutong
+artifactName: Shutong-${version}-${os}-${arch}.${ext}
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/**
+  - package.json
+electronLanguages: [zh_CN, en, en_US]
+publish: null
+extraResources:
+  - from: build-backend/dist/shutong-backend
+    to: backend
+  - from: ../web/dist
+    to: web
+  - from: THIRD_PARTY_NOTICES.md
+    to: THIRD_PARTY_NOTICES.md
+mac:
+  category: public.app-category.utilities
+  # Ad-hoc only: there is no developer certificate, the tutorial explains the warning.
+  identity: "-"
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  notarize: false
+  target: [dmg]
+dmg:
+  sign: false
+win:
+  executableName: shutong
+  target: [nsis]
+  extraResources:
+    - from: vendor/libarchive
+      to: libarchive
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false
+  unicode: true
