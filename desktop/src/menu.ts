@@ -1,6 +1,6 @@
 import { app, Menu, MenuItemConstructorOptions, shell } from "electron";
 
-export const TUTORIAL_URL = "https://github.com/Juhuaaaa/shutong-releases#readme";
+export const TUTORIAL_URL = "https://github.com/Juhuaaaa/shutong#readme";
 
 /** The edit menu is not decoration: on macOS, copy and paste in text fields only work through it. */
 export function buildMenu({ logsDir }: { logsDir: string }): Menu {
