@@ -6,7 +6,7 @@ import LibrariesView from "./LibrariesView.vue";
 
 const library = {
   id: 1, name: "漫画", kind: "manga", source_dir: "/s", library_dir: "/l", naming_template: "", source_policy: "keep",
-  archive_dir: null, pdf_to_cbz: true, include_edition: true, overwrite_policy: "never", rename_files: true, available: true, server_id: null, server_library_id: null,
+  archive_dir: null, pdf_to_cbz: true, overwrite_policy: "never", rename_files: true, available: true, server_id: null, server_library_id: null,
 };
 
 describe("LibrariesView", () => {

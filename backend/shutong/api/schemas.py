@@ -57,7 +57,6 @@ class LibraryOut(BaseModel):
     source_policy: str
     archive_dir: Optional[str]
     pdf_to_cbz: bool
-    include_edition: bool
     overwrite_policy: str
     rename_files: bool
     available: bool

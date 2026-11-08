@@ -5,7 +5,7 @@ import UploadView from "./UploadView.vue";
 
 const library = (id: number, name: string) => ({
   id, name, kind: "manga", source_dir: `/s${id}`, library_dir: `/l${id}`, naming_template: "", source_policy: "keep",
-  archive_dir: null, pdf_to_cbz: true, include_edition: true, overwrite_policy: "never", rename_files: true, available: true, server_id: null, server_library_id: null,
+  archive_dir: null, pdf_to_cbz: true, overwrite_policy: "never", rename_files: true, available: true, server_id: null, server_library_id: null,
 });
 
 describe("UploadView", () => {

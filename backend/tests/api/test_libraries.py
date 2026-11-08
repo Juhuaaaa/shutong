@@ -1,3 +1,4 @@
+import json
 import shutil
 import unittest
 
@@ -19,18 +20,32 @@ class LibraryRoutesTests(ApiCase):
         self.assertEqual((changed.json()["naming_template"], changed.json()["pdf_to_cbz"]),
                          ("{series}/{volume}{ext}", False))
 
-    def test_include_edition_switch(self):
+    def test_the_template_decides_the_edition(self):
         library = self.make_library()
-        self.assertTrue(library["include_edition"])
-        changed = self.client.patch("/api/libraries/{0}".format(library["id"]), json={"include_edition": False})
-        self.assertFalse(changed.json()["include_edition"])
+        self.assertNotIn("include_edition", library)
         self.ai = ReaderAi(series={"迷宫饭[bili电子版]": {"title": "迷宫饭", "edition": "bili电子版"}})
         self.zip("迷宫饭[bili电子版]/迷宫饭 Vol.01.zip")
         self.client.post("/api/libraries/{0}/scan".format(library["id"]))
         [item] = self.client.get("/api/items", params={"library_id": library["id"]}).json()["items"]
         self.assertEqual((item["status"], item["plan"]["series"]), ("published", "迷宫饭"), item)
-        created = self.make_library(name="轻小说", kind="novel", include_edition=False)
-        self.assertFalse(created["include_edition"])
+        self.assertEqual(item["target_path"], "迷宫饭/迷宫饭 Vol.01.cbz")
+        template = "{series}{edition:[%s]}/{series}{edition:[%s]} {volume}{ext}"
+        preview = self.client.post("/api/libraries/{0}/template-preview".format(library["id"]),
+                                   json={"template": template}).json()
+        self.assertEqual(preview["examples"][0]["target"], "迷宫饭[bili电子版]/迷宫饭[bili电子版] Vol.01.cbz")
+        author = self.client.post("/api/libraries/{0}/template-preview".format(library["id"]),
+                                  json={"template": "{author}/{series} {volume}{ext}"}).json()
+        self.assertEqual(author["examples"][0]["target"], "未知作者/迷宫饭 Vol.01.cbz")
+        # Plans written before {author}: the series named its edition, the writers are in the metadata.
+        with self.app.state.db.connect() as connection:
+            plan = json.loads(connection.execute("SELECT plan FROM items").fetchone()[0])
+            plan["fields"] = {key: value for key, value in plan["fields"].items() if key != "author"}
+            plan["fields"]["series"] = "迷宫饭[bili电子版]"
+            plan["metadata"]["writers"] = ["九井谅子"]
+            connection.execute("UPDATE items SET plan = ?", (json.dumps(plan),))
+        old = self.client.post("/api/libraries/{0}/template-preview".format(library["id"]),
+                               json={"template": "{author}/{series} {volume}{ext}"}).json()
+        self.assertEqual(old["examples"][0]["target"], "九井谅子/迷宫饭 Vol.01.cbz")
 
     def test_overwrite_policy_and_rename_switch(self):
         library = self.make_library()

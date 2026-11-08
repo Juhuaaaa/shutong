@@ -10,7 +10,7 @@ from shutong.engine.kinds.novel.naming import NovelVolume
 from shutong.engine.planner import PlanInput, plan_batch
 from shutong.engine.recognition import Directives, Recognition
 from shutong.engine.states import ReviewReason
-from shutong.engine.template import DEFAULT_TEMPLATE
+from shutong.engine.template import DEFAULT_TEMPLATE, EDITION_TEMPLATE
 from shutong.metadata.base import Subject
 
 SUBJECT = Subject(subject_id=133315, name="ダンジョン飯", name_cn="迷宫饭", summary="简介", release_date="2014-02-15",
@@ -40,9 +40,26 @@ class PlannerTests(unittest.TestCase):
     def plan(self, kind, inputs):
         return plan_batch(kind, self.lib, DEFAULT_TEMPLATE, inputs)
 
-    def test_manga_default_target_and_metadata(self):
+    def test_default_template_leaves_the_edition_out(self):
         [decision] = self.plan("manga", [self.item("Vol.01.zip", recognition("迷宫饭", VolumeRef.volume(Decimal(1)),
                                                                              edition="bili电子版"))])
+        self.assertEqual((decision.series_name, decision.target), ("迷宫饭", Path("迷宫饭/迷宫饭 Vol.01.cbz")))
+        self.assertEqual(decision.metadata["series_name"], "迷宫饭")
+
+    def test_author_in_the_template(self):
+        template = "{author}/{series}/{series} {volume}{ext}"
+        [decision] = plan_batch("manga", self.lib, template, [self.item("Vol.01.zip", recognition(
+            "迷宫饭", VolumeRef.volume(Decimal(1))))])
+        self.assertEqual(decision.target, Path("九井谅子/迷宫饭/迷宫饭 Vol.01.cbz"))
+        self.assertEqual(decision.fields["author"], "九井谅子")
+        nobody = Subject.unlisted("迷宫饭")
+        [decision] = plan_batch("manga", self.lib, template, [self.item("Vol.02.zip", recognition(
+            "迷宫饭", VolumeRef.volume(Decimal(2))), subject=nobody)])
+        self.assertEqual(decision.target, Path("未知作者/迷宫饭/迷宫饭 Vol.02.cbz"))
+
+    def test_manga_default_target_and_metadata(self):
+        [decision] = plan_batch("manga", self.lib, EDITION_TEMPLATE, [self.item("Vol.01.zip", recognition(
+            "迷宫饭", VolumeRef.volume(Decimal(1)), edition="bili电子版"))])
         self.assertEqual(decision.status, "planned")
         self.assertEqual(decision.series_name, "迷宫饭[bili电子版]")
         self.assertEqual(decision.target, Path("迷宫饭[bili电子版]/迷宫饭[bili电子版] Vol.01.cbz"))
@@ -52,8 +69,7 @@ class PlannerTests(unittest.TestCase):
 
     def test_without_edition_in_names(self):
         rec = recognition("迷宫饭", VolumeRef.volume(Decimal(1)), edition="东立电子版")
-        [decision] = plan_batch("manga", self.lib, DEFAULT_TEMPLATE, [self.item("Vol.01.zip", rec)],
-                                include_edition=False)
+        [decision] = plan_batch("manga", self.lib, DEFAULT_TEMPLATE, [self.item("Vol.01.zip", rec)])
         self.assertEqual((decision.status, decision.series_name), ("planned", "迷宫饭"))
         self.assertEqual(decision.target, Path("迷宫饭/迷宫饭 Vol.01.cbz"))
         self.assertEqual(decision.metadata["series_name"], "迷宫饭")
@@ -63,14 +79,14 @@ class PlannerTests(unittest.TestCase):
         decisions = plan_batch("manga", self.lib, DEFAULT_TEMPLATE, [
             self.item("a.zip", recognition("迷宫饭", VolumeRef.volume(Decimal(3)), edition="东立电子版")),
             self.item("b.zip", recognition("迷宫饭", VolumeRef.volume(Decimal(3)), edition="bili电子版")),
-        ], include_edition=False)
+        ])
         self.assertEqual([(d.status, d.review_reason) for d in decisions],
                          [("planned", None), ("review", ReviewReason.CONFLICT)])
 
     def test_novel_without_edition_in_names(self):
         rec = recognition("魔女与使魔", NovelVolume.volume(Decimal(1)), edition="bili电子版")
         [decision] = plan_batch("novel", self.lib, DEFAULT_TEMPLATE,
-                                [self.item("1.epub", rec, suffix=".epub")], include_edition=False)
+                                [self.item("1.epub", rec, suffix=".epub")])
         self.assertEqual(decision.series_name, "魔女与使魔")
         self.assertNotIn("bili", decision.target.as_posix())
 
@@ -305,8 +321,7 @@ class PlannerTests(unittest.TestCase):
     def test_without_edition_existing_volume_of_another_batch_is_conflict(self):
         self._cbz(self.lib / "迷宫饭" / "迷宫饭 Vol.03.cbz", "迷宫饭", VolumeRef.volume(Decimal(3)))
         rec = recognition("迷宫饭", VolumeRef.volume(Decimal(3)), edition="bili电子版")
-        [decision] = plan_batch("manga", self.lib, DEFAULT_TEMPLATE, [self.item("v3.zip", rec)],
-                                include_edition=False)
+        [decision] = plan_batch("manga", self.lib, DEFAULT_TEMPLATE, [self.item("v3.zip", rec)])
         self.assertEqual((decision.status, decision.review_reason), ("review", ReviewReason.CONFLICT))
 
     def test_existing_novel_target_with_matching_metadata_is_claimed(self):
@@ -349,7 +364,7 @@ class PlannerTests(unittest.TestCase):
         existing = "无职转生～到了异世界就拿出真本事～[角川电子版]"
         (self.lib / existing).mkdir()
         rec = recognition("无职转生 ～到了异世界就拿出真本事～", VolumeRef.volume(Decimal(24)), edition="角川电子版")
-        [decision] = self.plan("manga", [self.item("v24.zip", rec)])
+        [decision] = plan_batch("manga", self.lib, EDITION_TEMPLATE, [self.item("v24.zip", rec)])
         self.assertEqual(decision.series_name, existing)
         self.assertEqual(decision.target, Path(existing) / (existing + " Vol.24.cbz"))
         self.assertEqual(decision.metadata["series_name"], existing)

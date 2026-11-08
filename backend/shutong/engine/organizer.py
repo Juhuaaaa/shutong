@@ -831,7 +831,6 @@ class Organizer:
         template = library.naming_template or DEFAULT_TEMPLATE
         try:
             decisions = plan_batch(library.kind, library.library_dir, template, inputs,
-                                   include_edition=library.include_edition,
                                    owner_of=lambda target: self.items.published_owner(library.id, target),
                                    overwrite=library.overwrite_policy, rename=library.rename_files,
                                    published=self.items.published_volumes(library.id),

@@ -9,7 +9,7 @@ vi.mock("@/composables/confirm", () => ({ ask: vi.fn().mockResolvedValue(true) }
 
 const library = {
   id: 1, name: "漫画", kind: "manga", source_dir: "/s", library_dir: "/l", naming_template: "", source_policy: "keep",
-  archive_dir: null, pdf_to_cbz: true, include_edition: true, overwrite_policy: "never", rename_files: true, available: true, server_id: null, server_library_id: null,
+  archive_dir: null, pdf_to_cbz: true, overwrite_policy: "never", rename_files: true, available: true, server_id: null, server_library_id: null,
   watch: false,
 };
 
@@ -127,22 +127,22 @@ describe("LibraryCard", () => {
     expect(wrapper.emitted("saved")).toBeTruthy();
   });
 
-  it("turns the edition in names off", async () => {
-    const { calls } = fakeApi({ "PATCH /api/libraries/1": { ...library, include_edition: false } });
+  it("leaves the edition to the naming template", async () => {
+    fakeApi({});
     const wrapper = card();
     await flush();
-    await wrapper.find("[data-test=include-edition] input").setValue(false);
-    await save(wrapper).trigger("click");
-    await flush();
-    expect(calls.find((call) => call.method === "PATCH")?.body).toEqual({ include_edition: false });
+    expect(wrapper.find("[data-test=include-edition]").exists()).toBe(false);
+    expect(wrapper.text()).toContain("{author}");
+    expect(wrapper.text()).toContain("{series}{edition:[%s]}/{series}{edition:[%s]} {volume}{ext}");
+    expect(wrapper.find("[data-test=template] input").attributes("placeholder")).toBe("留空使用默认模板 {series}/{series} {volume}{ext}");
   });
 
-  it("has no edition switch for a novel library", async () => {
+  it("offers no edition for a novel library", async () => {
     fakeApi({});
     const wrapper = card({ library: { ...library, kind: "novel" } });
     await flush();
-    expect(wrapper.find("[data-test=include-edition]").exists()).toBe(false);
     expect(wrapper.text()).not.toContain("{edition}");
+    expect(wrapper.text()).toContain("{author}");
   });
 
   it("offers what to do with a volume already in the library", async () => {
@@ -190,7 +190,7 @@ describe("LibraryCard", () => {
     await save(wrapper).trigger("click");
     await flush();
     const body = calls.find((call) => call.method === "POST")?.body as Record<string, unknown>;
-    expect([body.name, body.source_dir, body.include_edition]).toEqual(["轻小说", "/media/downloads/novel", true]);
+    expect([body.name, body.source_dir, "include_edition" in body]).toEqual(["轻小说", "/media/downloads/novel", false]);
   });
 
   it("collapsed shows the summary and asks to scan", async () => {

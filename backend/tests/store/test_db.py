@@ -181,6 +181,22 @@ class DatabaseTests(unittest.TestCase):
         self.assertEqual(problems, [])
         self.assertEqual(integrity, "ok")
 
+    def test_migration_14_writes_the_edition_into_the_template(self):
+        self._migrate_to(13)
+        with self.db.connect() as connection:
+            for row in ((1, "默认", "manga", "", 1), (2, "自定", "manga", "{series}/{volume}{ext}", 1),
+                        (3, "不带", "manga", "", 0), (4, "轻小说", "novel", "", 1)):
+                connection.execute("INSERT INTO libraries(id, name, kind, source_dir, library_dir, created_at,"
+                                   " naming_template, include_edition) VALUES (?, ?, ?, '/s', ?, 't', ?, ?)",
+                                   (row[0], row[1], row[2], "/l{0}".format(row[0]), row[3], row[4]))
+        self.db.migrate()
+        with self.db.connect() as connection:
+            templates = [row[0] for row in connection.execute("SELECT naming_template FROM libraries ORDER BY id")]
+            columns = [row[1] for row in connection.execute("PRAGMA table_info(libraries)")]
+        self.assertEqual(templates, ["{series}{edition:[%s]}/{series}{edition:[%s]} {volume}{ext}",
+                                     "{series}{edition:[%s]}/{volume}{ext}", "", ""])
+        self.assertNotIn("include_edition", columns)
+
 
 if __name__ == "__main__":
     unittest.main()

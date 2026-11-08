@@ -80,15 +80,15 @@ class CliEndToEndTests(unittest.TestCase):
 
         code, out = self.run_cli("scan", "漫画")
         self.assertEqual(code, 0)
-        self.assertIn("间谍过家家[东立电子版]/间谍过家家[东立电子版] Vol.01.cbz", out)
+        self.assertIn("间谍过家家/间谍过家家 Vol.01.cbz", out)
         self.assertEqual(self.run_cli("scan", "轻小说")[0], 0)
 
         self.assertEqual(self.run_cli("execute", "漫画", "--all-planned")[0], 0)
         self.assertEqual(self.run_cli("execute", "轻小说", "--all-planned")[0], 0)
 
-        cbz = manga_library / "间谍过家家[东立电子版]" / "间谍过家家[东立电子版] Vol.01.cbz"
+        cbz = manga_library / "间谍过家家" / "间谍过家家 Vol.01.cbz"
         fields = read_comic_info(cbz)
-        self.assertEqual((fields["Series"], fields["Web"]), ("间谍过家家[东立电子版]", "https://bgm.tv/subject/279379"))
+        self.assertEqual((fields["Series"], fields["Web"]), ("间谍过家家", "https://bgm.tv/subject/279379"))
         self.assertTrue(archive.exists())  # manga library keeps sources by default
         epub = novel_library / "86" / "86 Vol.01.epub"
         self.assertEqual((read_metadata(epub).series, read_metadata(epub).title), ("86", "第一卷"))

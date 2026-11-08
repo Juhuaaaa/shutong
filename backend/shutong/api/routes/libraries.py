@@ -10,7 +10,8 @@ from shutong.api.routes.items import Publishing, planned_ids, require_ai
 from shutong.api.schemas import JobRef, LibraryOut, RunOut, Summary, TemplateExample, TemplatePreview, UploadResult
 from shutong.api.upload import save_upload
 from shutong.engine.organizer import Organizer
-from shutong.engine.template import TemplateError, render, validate_template
+from shutong.engine.template import UNKNOWN_AUTHOR, TemplateError, render, validate_template
+from shutong.engine.text import path_safe
 from shutong.store.records import KEEP, Library, LibraryStore, RunStore
 from shutong.store.servers import ServerStore
 
@@ -38,7 +39,6 @@ class LibraryIn(BaseModel):
     source_policy: Policy = "keep"
     archive_dir: Optional[str] = None
     pdf_to_cbz: bool = True
-    include_edition: bool = True
     overwrite_policy: Overwrite = "never"
     rename_files: bool = True
     server_id: Optional[int] = None
@@ -54,7 +54,6 @@ class LibraryPatch(BaseModel):
     source_policy: Optional[Policy] = None
     archive_dir: Optional[str] = None
     pdf_to_cbz: Optional[bool] = None
-    include_edition: Optional[bool] = None
     overwrite_policy: Optional[Overwrite] = None
     rename_files: Optional[bool] = None
     server_id: Optional[int] = None
@@ -73,7 +72,7 @@ def library_out(library: Library) -> LibraryOut:
         library_dir=str(library.library_dir), naming_template=library.naming_template,
         source_policy=library.source_policy,
         archive_dir=str(library.archive_dir) if library.archive_dir is not None else None,
-        pdf_to_cbz=library.pdf_to_cbz, include_edition=library.include_edition,
+        pdf_to_cbz=library.pdf_to_cbz,
         overwrite_policy=library.overwrite_policy, rename_files=library.rename_files, server_id=library.server_id, server_library_id=library.server_library_id,
         available=(library.source_managed or Path(library.source_dir).is_dir()) and Path(library.library_dir).is_dir(),
     )
@@ -157,7 +156,7 @@ def create_library(body: LibraryIn, request: Request) -> LibraryOut:
                            source_policy=body.source_policy,
                            archive_dir=Path(body.archive_dir) if body.archive_dir else None,
                            naming_template=body.naming_template, pdf_to_cbz=body.pdf_to_cbz,
-                           include_edition=body.include_edition, watch=body.watch,
+                           watch=body.watch,
                            overwrite_policy=body.overwrite_policy, rename_files=body.rename_files)
     if body.server_id is not None:
         library = store.update(library.id, server_id=body.server_id, server_library_id=body.server_library_id)
@@ -195,7 +194,6 @@ def update_library(library_id: int, body: LibraryPatch, request: Request) -> Lib
     updated = store.update(
         library.id, name=changes.get("name"), naming_template=changes.get("naming_template"),
         source_policy=changes.get("source_policy"), pdf_to_cbz=changes.get("pdf_to_cbz"),
-        include_edition=changes.get("include_edition"),
         overwrite_policy=changes.get("overwrite_policy"), rename_files=changes.get("rename_files"),
         source_dir=(Path(source.strip()) if source.strip() else "") if "source_dir" in changes else None,
         watch=watch if watch != library.watch else None,
@@ -271,6 +269,15 @@ def series_directories(library_id: int, request: Request) -> List[str]:
     return sorted(entry.name for entry in root.iterdir() if entry.is_dir() and not entry.name.startswith("."))
 
 
+def _current_fields(fields: dict, metadata: dict) -> dict:
+    """Plans from before ``{author}`` existed: ``series`` carried the edition then, the writers are in metadata."""
+    if "author" in fields:
+        return fields
+    writers = [name for name in metadata.get("writers") or metadata.get("authors") or [] if str(name).strip()]
+    return dict(fields, series=fields.get("title") or fields.get("series"),
+                author=path_safe(str(writers[0])) if writers else UNKNOWN_AUTHOR)
+
+
 @router.post("/{library_id}/template-preview", response_model=TemplatePreview)
 def template_preview(library_id: int, body: TemplateIn, request: Request) -> TemplatePreview:
     get_library(request, library_id)
@@ -283,9 +290,11 @@ def template_preview(library_id: int, body: TemplateIn, request: Request) -> Tem
             " ORDER BY id DESC LIMIT 50", (library_id,)).fetchall()
     examples = []
     for row in rows:
-        fields = json.loads(row["plan"]).get("fields")
+        plan = json.loads(row["plan"])
+        fields = plan.get("fields")
         if not fields:
             continue
+        fields = _current_fields(fields, plan.get("metadata") or {})
         try:
             target = render(body.template, fields).as_posix()
         except TemplateError as error:

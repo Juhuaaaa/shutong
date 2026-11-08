@@ -196,4 +196,13 @@ MIGRATIONS: tuple[str, ...] = (
       WHERE id IN (SELECT id FROM item_subjects);
     DROP TABLE item_subjects;
     """,
+    # The naming template alone decides whether names carry the edition; the switch is gone. Libraries that had it
+    # on keep their names: their template gets the edition written into it.
+    """
+    UPDATE libraries SET naming_template = CASE
+        WHEN naming_template = '' THEN '{series}{edition:[%s]}/{series}{edition:[%s]} {volume}{ext}'
+        ELSE replace(naming_template, '{series}', '{series}{edition:[%s]}') END
+      WHERE kind = 'manga' AND include_edition = 1;
+    ALTER TABLE libraries DROP COLUMN include_edition;
+    """,
 )

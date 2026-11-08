@@ -43,7 +43,6 @@ class Library:
     pdf_to_cbz: bool
     server_id: Optional[int] = None  # media server notified after publishing
     server_library_id: Optional[str] = None  # that server's library id, as text
-    include_edition: bool = True  # series names carry the edition (迷宫饭[bili电子版])
     # No source dir of its own: files only come in through uploads, kept under the data dir until organized.
     source_managed: bool = False
     watch: bool = False  # scan by itself once new files in the source dir have settled
@@ -105,7 +104,6 @@ class LibraryStore:
         archive_dir: Optional[Path] = None,
         naming_template: str = "",
         pdf_to_cbz: bool = True,
-        include_edition: bool = True,
         watch: bool = False,
         overwrite_policy: str = "never",
         rename_files: bool = True,
@@ -113,12 +111,12 @@ class LibraryStore:
         with self.db.connect() as connection:
             cursor = connection.execute(
                 "INSERT INTO libraries(name, kind, source_dir, library_dir, naming_template,"
-                " source_policy, archive_dir, pdf_to_cbz, include_edition, watch, overwrite_policy, rename_files, created_at)"
-                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                " source_policy, archive_dir, pdf_to_cbz, watch, overwrite_policy, rename_files, created_at)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     name, kind, _source_column(source_dir), str(library_dir), naming_template,
                     source_policy, str(archive_dir) if archive_dir is not None else None,
-                    int(pdf_to_cbz), int(include_edition), int(watch), overwrite_policy, int(rename_files), now_iso(),
+                    int(pdf_to_cbz), int(watch), overwrite_policy, int(rename_files), now_iso(),
                 ),
             )
             library_id = cursor.lastrowid
@@ -147,7 +145,6 @@ class LibraryStore:
             pdf_to_cbz=bool(row["pdf_to_cbz"]),
             server_id=row["server_id"],
             server_library_id=row["server_library_id"],
-            include_edition=bool(row["include_edition"]),
             overwrite_policy=row["overwrite_policy"],
             rename_files=bool(row["rename_files"]),
         )
@@ -161,7 +158,7 @@ class LibraryStore:
                source_policy: Optional[str] = None, archive_dir: Any = KEEP, pdf_to_cbz: Optional[bool] = None,
                source_dir: Any = None, library_dir: Optional[Path] = None,
                server_id: Any = KEEP, server_library_id: Any = KEEP,
-               include_edition: Optional[bool] = None, watch: Optional[bool] = None,
+               watch: Optional[bool] = None,
                overwrite_policy: Optional[str] = None, rename_files: Optional[bool] = None) -> Library:
         """Change the given fields; ``archive_dir=None`` clears it, leaving it out keeps it.
 
@@ -177,8 +174,6 @@ class LibraryStore:
             columns["watch"] = int(watch)
         if pdf_to_cbz is not None:
             columns["pdf_to_cbz"] = int(pdf_to_cbz)
-        if include_edition is not None:
-            columns["include_edition"] = int(include_edition)
         if overwrite_policy is not None:
             columns["overwrite_policy"] = overwrite_policy
         if rename_files is not None:

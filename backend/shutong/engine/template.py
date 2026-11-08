@@ -4,12 +4,20 @@ import re
 from typing import Mapping, Optional
 
 DEFAULT_TEMPLATE = "{series}/{series} {volume}{ext}"
-VARIABLES = frozenset({"series", "title", "edition", "volume", "year", "bgm", "ext"})
+# The default with the edition after the title: 迷宫饭[bili电子版]/迷宫饭[bili电子版] Vol.01.cbz
+EDITION_TEMPLATE = "{series}{edition:[%s]}/{series}{edition:[%s]} {volume}{ext}"
+VARIABLES = frozenset({"series", "title", "edition", "author", "volume", "year", "bgm", "ext"})
+UNKNOWN_AUTHOR = "未知作者"
 _PLACEHOLDER = re.compile(r"\{([^{}:]+)(?::([^{}]*))?\}")
 
 
 class TemplateError(ValueError):
     pass
+
+
+def uses_edition(template: str) -> bool:
+    """A template naming the edition makes each edition a series of its own (in folders and in Kavita)."""
+    return any(match.group(1) == "edition" for match in _PLACEHOLDER.finditer(template or ""))
 
 
 def validate_template(template: str) -> None:
