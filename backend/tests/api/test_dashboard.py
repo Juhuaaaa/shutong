@@ -42,6 +42,9 @@ class DashboardTests(ApiCase):
         self.assertEqual((recent["library_id"], recent["group_key"], recent["series"], recent["subject_id"],
                           recent["published"]), (self.manga["id"], "迷宫饭", "迷宫饭", "133315", 3))
         self.assertEqual(recent["image"], "https://api.bgm.tv/v0/subjects/133315/image?type=common")
+        self.client.patch("/api/settings", json={"bangumi.image_base_url": "https://img.mirror.example"})
+        [recent] = self.dashboard()["recent"]
+        self.assertEqual(recent["image"], "https://img.mirror.example/v0/subjects/133315/image?type=common")
 
     def test_recent_keeps_eight(self):
         with self.app.state.db.connect() as connection:

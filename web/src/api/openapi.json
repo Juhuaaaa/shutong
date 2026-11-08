@@ -451,6 +451,17 @@
             "title": "Group Key",
             "type": "string"
           },
+          "image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image"
+          },
           "item_ids": {
             "items": {
               "type": "integer"

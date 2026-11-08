@@ -30,6 +30,11 @@ class HistoryRoutesTests(ApiCase):
         self.assertEqual((dungeon["total"], dungeon["counts"], dungeon["series"], dungeon["subject_id"]),
                          (3, {"published": 3}, "迷宫饭", "133315"))
         self.assertEqual(len(dungeon["item_ids"]), 3)
+        self.assertEqual(dungeon["image"], "https://api.bgm.tv/v0/subjects/133315/image?type=small")
+        self.assertIsNone(by_folder["[]x"]["image"])
+        self.client.patch("/api/settings", json={"bangumi.base_url": "https://bgm.mirror.example"})
+        dungeon = {group["folder"]: group for group in self.history(library_id=self.library["id"])["groups"]}["迷宫饭"]
+        self.assertEqual(dungeon["image"], "https://bgm.mirror.example/v0/subjects/133315/image?type=small")
         self.assertEqual(by_folder["[]x"]["counts"], {"needs_review": 1})
 
     def test_newest_first_and_paging(self):

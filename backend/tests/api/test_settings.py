@@ -48,6 +48,16 @@ class SettingsRoutesTests(ApiCase):
         self.assertEqual(ok.status_code, 200)
         self.assertEqual(self.client.get("/api/settings").json()["metadata.sources"], ["anilist", "bangumi"])
 
+    def test_bangumi_addresses_are_web_addresses(self):
+        for key in ("bangumi.base_url", "bangumi.image_base_url"):
+            for bad in ("bgm.mirror.example", "ftp://x", "https://"):
+                with self.subTest(key=key, bad=bad):
+                    self.assertEqual(self.client.patch("/api/settings", json={key: bad}).status_code, 422)
+        ok = self.client.patch("/api/settings", json={"bangumi.image_base_url": "https://img.mirror.example/",
+                                                       "bangumi.base_url": "http://192.168.1.2:8080"})
+        self.assertEqual(ok.status_code, 200)
+        self.assertEqual(self.client.patch("/api/settings", json={"bangumi.image_base_url": ""}).status_code, 200)
+
     def test_proxy_is_validated(self):
         bad = self.client.patch("/api/settings", json={"network.proxy": "192.168.1.2:7890"})
         self.assertEqual(bad.status_code, 422)

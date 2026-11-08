@@ -7,7 +7,7 @@ from urllib.request import urlopen
 from shutong.ai.audit import AuditedAi
 from shutong.ai.openai_compat import AiSettings, OpenAICompatProvider
 from shutong.metadata.anilist import AniListSource
-from shutong.metadata.bangumi import BangumiSettings, BangumiSource
+from shutong.metadata.bangumi import DEFAULT_BASE_URL, BangumiSettings, BangumiSource
 from shutong.metadata.registry import SourceRegistry
 from shutong.net import make_opener, parse_proxy
 from shutong.store.ai_calls import AiCallStore
@@ -41,13 +41,25 @@ def _proxy_opener(settings: SettingsStore):
         return urlopen
 
 
+def _address(value) -> str:
+    return (value or "").strip().rstrip("/")
+
+
+def bangumi_image_base(settings: SettingsStore) -> str:
+    """Where Bangumi covers come from: their own setting, else the API's address (a mirror usually serves both)."""
+    return (_address(settings.get("bangumi.image_base_url")) or _address(settings.get("bangumi.base_url"))
+            or DEFAULT_BASE_URL)
+
+
 def build_services(db: Database, *, opener=None, sleep=time.sleep) -> Services:
     """Metadata sources go through ``network.proxy``; AI only when ``ai.use_proxy`` is on. ``opener`` overrides both."""
     settings = SettingsStore(db)
     proxied = opener or _proxy_opener(settings)
     ai_opener = opener or (proxied if settings.get("ai.use_proxy") else urlopen)
+    base_url = _address(settings.get("bangumi.base_url")) or DEFAULT_BASE_URL
     bangumi = BangumiSource(
-        BangumiSettings(base_url=settings.get("bangumi.base_url"), token=settings.get("bangumi.token") or None),
+        BangumiSettings(base_url=base_url, token=settings.get("bangumi.token") or None,
+                        image_base_url=bangumi_image_base(settings)),
         CacheStore(db), opener=proxied, sleep=sleep,
     )
     anilist = AniListSource(CacheStore(db), opener=proxied, sleep=sleep)

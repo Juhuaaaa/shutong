@@ -11,6 +11,8 @@ from pydantic import BaseModel
 from shutong.api.auth import require_login
 from shutong.api.routes.jobs import JobOut
 from shutong.api.schemas import cover_url
+from shutong.services import bangumi_image_base
+from shutong.store.settings import SettingsStore
 from shutong.store.records import LibraryStore
 
 router = APIRouter(prefix="/api", tags=["dashboard"], dependencies=[Depends(require_login)])
@@ -62,6 +64,7 @@ def dashboard(request: Request) -> dict:
     month = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat()
     libraries, storage, devices = [], [], set()
     stored = LibraryStore(db).all()
+    image_base = bangumi_image_base(SettingsStore(db))
     # File system first: a stale network mount can stall a stat, and a connection holds the write lock.
     disk = {}
     for library in stored:
@@ -84,7 +87,7 @@ def dashboard(request: Request) -> dict:
                 "planned": counts.get("planned", 0), "needs_review": counts.get("needs_review", 0),
                 "failed": counts.get("failed", 0), "available": available,
             })
-        recent = [_recent(connection, row) for row in connection.execute(
+        recent = [_recent(connection, row, image_base) for row in connection.execute(
             "SELECT i.library_id, i.group_key, max(e.at) AS at FROM item_events e JOIN items i ON i.id = e.item_id"
             " WHERE e.kind = 'published' AND i.group_key IS NOT NULL GROUP BY i.library_id, i.group_key"
             " ORDER BY at DESC LIMIT ?", (_RECENT,)).fetchall()]
@@ -111,7 +114,7 @@ def _add_storage(storage: list, devices: set, directory: Path) -> None:
     storage.append({"path": str(directory), "total": usage.total, "used": usage.used, "free": usage.free})
 
 
-def _recent(connection, row) -> dict:
+def _recent(connection, row, image_base: str) -> dict:
     published, series = connection.execute(
         "SELECT count(*), max(json_extract(plan, '$.series')) FROM items"
         " WHERE library_id = ? AND group_key = ? AND status = 'published'",
@@ -122,5 +125,5 @@ def _recent(connection, row) -> dict:
         (row["library_id"], row["group_key"])).fetchone()
     subject_id, source = (named[0], named[1]) if named else (None, None)
     return {"library_id": row["library_id"], "group_key": row["group_key"], "series": series,
-            "subject_id": subject_id, "subject_source": source, "image": cover_url(source, subject_id),
+            "subject_id": subject_id, "subject_source": source, "image": cover_url(source, subject_id, image_base),
             "published": published, "at": row["at"]}

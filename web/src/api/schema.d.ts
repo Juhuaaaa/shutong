@@ -1073,6 +1073,8 @@ export interface components {
             folder: string;
             /** Group Key */
             group_key: string;
+            /** Image */
+            image?: string | null;
             /** Item Ids */
             item_ids: number[];
             /** Library Id */
