@@ -20,6 +20,7 @@ def build_epub(
     title: str = "Book Title",
     language: str = "zh-CN",
     creators=("Author",),
+    creator_roles=None,
     series: str = "",
     series_index: str = "",
     extra_manifest_items=(),
@@ -35,9 +36,15 @@ def build_epub(
     identifier.text = "urn:uuid:00000000-0000-0000-0000-000000000000"
     title_element = ET.SubElement(metadata, DC + "title")
     title_element.text = title
-    for creator in creators:
-        element = ET.SubElement(metadata, DC + "creator")
+    for number, creator in enumerate(creators):
+        element = ET.SubElement(metadata, DC + "creator", {"id": "creator%d" % number})
         element.text = creator
+        role = (creator_roles or {}).get(creator)
+        if role and version.startswith("3"):
+            ET.SubElement(metadata, OPF + "meta", {"refines": "#creator%d" % number, "property": "role",
+                                                   "scheme": "marc:relators"}).text = role
+        elif role:
+            element.set(OPF + "role", role)
     language_element = ET.SubElement(metadata, DC + "language")
     language_element.text = language
     if series:
@@ -223,8 +230,8 @@ class EpubMetadataTests(unittest.TestCase):
         self.assertEqual("出版社", metadata.publisher)
         self.assertEqual(("奇幻", "冒险"), metadata.subjects)
         self.assertEqual("系列简介", metadata.description)
-        # Existing creators are preserved instead of being replaced.
-        self.assertEqual(("既有作者",), metadata.creators)
+        # The source's authors take the place of whatever the file said.
+        self.assertEqual(("新作者",), metadata.creators)
         elements = _metadata_elements(destination)
         self.assertEqual(1, len(elements["calibre:series"]))
         self.assertEqual(1, len(elements["calibre:series_index"]))
@@ -567,6 +574,50 @@ class EpubMetadataTests(unittest.TestCase):
         metadata = epub.read_metadata(destination)
         self.assertEqual("系列", metadata.series)
         self.assertEqual(("作者",), metadata.creators)
+
+
+    def _write_people(self, version: str, authors=("燦々SUN",), illustrators=("ももこ",)) -> Path:
+        source = self.root / ("people%s.epub" % version)
+        destination = self.root / ("people%s-out.epub" % version)
+        build_epub(source, version=version, creators=("错误作者", "某译者"), creator_roles={"某译者": "trl"})
+        epub.write_metadata(source, destination, epub.KavitaMetadata(
+            series="艾莉同学", series_index=1, title="第一卷", authors=authors, illustrators=illustrators))
+        return destination
+
+    def test_epub2_authors_from_the_source_replace_the_file_s_and_illustrators_are_marked(self) -> None:
+        output = self._write_people("2.0")
+        self.assertEqual([("某译者", "trl"), ("燦々SUN", "aut"), ("ももこ", "ill")], _people(output))
+        # EPUB 2's own way, for readers other than Kavita
+        roles = {item.text: item.get(OPF + "role") for item in _package(output).iter(DC + "creator")}
+        self.assertEqual({"某译者": "trl", "燦々SUN": "aut", "ももこ": "ill"}, roles)
+
+    def test_epub3_authors_from_the_source_replace_the_file_s_and_illustrators_are_marked(self) -> None:
+        output = self._write_people("3.0")
+        self.assertEqual([("某译者", "trl"), ("燦々SUN", "aut"), ("ももこ", "ill")], _people(output))
+        self.assertFalse([item for item in _package(output).iter(DC + "creator") if item.get(OPF + "role")])
+
+    def test_without_authors_from_the_source_the_file_s_own_stay(self) -> None:
+        output = self._write_people("3.0", authors=(), illustrators=())
+        self.assertEqual([("错误作者", None), ("某译者", "trl")], _people(output))
+
+    def test_writing_people_twice_does_not_pile_them_up(self) -> None:
+        once = self._write_people("3.0")
+        twice = self.root / "twice.epub"
+        epub.write_metadata(once, twice, epub.KavitaMetadata(
+            series="艾莉同学", series_index=1, title="第一卷", authors=("燦々SUN",), illustrators=("ももこ",)))
+        self.assertEqual(_people(once), _people(twice))
+        roles = [item for item in _package(twice).iter(OPF + "meta") if item.get("property") == "role"]
+        self.assertEqual(3, len(roles))
+
+
+def _people(path: Path) -> list:
+    """Creators with the role Kavita gives them: only a marc:relators refinement counts there."""
+    metadata = _package(path).find(OPF + "metadata")
+    roles = {(item.get("refines") or "")[1:]: (item.text or item.get("content") or "").strip()
+             for item in metadata.findall(OPF + "meta")
+             if item.get("property") == "role" and item.get("scheme") in (None, "marc:relators")}
+    return [((item.text or "").strip(), roles.get(item.get("id") or ""))
+            for item in metadata.findall(DC + "creator")]
 
 
 def _package(path: Path) -> ET.Element:

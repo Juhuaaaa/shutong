@@ -30,6 +30,7 @@ _DOWN_SECONDS = 300
 _SEARCH_CACHE_TTL_SECONDS = 24 * 60 * 60
 _SUBJECT_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60
 _WRITER_ROLES = ("Story", "Original Creator", "Original Story")  # "Story & Art" starts with "Story"
+_ILLUSTRATOR_ROLES = ("Illustration",)
 
 _FIELDS = """
   id title { romaji english native } synonyms description(asHtml: false)
@@ -176,7 +177,8 @@ def normalize_media(media: dict) -> Subject:
         name_cn="",
         summary=_plain(media.get("description")),
         release_date=_date(media.get("startDate")),
-        writers=_writers(media.get("staff")),
+        writers=_staff(media.get("staff"), _WRITER_ROLES),
+        illustrators=_staff(media.get("staff"), _ILLUSTRATOR_ROLES),
         publisher="",
         genres=tuple(genre for genre in (_text(g) for g in genres) if genre),
         completed=status == "FINISHED",
@@ -189,11 +191,11 @@ def normalize_media(media: dict) -> Subject:
     )
 
 
-def _writers(staff: Any) -> Tuple[str, ...]:
+def _staff(staff: Any, roles: Tuple[str, ...]) -> Tuple[str, ...]:
     edges = staff.get("edges") if isinstance(staff, dict) else None
     names: List[str] = []
     for edge in edges if isinstance(edges, list) else []:
-        if not isinstance(edge, dict) or not _text(edge.get("role")).startswith(_WRITER_ROLES):
+        if not isinstance(edge, dict) or not _text(edge.get("role")).startswith(roles):
             continue
         node = edge.get("node") if isinstance(edge.get("node"), dict) else {}
         person = node.get("name") if isinstance(node.get("name"), dict) else {}

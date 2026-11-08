@@ -80,6 +80,14 @@ class BangumiTests(unittest.TestCase):
         self.assertEqual(subject.publisher, "集英社")
         self.assertEqual(subject.genres, ("漫画",))
 
+    def test_normalize_subject_reads_the_illustrators_of_a_light_novel(self):
+        subject = normalize_subject({"id": 339092, "name": "x", "name_cn": "不时轻声地以俄语遮羞的邻座艾莉同学",
+                                     "infobox": [{"key": "作者", "value": "燦々SUN"},
+                                                 {"key": "插图", "value": "ももこ"},
+                                                 {"key": "插画", "value": [{"v": "ももこ"}, {"v": "另一位"}]}]})
+        self.assertEqual(subject.writers, ("燦々SUN",))
+        self.assertEqual(subject.illustrators, ("ももこ", "另一位"))
+
     def test_normalize_subject_reads_the_series_flag(self):
         self.assertIs(normalize_subject({"id": 20244, "name": "ベルベット・キス (1)", "series": False}).series, False)
         self.assertIs(normalize_subject({"id": 661086, "name": "ベルベット・アーミー", "series": True}).series, True)

@@ -79,6 +79,20 @@ class MetadataBuildTests(unittest.TestCase):
                                       first_volume=True, fallback_title="f")
                 self.assertEqual(metadata_from_json("novel", metadata_to_json(meta)), meta)
 
+    def test_novel_carries_the_illustrators_and_survives_a_round_trip(self):
+        subject = replace(SUBJECT, illustrators=("ももこ",))
+        meta = novel_metadata("x", NovelVolume.volume(Decimal(1)), subject, {}, Directives(),
+                              first_volume=True, fallback_title="f")
+        self.assertEqual(meta.illustrators, ("ももこ",))
+        self.assertEqual(metadata_from_json("novel", metadata_to_json(meta)), meta)
+
+    def test_novel_plans_from_before_illustrators_still_load(self):
+        meta = novel_metadata("x", NovelVolume.volume(Decimal(1)), SUBJECT, {}, Directives(),
+                              first_volume=True, fallback_title="f")
+        stored = metadata_to_json(meta)
+        stored.pop("illustrators", None)
+        self.assertEqual(metadata_from_json("novel", stored).illustrators, ())
+
     def test_volume_from_key(self):
         self.assertEqual(volume_from_key("manga", "range:1-5"), VolumeRef.range(Decimal(1), Decimal(5)))
         self.assertEqual(volume_from_key("manga", "special:2"), VolumeRef.special(2))

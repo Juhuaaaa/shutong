@@ -188,6 +188,7 @@ def normalize_subject(value: Any, image_base: str = "", api_base: str = DEFAULT_
     infobox = value.get("infobox")
     entries = infobox if isinstance(infobox, list) else []
     writers = _infobox_values(entries, {"作者", "作画", "原作"})
+    illustrators = _infobox_values(entries, {"插图", "插画", "插画师"})
     publishers = _infobox_values(entries, {"出版社", "连载杂志", "連載雜誌", "发行"})
     total_volumes = _positive_integer_or_none(value.get("volumes"))
     if total_volumes is None:
@@ -209,6 +210,7 @@ def normalize_subject(value: Any, image_base: str = "", api_base: str = DEFAULT_
         summary=_text(value.get("summary")) or _text(value.get("short_summary")),
         release_date=release_date,
         writers=tuple(writers),
+        illustrators=tuple(illustrators),
         publisher=", ".join(publishers),
         genres=tuple(genres),
         completed=completed,

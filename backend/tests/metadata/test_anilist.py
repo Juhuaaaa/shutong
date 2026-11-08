@@ -28,6 +28,7 @@ KAGUYA = {
     "staff": {"edges": [
         {"role": "Story & Art", "node": {"name": {"full": "Aka Akasaka", "native": "赤坂アカ"}}},
         {"role": "Assistant", "node": {"name": {"full": "Someone", "native": "誰か"}}},
+        {"role": "Illustration", "node": {"name": {"full": "Momoco", "native": "ももこ"}}},
     ]},
 }
 
@@ -81,6 +82,7 @@ class AniListTests(unittest.TestCase):
         self.assertEqual(len(subject.aliases), 3)  # the synonym equal to the English title is not repeated
         self.assertEqual(subject.display_title, "Kaguya-sama: Love is War")
         self.assertEqual(subject.writers, ("赤坂アカ",))
+        self.assertEqual(subject.illustrators, ("ももこ",))
         self.assertEqual(subject.release_date, "2015-05-19")
         self.assertEqual((subject.completed, subject.total_volumes, subject.series), (True, 28, True))
         self.assertEqual(subject.platform, "漫画")

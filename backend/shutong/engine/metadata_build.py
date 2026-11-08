@@ -96,6 +96,7 @@ def novel_metadata(series_name: str, volume: NovelVolume, subject: Subject, deta
         title=title,
         language=directives.lang or "zh",
         authors=tuple(subject.writers),
+        illustrators=tuple(subject.illustrators),
         publisher=subject.publisher,
         genres=select_genres(subject),
         description=" ".join(subject.summary.split()) if first_volume else "",
@@ -143,6 +144,6 @@ def metadata_from_json(kind: str, data: Mapping[str, Any]):
             values[key] = tuple(values[key])
         return ComicMetadata(**values)
     values["series_index"] = Decimal(values["series_index"])
-    for key in ("authors", "genres"):
-        values[key] = tuple(values[key])
+    for key in ("authors", "genres", "illustrators"):
+        values[key] = tuple(values.get(key) or ())
     return KavitaMetadata(**values)

@@ -108,7 +108,8 @@ def apply_subject(metadata: Metadata, subject: Subject) -> Metadata:
                        summary=subject.summary, writers=tuple(subject.writers), publisher=subject.publisher,
                        release_date=subject.release_date, genres=tuple(subject.genres),
                        completed=subject.completed, total_volumes=subject.total_volumes)
-    return replace(metadata, authors=tuple(subject.writers), publisher=subject.publisher,
+    return replace(metadata, authors=tuple(subject.writers), illustrators=tuple(subject.illustrators),
+                   publisher=subject.publisher,
                    genres=select_genres(subject), description=" ".join(subject.summary.split()),
                    date=normalize_release_date(subject.release_date), web_url=subject.web_url)
 
