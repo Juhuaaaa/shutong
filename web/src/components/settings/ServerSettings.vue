@@ -2,7 +2,7 @@
 import { mdiDeleteOutline, mdiLanConnect, mdiPencilOutline, mdiPlus, mdiServerNetwork } from "@mdi/js";
 import kavitaIcon from "@/assets/servers/kavita.png";
 import komgaIcon from "@/assets/servers/komga.png";
-import { onMounted, reactive, ref } from "vue";
+import { onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { servers as api, type Server } from "@/api";
 
@@ -17,6 +17,10 @@ const list = ref<Server[]>([]);
 const editing = ref<Server | null | undefined>(undefined);
 const form = reactive({ kind: "kavita" as ServerKind, name: "", base_url: "", username: "", password: "" });
 const kinds = [{ title: "Kavita", value: "kavita" }, { title: "Komga", value: "komga" }];
+// A new server is named after its kind until someone types a name of their own.
+watch(() => form.kind, (kind, before) => {
+  if (!form.name.trim() || form.name === before) form.name = kind;
+});
 const results = ref<Record<number, { ok: boolean; text: string }>>({});
 
 function failed(error: unknown) {
@@ -30,7 +34,7 @@ onMounted(() => load().catch(failed));
 
 function open(server: Server | null) {
   editing.value = server;
-  Object.assign(form, { kind: (server?.kind ?? "kavita") as ServerKind, name: server?.name ?? t("settings.serverDefaultName"), base_url: server?.base_url ?? "http://",
+  Object.assign(form, { kind: (server?.kind ?? "kavita") as ServerKind, name: server?.name ?? "kavita", base_url: server?.base_url ?? "http://",
     username: server?.username ?? "", password: "" });
 }
 
