@@ -21,7 +21,7 @@ COUNTS = {
     "planned": "待入库", "executed": "入库", "needs_review": "复核", "review": "转入复核", "published": "已整理", "failed": "整理出错",
     "skipped": "跳过", "known": "已见过", "duplicate": "重复", "cancelled": "已取消", "parsed": "待识别",
     "ready": "就绪", "replanned": "重新规划", "deleted": "删除旧文件", "claimed": "认领", "merged_into_original": "分部并入原作",
-    "matched": "已匹配", "removed": "清理", "kavita": "Kavita", "counts": "",
+    "matched": "已匹配", "removed": "清理", "kavita": "Kavita", "counts": "", "groups": "采纳的组",
 }
 HIDDEN_COUNTS = frozenset({"run_id"})
 

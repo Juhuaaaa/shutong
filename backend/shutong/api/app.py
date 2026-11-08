@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 
 from shutong.api import desktop
+from shutong.engine import discard
 from shutong.api.auth import Auth
 from shutong.api.watcher import SourceWatcher
 from shutong.api.jobs import JobRunner
@@ -36,6 +37,15 @@ def _log_errors(app: FastAPI) -> None:
         return JSONResponse({"detail": "服务器内部错误，详情见日志"}, status_code=500)
 
 
+def _use_trash(desktop: bool) -> None:
+    """On the desktop, files Shutong removes go to the system trash."""
+    try:
+        discard.use_system_trash(desktop)
+    except ImportError as error:  # a build without send2trash: delete as on a server, but say so
+        logging.getLogger("shutong.app").warning("回收站不可用，删除的文件不会进回收站：%s", error)
+        discard.use_system_trash(False)
+
+
 def create_app(data_dir: Path, *, inline_jobs: bool = False,
                services_factory: Callable[[Database], Services] = build_services,
                server_factory: Callable[[ServerRecord], MediaServer] = server_for,
@@ -52,6 +62,7 @@ def create_app(data_dir: Path, *, inline_jobs: bool = False,
     app.state.data_dir = data_dir
     app.state.logs = buffer
     app.state.desktop = desktop_token is not None
+    _use_trash(app.state.desktop)
     app.state.auth = desktop.DesktopAuth(desktop_token) if app.state.desktop else Auth(db)
     if app.state.desktop:
         app.add_middleware(desktop.DesktopGuard)

@@ -80,6 +80,15 @@ class MultiSourceTests(OrganizerFixture):
         [item] = self.all_items()
         self.assertEqual((item.status, item.subject_source), (ItemStatus.PLANNED, "b"))
 
+    def test_ai_suggestion_names_its_source(self):
+        other = subject(5, "地下城美食", total=2)
+        a = Named("a", [other], {5: other})
+        self.zip("迷宫饭/Vol.01.zip")
+        self.organizer_with(a, ai=ReaderAi(choose_confidence=0.5)).scan(self.library.id)
+        [item] = self.all_items()
+        suggestion = [event for event in self.items.events(item.id) if event.kind == "ai_suggestion"][-1]
+        self.assertEqual((suggestion.detail["source"], suggestion.detail["subject_id"]), ("a", "5"))
+
     def test_all_sources_empty_goes_to_review(self):
         self.zip("迷宫饭/Vol.01.zip")
         self.organizer_with(Named("a"), Named("b")).scan(self.library.id)
@@ -180,6 +189,23 @@ class MultiSourceTests(OrganizerFixture):
         [item] = self.all_items()
         with self.assertRaises(ValueError):
             organizer.confirm([item.id], subject=SubjectRef("douban", "1"))
+
+    def test_english_summaries_are_written_in_chinese(self):
+        english = replace(ANI_DUNGEON, summary="Adventurers cook monsters.")
+        anilist = Named("anilist", [english], {30002: english})
+
+        class Translating(ReaderAi):
+            def complete_json(self, purpose, system, payload, *, item_id=None):
+                if purpose == "translate":
+                    return {"summary": "冒险者烹饪魔物。"}, 9
+                return super().complete_json(purpose, system, payload, item_id=item_id)
+
+        self.zip("迷宫饭/Vol.01.zip")
+        registry = SourceRegistry({"anilist": anilist}, ["anilist"])
+        organizer = Organizer(Services(self.db, registry, Translating(), EngineConfig(translate_summaries=True)))
+        organizer.scan(self.library.id)
+        [item] = self.all_items()
+        self.assertEqual(item.plan["metadata"]["summary"], "冒险者烹饪魔物。")
 
     def test_refresh_uses_the_items_own_source(self):
         a = Named("a", [], {})

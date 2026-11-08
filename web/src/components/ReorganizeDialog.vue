@@ -5,6 +5,7 @@ import { items as itemApi, type Choices, type Item } from "@/api";
 import type { ApiError } from "@/api/client";
 import { isVolumeText, subjectRefOf } from "@/composables/volume";
 import { useJobs } from "@/stores/jobs";
+import { useAuth } from "@/stores/auth";
 import { useLibraries } from "@/stores/libraries";
 
 const props = defineProps<{ items: Item[] }>();
@@ -12,6 +13,7 @@ const emit = defineEmits<{ close: []; done: [result: Record<string, number>] }>(
 const { t } = useI18n();
 const jobs = useJobs();
 const libraries = useLibraries();
+const auth = useAuth();
 const form = reactive({ title: "", edition: "", subject: "", volume: "" });
 const busy = ref(false);
 const error = ref("");
@@ -47,7 +49,9 @@ async function submit() {
     <VCard class="pa-2">
       <VCardTitle>{{ t("history.reorganizeTitle", { count: items.length }) }}</VCardTitle>
       <VCardText class="d-flex flex-column ga-4">
-        <VAlert type="info" variant="tonal" density="compact" rounded="lg">{{ t("history.reorganizeNote") }}</VAlert>
+        <VAlert :type="auth.desktop ? 'info' : 'warning'" variant="tonal" density="compact" rounded="lg" data-test="reorganize-note">
+          {{ t(auth.desktop ? "history.reorganizeNoteDesktop" : "history.reorganizeNote") }}
+        </VAlert>
         <VTextField v-model="form.title" :label="t('review.title')" :placeholder="String(first.plan.series ?? '')" persistent-placeholder
           hide-details />
         <VTextField v-if="kind === 'manga'" v-model="form.edition" :label="t('review.edition')" :placeholder="t('history.keep')" persistent-placeholder

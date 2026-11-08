@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { mdiRefresh } from "@mdi/js";
+import { mdiRefresh, mdiRobotOutline } from "@mdi/js";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { libraries as libraryApi, review, settings, type Choices, type ReviewGroup } from "@/api";
@@ -108,6 +108,26 @@ async function reidentifyAll() {
   }
 }
 
+/** Groups shown (after the list's filters) whose AI suggestion would settle them as they are. */
+const adoptable = computed(() => (list.value?.shown ?? groups.value).filter((group) => group.adoptable));
+
+async function adoptAll() {
+  const chosen = adoptable.value;
+  const files = chosen.reduce((sum, group) => sum + group.count, 0);
+  if (!(await ask(t("review.adoptAllTitle", { groups: chosen.length }), t("review.adoptAllText", { files })))) return;
+  busy.value = true;
+  try {
+    const job = await jobs.submit(review.adopt(chosen.flatMap((group) => group.item_ids)), t("jobs.kind.adopt"));
+    const result = job.result as Record<string, number>;
+    notify.success(t("review.adopted", { groups: result.groups ?? 0, executed: result.executed ?? 0, review: result.needs_review ?? 0 }));
+    await Promise.all([load(), libraries.refresh().catch(() => {})]);
+  } catch (error) {
+    notify.error((error as ApiError).detail ?? String(error));
+  } finally {
+    busy.value = false;
+  }
+}
+
 function skip() {
   if (selectedKey.value) selectedKey.value = next(selectedKey.value) ?? selectedKey.value;
 }
@@ -118,6 +138,10 @@ function skip() {
     <div class="toolbar">
       <h1 class="st-page-title">{{ t("nav.review") }}</h1>
       <VSpacer />
+      <VBtn v-if="adoptable.length" variant="flat" color="primary" :prepend-icon="mdiRobotOutline" :disabled="busy"
+        data-test="adopt-all" class="mr-2" @click="adoptAll">
+{{ t("review.adoptAll", { groups: adoptable.length }) }}
+</VBtn>
       <VBtn variant="tonal" color="primary" :prepend-icon="mdiRefresh" :disabled="busy || !groups.length" :loading="busy"
         data-test="reidentify-all" @click="reidentifyAll">
 {{ t("review.reidentifyAll") }}

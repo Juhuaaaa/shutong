@@ -5,6 +5,7 @@
 - Electron（MIT）及其带的 Chromium、Node.js，许可证见程序目录里的 LICENSE 和 LICENSES.chromium.html
 - Python（PSF License）
 - FastAPI、Starlette、Pydantic、Uvicorn、websockets、python-multipart、PySocks（MIT 或 BSD）
-- Pillow（MIT-CMU）、NumPy（BSD）、pypdf（BSD）
+- Pillow（MIT-CMU）、NumPy（BSD）、pypdf（BSD）、Send2Trash（BSD）
 - Vue、Vue Router、Pinia、vue-i18n、Vuetify（MIT），Material Design Icons（Apache 2.0）
+- Kavita、Komga 的应用图标归各自项目所有，只用来标明媒体服务器的类型
 - libarchive-c（CC0）、libarchive（BSD，Windows 版），及其依赖的 zlib、bzip2、xz、zstd、lz4、expat 等（各自的宽松许可证）

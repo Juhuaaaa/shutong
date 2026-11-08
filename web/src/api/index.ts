@@ -57,7 +57,8 @@ export const desktop = {
 };
 
 export const history = {
-  groups: (query: { library_id?: number; status?: string; missing_metadata?: boolean; q?: string; limit?: number; offset?: number }) =>
+  groups: (query: { library_id?: number; status?: string; missing_metadata?: boolean; ai_picked?: boolean; source?: string;
+    q?: string; limit?: number; offset?: number }) =>
     request<HistoryPage>("GET", "/api/history/groups", { query }),
   items: (libraryId: number, groupKey: string, status?: string) =>
     request<Item[]>("GET", `/api/history/groups/${libraryId}/${groupKey.split("/").map(encodeURIComponent).join("/")}`,
@@ -139,6 +140,7 @@ export const review = {
     request<JobRef>("POST", "/api/review/confirm", { body: { item_ids: itemIds, ...choices } }),
   reidentify: (target: { item_ids: number[] } | { library_id: number }) =>
     request<JobRef>("POST", "/api/review/reidentify", { body: target }),
+  adopt: (itemIds: number[]) => request<JobRef>("POST", "/api/review/adopt", { body: { item_ids: itemIds } }),
 };
 
 export const metadata = {

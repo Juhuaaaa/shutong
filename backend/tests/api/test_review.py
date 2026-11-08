@@ -1,5 +1,6 @@
 import unittest
 
+from shutong.api.routes.review import adoptable_choices
 from shutong.metadata.base import MetadataUnavailable
 
 from ..engine.reader_ai import ReaderAi
@@ -20,6 +21,17 @@ class ReviewRoutesTests(ApiCase):
 
     def groups(self):
         return self.client.get("/api/review/groups", params={"library_id": self.library["id"]}).json()
+
+    def test_adopt_the_ai_suggestions_of_many_groups_at_once(self):
+        groups = self.groups()
+        self.assertEqual([group["adoptable"] for group in groups], [True, True])
+        ids = [item_id for group in groups for item_id in group["item_ids"]]
+        response = self.client.post("/api/review/adopt", json={"item_ids": ids})
+        job = self.client.get("/api/jobs/{0}".format(response.json()["job_id"])).json()
+        self.assertEqual((job["kind"], job["state"]), ("adopt", "done"), job)
+        self.assertEqual((job["result"]["groups"], job["result"]["executed"]), (2, 3))
+        self.assertEqual(self.groups(), [])
+        self.assertEqual(self.client.post("/api/review/adopt", json={"item_ids": []}).status_code, 422)
 
     def test_groups_by_source_folder(self):
         groups = self.groups()
@@ -100,6 +112,29 @@ class ReviewRoutesTests(ApiCase):
         self.source = FakeSource(error=MetadataUnavailable("timeout"))
         response = self.client.get("/api/metadata/search", params={"q": "迷宫饭"})
         self.assertEqual((response.status_code, response.json()["detail"]), (503, "Bangumi 暂时无法访问"))
+
+
+
+class AdoptableTests(unittest.TestCase):
+    def group(self, reasons, suggestion, candidates=()):
+        return {"reasons": reasons, "ai_suggestion": suggestion, "candidates": list(candidates)}
+
+    def test_what_a_suggestion_can_settle(self):
+        naming = {"title": "迷宫饭", "edition": "bili电子版", "subject_id": None, "problem": None}
+        self.assertEqual(adoptable_choices(self.group(["naming"], naming)), {"title": "迷宫饭", "edition": "bili电子版"})
+        pick = {"title": None, "edition": None, "subject_id": "30002", "source": "anilist", "problem": None}
+        self.assertEqual(adoptable_choices(self.group(["metadata"], pick))["subject"].key, "anilist:30002")
+        old = dict(pick, source=None, subject_id=9)
+        self.assertEqual(adoptable_choices(self.group(["metadata"], old, [{"source": "bangumi", "id": "9"}]))["subject"].key,
+                         "bangumi:9")
+
+    def test_what_it_cannot(self):
+        naming = {"title": "迷宫饭", "edition": None, "subject_id": None, "problem": None}
+        self.assertIsNone(adoptable_choices(self.group(["volume"], naming)))
+        self.assertIsNone(adoptable_choices(self.group(["naming", "conflict"], naming)))
+        self.assertIsNone(adoptable_choices(self.group(["metadata"], naming)))  # no entry picked
+        self.assertIsNone(adoptable_choices(self.group(["naming"], dict(naming, problem="AI 调用失败"))))
+        self.assertIsNone(adoptable_choices(self.group(["naming"], None)))
 
 
 if __name__ == "__main__":

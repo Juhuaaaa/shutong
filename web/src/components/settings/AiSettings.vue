@@ -76,6 +76,13 @@ async function clear(key: string) {
     notify.error((error as ApiError).detail ?? String(error));
   }
 }
+
+/** The guide walks through getting a DeepSeek key; the button fills in what does not change between users. */
+const GUIDE_AI = "https://github.com/Juhuaaaa/shutong/blob/main/docs/guide.md#ai必填";
+function useDeepSeek() {
+  baseUrl.value = "https://api.deepseek.com";
+  model.value = "deepseek-flash";
+}
 </script>
 
 <template>
@@ -83,7 +90,12 @@ async function clear(key: string) {
     <VAlert v-if="route.name !== 'welcome'" type="info" variant="tonal" density="compact" rounded="lg" data-test="ai-required">
       {{ t("settings.aiRequired") }}
     </VAlert>
-    <VTextField v-model="baseUrl" :label="t('settings.aiUrl')" placeholder="https://api.deepseek.com/v1"
+    <div class="recommend text-body-2" data-test="ai-recommend">
+      {{ t("settings.aiRecommend") }}
+      <VBtn size="small" variant="tonal" color="primary" data-test="ai-deepseek" @click="useDeepSeek">{{ t("settings.aiUseDeepSeek") }}</VBtn>
+      <a :href="GUIDE_AI" target="_blank" rel="noopener noreferrer" data-test="ai-guide">{{ t("settings.aiGuide") }}</a>
+    </div>
+    <VTextField v-model="baseUrl" :label="t('settings.aiUrl')" placeholder="https://api.deepseek.com"
       persistent-placeholder data-test="ai-url" />
     <SecretField v-model="apiKey" :label="t('settings.aiKey')" :is-set="!!form.secretSet['ai.api_key']"
       clear-test="clear-ai-key" data-test="ai-key" @clear="clear('ai.api_key')" />
@@ -120,6 +132,8 @@ async function clear(key: string) {
 </template>
 
 <style scoped>
+.recommend { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.recommend a { color: rgb(var(--v-theme-primary)); }
 .form { max-width: 600px; display: flex; flex-direction: column; gap: 8px; }
 .form > .v-alert:first-child { margin-bottom: 12px; }
 .row { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }

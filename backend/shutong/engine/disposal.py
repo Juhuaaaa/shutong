@@ -7,6 +7,7 @@ import secrets
 import shutil
 from typing import Optional
 
+from .discard import discard, remove_for_good
 from .fingerprint import fingerprint, sha256_file
 from .publish import TargetExists, no_overwrite_move
 
@@ -41,7 +42,7 @@ def dispose_source(
             raise ValueError("archive policy needs an archive_dir")
         return _archive(source, Path(ctx.archive_dir) / _relative(ctx, source))
     if ctx.policy == "delete":
-        remove_tree(source)
+        discard(source)  # into the trash on the desktop
         return DisposalOutcome("deleted")
     raise ValueError("unknown source policy: {0}".format(ctx.policy))
 
@@ -114,11 +115,5 @@ def _existing_ancestor(path: Path) -> Path:
 
 
 def remove_tree(path: Path) -> None:
-    """Delete a file or a whole folder for good; a missing path is fine."""
-    if path.is_dir() and not path.is_symlink():
-        shutil.rmtree(path)
-    else:
-        try:
-            path.unlink()
-        except FileNotFoundError:
-            pass
+    """Delete a file or a whole folder for good (temporary copies, moved sources); a missing path is fine."""
+    remove_for_good(Path(path))

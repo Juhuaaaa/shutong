@@ -68,10 +68,43 @@ describe("SettingsView", () => {
     expect(calls.find((call) => call.method === "PATCH")?.body).toEqual({ "metadata.sources": ["anilist", "bangumi"] });
   });
 
+  it("shows the sources the server really asks, whatever was stored", async () => {
+    api({ "GET /api/settings": { ...settings, "metadata.sources": ["douban"] } });
+    await mountView(SettingsView, "/settings/metadata");
+    await vi.waitFor(() => expect(document.querySelector("[data-test=source-switch-bangumi] input")).not.toBeNull());
+    expect((document.querySelector("[data-test=source-switch-bangumi] input") as HTMLInputElement).checked).toBe(true);
+  });
+
+  it("turns the summary translation off", async () => {
+    const { calls } = api({ "GET /api/settings": { ...settings, "metadata.translate_summaries": true } });
+    await mountView(SettingsView, "/settings/metadata");
+    await vi.waitFor(() => expect((document.querySelector("[data-test=translate-summaries] input") as HTMLInputElement)?.checked).toBe(true));
+    (document.querySelector("[data-test=translate-summaries] input") as HTMLInputElement).click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    (document.querySelector("[data-test=save-metadata]") as HTMLElement).click();
+    await vi.waitFor(() => expect(calls.some((call) => call.method === "PATCH")).toBe(true));
+    expect(calls.find((call) => call.method === "PATCH")?.body).toEqual({ "metadata.translate_summaries": false });
+  });
+
   it("still opens the metadata tab from an old Bangumi link", async () => {
     api();
     await mountView(SettingsView, "/settings/bangumi");
     await vi.waitFor(() => expect(document.querySelector("[data-test=sources]")).not.toBeNull());
+  });
+
+  it("recommends DeepSeek and fills in its address and model", async () => {
+    const { calls } = api({ "GET /api/settings": { ...settings, "ai.base_url": "", "ai.model": "", "ai.api_key": "" } });
+    await mountView(SettingsView, "/settings/ai");
+    await vi.waitFor(() => expect(document.querySelector("[data-test=ai-deepseek]")).not.toBeNull());
+    expect(document.querySelector("[data-test=ai-guide]")?.getAttribute("href")).toContain("docs/guide.md");
+    await vi.waitFor(() => expect(input("ai-threshold")?.value).toBe("0.95"));  // settings loaded
+    (document.querySelector("[data-test=ai-deepseek]") as HTMLElement).click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(input("ai-url").value).toBe("https://api.deepseek.com");
+    (document.querySelector("[data-test=save-ai]") as HTMLElement).click();
+    await vi.waitFor(() => expect(calls.some((call) => call.method === "PATCH")).toBe(true));
+    expect(calls.find((call) => call.method === "PATCH")?.body)
+      .toEqual({ "ai.base_url": "https://api.deepseek.com", "ai.model": "deepseek-flash" });
   });
 
   it("opens on the AI tab, which says scanning needs it", async () => {

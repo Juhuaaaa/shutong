@@ -15,6 +15,7 @@ import unicodedata
 
 from shutong.engine.ai_assist import SourceContext, _effective_threshold, _safe_name
 from shutong.engine.ai_recognize import AiNotConfigured, FileReading, Reading, SeriesReading, batches, read_batch
+from shutong.engine.discard import discard
 from shutong.engine.disposal import DisposalContext, dispose_source, remove_tree
 from shutong.engine import failure
 from shutong.engine.fingerprint import fingerprint
@@ -31,9 +32,12 @@ from shutong.engine.publish import STATE_DIR, Publisher, TargetExists
 from shutong.engine.recognition import Recognition
 from shutong.engine.states import TRANSITIONS, ItemStatus, ReviewReason
 from shutong.engine.template import DEFAULT_TEMPLATE
+from shutong.engine.translate import localize
 from shutong.metadata.base import Subject, SubjectRef
+from shutong.metadata.registry import LABELS, NUMERIC_IDS
 from shutong.services import Services
 from shutong.store.ai_calls import AiCallStore
+from shutong.store.cache import CacheStore
 from shutong.store.journal import JournalStore
 from shutong.store.records import Item, ItemStore, Library, LibraryStore, RunStore
 
@@ -290,6 +294,11 @@ class Organizer:
 
     # ---- review, reorganize, cancel -----------------------------------------------------------
 
+    def _localized(self, subject: Subject) -> Subject:
+        """English summaries in Chinese when the setting is on; never holds organizing up."""
+        return localize(subject, ai=self.services.ai, cache=CacheStore(self.services.db),
+                        enabled=self.services.config.translate_summaries)
+
     def _validate(self, **choices) -> None:
         validate_choices(sources=self.services.sources.names, **choices)
 
@@ -368,7 +377,7 @@ class Organizer:
                 continue
             target = library.library_dir / item.target_path if item.target_path else None
             if target is not None and os.path.lexists(target):
-                remove_tree(target)
+                discard(target)  # into the trash on the desktop
                 counts["deleted"] += 1
             self.items.add_event(item.id, "target_deleted",
                                  {"target": item.target_path.as_posix() if item.target_path else None})
@@ -390,7 +399,7 @@ class Organizer:
             raise ValueError("要选一个条目或手填元数据")
         if subject is not None:
             self._validate(subject=subject)
-            subject = self.services.sources.get(subject.source).get(subject.id)
+            subject = self._localized(self.services.sources.get(subject.source).get(subject.id))
         counts: Dict[str, object] = {"edited": 0, "skipped": 0, "failed": 0, "ids": [], "series": []}
         for item_id in item_ids:
             item = self.items.get(item_id)
@@ -455,7 +464,7 @@ class Organizer:
             try:
                 if ref not in subjects:
                     # Its own source, switched on or not: what was organized from it stays refreshable.
-                    subjects[ref] = self.services.sources.get(ref.source).get(ref.id, fresh=True)
+                    subjects[ref] = self._localized(self.services.sources.get(ref.source).get(ref.id, fresh=True))
                 library = self.libraries.get(item.library_id)
                 before = metadata_from_json(library.kind, item.plan["metadata"])
                 after = apply_subject(before, subjects[ref])
@@ -687,7 +696,7 @@ class Organizer:
         if subject is None:
             return None
         suffix = adapter.output_suffix(entry) if hasattr(adapter, "output_suffix") else ".epub"
-        return PlanInput(item_id, entry, recognition, subject, suffix)
+        return PlanInput(item_id, entry, recognition, self._localized(subject), suffix)
 
     def _match_sub_series(self, item_id: int, library: Library, adapter: KindAdapter, parse: ParseResult,
                           reading: Reading, entry: SourceEntry,
@@ -790,7 +799,7 @@ class Organizer:
         if result.method in ("rule", "auto", "ai"):
             self._remember_source(library, entry, result.subject, sub_series=sub_series)
             if result.method == "ai":
-                self.items.add_event(item_id, "ai_adopted", _suggestion_json(result.suggestion))
+                self.items.add_event(item_id, "ai_adopted", _suggestion_json(result.suggestion, result.source))
                 if result.suggestion.call_id is not None:
                     self.ai_calls.mark_adopted(result.suggestion.call_id)
             self.items.transition(item_id, ItemStatus.MATCHED, event="matched",
@@ -799,7 +808,7 @@ class Organizer:
                                   subject_id=result.subject.subject_id, subject_source=result.subject.source)
             return result.subject
         if result.suggestion is not None:
-            self.items.add_event(item_id, "ai_suggestion", _suggestion_json(result.suggestion))
+            self.items.add_event(item_id, "ai_suggestion", _suggestion_json(result.suggestion, result.source))
         # No subject settled: the user decides in review (pick one, or organize without metadata). Offer what
         # the AI looked at, its own guess first.
         suggestion = result.suggestion
@@ -977,9 +986,7 @@ class Organizer:
         old = Path(replaces)
         if old != item.target_path:
             try:
-                (library.library_dir / old).unlink()
-            except FileNotFoundError:
-                pass
+                discard(library.library_dir / old)  # into the trash on the desktop
             except OSError as error:
                 self.items.add_event(item.id, "replaced_file_kept", {"file": replaces, "error": str(error)})
         for owner in self.items.published_at(library.id, old):
@@ -1162,6 +1169,8 @@ def validate_choices(*, title=None, edition=None, subject: Optional[SubjectRef] 
             raise ValueError("条目的来源和编号都不能为空")
         if sources is not None and subject.source not in sources:
             raise ValueError("没有这个数据源：{0}".format(subject.source))
+        if subject.source in NUMERIC_IDS and not (str(subject.id).isdigit() and int(subject.id) > 0):
+            raise ValueError("{0} 的条目编号要是正整数：{1}".format(LABELS.get(subject.source, subject.source), subject.id))
     for volume in volumes.values():
         parse_volume_text(volume)
 
@@ -1238,9 +1247,12 @@ def _reading_json(reading: Reading) -> dict:
             "reason": series.reason, "meets_threshold": False, "call_id": reading.call_id, "problem": reading.problem}
 
 
-def _suggestion_json(suggestion) -> dict:
-    return {key: getattr(suggestion, key) for key in
+def _suggestion_json(suggestion, source: str = "") -> dict:
+    data = {key: getattr(suggestion, key) for key in
             ("subject_id", "title", "edition", "confidence", "reason", "meets_threshold", "call_id", "problem")}
+    if source and suggestion.subject_id:
+        data["source"] = source  # which source the picked id belongs to
+    return data
 
 
 def _parsed_json(parse: ParseResult, reading: Optional[Reading]) -> dict:

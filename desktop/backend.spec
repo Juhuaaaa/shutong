@@ -3,6 +3,7 @@ from PyInstaller.utils.hooks import collect_submodules
 
 # libarchive is imported lazily and only on Windows; collecting it does not load its DLL.
 hidden = (collect_submodules("shutong") + collect_submodules("uvicorn") + collect_submodules("websockets")
+          + collect_submodules("send2trash")  # picks its macOS / Windows backend at run time
           + ["libarchive", "libarchive.ffi", "libarchive.read", "libarchive.entry", "libarchive.exception",
              "libarchive.extract", "libarchive.write"])
 

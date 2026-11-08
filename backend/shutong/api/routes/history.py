@@ -16,9 +16,13 @@ _KIND_ORDER = {"volume": 0, "range": 0, "chapter": 1, "special": 2}
 
 @router.get("/groups", response_model=HistoryPage)
 def groups(request: Request, library_id: Optional[int] = None, status: Optional[ItemStatus] = None,
-           q: Optional[str] = None, missing_metadata: bool = False, limit: int = 30, offset: int = 0) -> dict:
+           q: Optional[str] = None, missing_metadata: bool = False, ai_picked: bool = False,
+           source: Optional[str] = None, limit: int = 30, offset: int = 0) -> dict:
+    """``ai_picked`` and ``source`` find organized files worth a second look: the AI chose their entry among
+    several, or it came from a given metadata source."""
     found, total = ItemStore(request.app.state.db).group_page(
-        library_id, status=status, query=q, missing_metadata=missing_metadata, limit=min(max(limit, 1), 200), offset=max(offset, 0))
+        library_id, status=status, query=q, missing_metadata=missing_metadata, ai_picked=ai_picked,
+        source=source or None, limit=min(max(limit, 1), 200), offset=max(offset, 0))
     return {"groups": [group for group in found if group["group_key"] is not None], "total": total}
 
 

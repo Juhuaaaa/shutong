@@ -5,6 +5,7 @@ from .base import MetadataSource
 
 KNOWN_SOURCES = ("bangumi", "anilist")
 LABELS = {"bangumi": "Bangumi", "anilist": "AniList"}
+NUMERIC_IDS = frozenset({"bangumi", "anilist"})  # sources whose ids are positive whole numbers
 DEFAULT_ENABLED = ("bangumi",)
 
 

@@ -36,6 +36,26 @@ function api(groups: unknown[], extra: Record<string, unknown> = {}) {
 describe("ReviewView", () => {
   afterEach(() => vi.unstubAllGlobals());
 
+  it("adopts the AI's suggestions for every group shown that it would settle", async () => {
+    const { calls } = api([group(1, { adoptable: true }), group(2, { adoptable: false }), group(3, { adoptable: true })], {
+      "POST /api/review/adopt": { job_id: 5 },
+      "GET /api/jobs/5": { id: 5, kind: "adopt", state: "done", result: { groups: 2, executed: 4, needs_review: 0 } },
+    });
+    const { wrapper } = await mountView(ReviewView, "/review");
+    await vi.waitFor(() => expect(wrapper.find("[data-test=adopt-all]").exists()).toBe(true));
+    expect(wrapper.find("[data-test=adopt-all]").text()).toContain("2");
+    await wrapper.find("[data-test=adopt-all]").trigger("click");
+    await vi.waitFor(() => expect(calls.some((call) => call.path === "/api/review/adopt")).toBe(true));
+    expect(calls.find((call) => call.path === "/api/review/adopt")?.body).toEqual({ item_ids: [11, 12, 31, 32] });
+  });
+
+  it("offers no batch adoption when no group has a usable suggestion", async () => {
+    api([group(1, { adoptable: false })]);
+    const { wrapper } = await mountView(ReviewView, "/review");
+    await vi.waitFor(() => expect(wrapper.find("[data-test=detail]").exists()).toBe(true));
+    expect(wrapper.find("[data-test=adopt-all]").exists()).toBe(false);
+  });
+
   it("keeps a huge list cheap to render", async () => {
     api(Array.from({ length: 3000 }, (_, index) => group(index)));
     const { wrapper } = await mountView(ReviewView, "/review");
@@ -67,6 +87,16 @@ describe("ReviewView", () => {
     await vi.waitFor(() => expect(calls.some((call) => call.path === "/api/review/confirm")).toBe(true));
     expect(calls.find((call) => call.path === "/api/review/confirm")?.body)
       .toMatchObject({ subject: { source: "anilist", id: "30002" } });
+  });
+
+  it("says which source the AI's pick comes from, and adopts it from there", async () => {
+    api([group(1, { ai_suggestion: { title: "Berserk", edition: null, subject_id: "30002", source: "anilist",
+      confidence: 0.6, reason: "原名一致", problem: null } })]);
+    const { wrapper } = await mountView(ReviewView, "/review");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("AniList 30002"));
+    const adopt = wrapper.findAll("button").find((button) => button.text() === "采纳建议");
+    await adopt!.trigger("click");
+    expect(wrapper.find("[data-test=subject]").text()).toContain("AniList");
   });
 
   it("fills the entry id from a candidate", async () => {

@@ -17,6 +17,7 @@ interface AiSuggestion {
   title: string | null;
   edition: string | null;
   subject_id: string | number | null;
+  source?: string;
   confidence: number;
   reason: string;
   problem: string | null;
@@ -54,6 +55,12 @@ const typedVolumes = computed(() => Object.fromEntries(Object.entries(volumes.va
   .filter(([id, value]) => value.trim() && (allTicked.value || ticked.value.has(Number(id))))));
 const badVolume = computed(() => Object.values(typedVolumes.value).some((value) => !isVolumeText(value, props.kind)));
 const hasChoice = computed(() => !noneTicked.value && Boolean(form.title.trim() || form.subject || Object.keys(typedVolumes.value).length));
+/** The AI's pick as "AniList 30002"; older suggestions do not say their source. */
+const suggested = computed(() => {
+  const id = suggestion.value?.subject_id;
+  if (!id) return "—";
+  return suggestion.value?.source ? `${sourceLabel(suggestion.value.source)} ${id}` : String(id);
+});
 const badSubject = computed(() => Boolean(subjectText.value.trim()) && !form.subject);
 /** The works the AI read in this folder, when it read more than one. */
 const works = computed(() => {
@@ -159,7 +166,8 @@ function adopt() {
   const id = suggestion.value.subject_id;
   if (id) {
     // The AI picks among the candidates it was shown: the review lists them, its pick first.
-    const ref = props.group.candidates.find((entry) => entry.id === String(id)) ?? { source: source.value, id: String(id) };
+    const ref = suggestion.value.source ? { source: suggestion.value.source, id: String(id) }
+      : props.group.candidates.find((entry) => entry.id === String(id)) ?? { source: source.value, id: String(id) };
     choose(ref);
   }
 }
@@ -254,9 +262,9 @@ function skipMetadata() {
       <template v-if="suggestion.problem">{{ t("review.aiProblem", { problem: suggestion.problem }) }}</template>
       <template v-else>
         {{ isNovel
-          ? t("review.aiSuggestsNovel", { title: suggestion.title ?? "—", subject: suggestion.subject_id ?? "—", confidence: suggestion.confidence.toFixed(2) })
+          ? t("review.aiSuggestsNovel", { title: suggestion.title ?? "—", subject: suggested, confidence: suggestion.confidence.toFixed(2) })
           : t("review.aiSuggests", { title: suggestion.title ?? "—", edition: suggestion.edition ?? t("review.noEdition"),
-              subject: suggestion.subject_id ?? "—", confidence: suggestion.confidence.toFixed(2) }) }}
+              subject: suggested, confidence: suggestion.confidence.toFixed(2) }) }}
         <div class="reason">{{ suggestion.reason }}</div>
         <VBtn size="small" variant="tonal" class="mt-2" @click="adopt">{{ t("review.adopt") }}</VBtn>
       </template>

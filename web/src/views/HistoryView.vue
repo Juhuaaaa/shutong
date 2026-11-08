@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { sourceLabel } from "@/composables/volume";
 import { mdiChevronLeft, mdiChevronRight, mdiMagnify } from "@mdi/js";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -31,7 +32,10 @@ const openItem = computed(() => (route.query.item ? Number(route.query.item) : n
 
 const statusOptions = computed(() => [{ title: t("history.allStatuses"), value: "" },
   ...STATUSES.map((value) => ({ title: t(`status.${value}`), value })),
-  { title: t("status.missing_metadata"), value: "missing_metadata" }]);
+  { title: t("status.missing_metadata"), value: "missing_metadata" },
+  // For spot checks: the entries the AI chose among several, and those from each metadata source.
+  { title: t("history.aiPicked"), value: "ai_picked" },
+  ...["bangumi", "anilist"].map((name) => ({ title: t("history.fromSource", { source: sourceLabel(name) }), value: `source:${name}` }))]);
 
 function setQuery(changes: Record<string, string | undefined>) {
   const next: Record<string, string> = {};
@@ -45,8 +49,11 @@ async function load() {
   loading.value = true;
   try {
     const missing = status.value === "missing_metadata";
-    const result = await historyApi.groups({ status: missing ? undefined : status.value || undefined,
-      missing_metadata: missing || undefined,
+    const aiPicked = status.value === "ai_picked";
+    const source = status.value.startsWith("source:") ? status.value.slice("source:".length) : undefined;
+    const special = missing || aiPicked || source !== undefined;
+    const result = await historyApi.groups({ status: special ? undefined : status.value || undefined,
+      missing_metadata: missing || undefined, ai_picked: aiPicked || undefined, source,
       q: query.value || undefined, limit: PAGE, offset: (page.value - 1) * PAGE });
     groups.value = result.groups;
     total.value = result.total;

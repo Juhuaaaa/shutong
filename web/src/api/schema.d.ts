@@ -187,7 +187,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Groups */
+        /**
+         * Groups
+         * @description ``ai_picked`` and ``source`` find organized files worth a second look: the AI chose their entry among
+         *     several, or it came from a given metadata source.
+         */
         get: operations["groups_api_history_groups_get"];
         put?: never;
         post?: never;
@@ -730,6 +734,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/review/adopt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Adopt
+         * @description Confirm what the AI suggested for every group the given items belong to, where that settles the group.
+         */
+        post: operations["adopt_api_review_adopt_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/review/confirm": {
         parameters: {
             query?: never;
@@ -899,6 +923,11 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** Adopt */
+        Adopt: {
+            /** Item Ids */
+            item_ids: number[];
+        };
         /** AiCallOut */
         AiCallOut: {
             /** Adopted */
@@ -1465,6 +1494,11 @@ export interface components {
         };
         /** ReviewGroup */
         ReviewGroup: {
+            /**
+             * Adoptable
+             * @default false
+             */
+            adoptable: boolean;
             /** Ai Suggestion */
             ai_suggestion: {
                 [key: string]: unknown;
@@ -2020,6 +2054,8 @@ export interface operations {
                 status?: components["schemas"]["ItemStatus"] | null;
                 q?: string | null;
                 missing_metadata?: boolean;
+                ai_picked?: boolean;
+                source?: string | null;
                 limit?: number;
                 offset?: number;
             };
@@ -3050,6 +3086,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SubjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    adopt_api_review_adopt_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Adopt"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobRef"];
                 };
             };
             /** @description Validation Error */

@@ -18,7 +18,7 @@ from shutong.labels import COUNTS, HIDDEN_COUNTS
 _KEEP = 200  # finished jobs remembered for the job list
 _PUSH_EVERY = 1.0  # seconds between progress pushes; a scan reports after every file
 _LABELS = {"scan": "扫描", "execute": "执行", "confirm": "复核确认", "reorganize": "重新整理", "retry": "重试",
-           "reidentify": "重新识别"}
+           "reidentify": "重新识别", "adopt": "采纳 AI 建议"}
 log = logging.getLogger("shutong.jobs")
 
 

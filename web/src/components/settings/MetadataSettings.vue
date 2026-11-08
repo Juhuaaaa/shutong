@@ -10,7 +10,8 @@ import { useSettingsForm } from "@/composables/useSettingsForm";
 import SecretField from "./SecretField.vue";
 
 const { t, te } = useI18n();
-const form = useSettingsForm(["metadata.sources", "bangumi.base_url", "bangumi.token"]);
+const form = useSettingsForm(["metadata.sources", "metadata.translate_summaries", "bangumi.base_url", "bangumi.token"]);
+const translate = form.field<boolean>("metadata.translate_summaries");
 const baseUrl = form.field<string>("bangumi.base_url");
 const token = form.field<string>("bangumi.token");
 const enabledNames = form.field<string[]>("metadata.sources");
@@ -21,12 +22,8 @@ const onCount = computed(() => sources.value.filter((source) => source.enabled).
 
 async function load() {
   await form.load();
-  const known = await metadata.sources();
-  const on = (enabledNames.value ?? []).filter((name) => known.some((source) => source.name === name));
-  sources.value = [
-    ...on.map((name) => ({ ...known.find((source) => source.name === name)!, enabled: true })),
-    ...known.filter((source) => !on.includes(source.name)).map((source) => ({ ...source, enabled: false })),
-  ];
+  // What the server really asks, in its order: a stored name it no longer knows is not shown as switched on.
+  sources.value = await metadata.sources();
 }
 onMounted(() => load().catch((error: ApiError) => notify.error(error.detail)));
 
@@ -107,6 +104,8 @@ async function clear(key: string) {
           :aria-label="t('settings.moveDown')" :data-test="`source-down-${source.name}`" @click="move(index, 1)" />
       </div>
     </div>
+    <VSwitch v-model="translate" :label="t('settings.translateSummaries')" :hint="t('settings.translateSummariesHint')"
+      persistent-hint class="mt-2" data-test="translate-summaries" />
     <div class="text-subtitle-2 mt-4">Bangumi</div>
     <VTextField v-model="baseUrl" :label="t('settings.bangumiUrl')" />
     <SecretField v-model="token" :label="t('settings.bangumiToken')"

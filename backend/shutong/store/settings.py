@@ -10,6 +10,7 @@ DEFAULTS: Dict[str, Any] = {
     "bangumi.base_url": "https://api.bgm.tv",
     "bangumi.token": None,
     "metadata.sources": ["bangumi"],
+    "metadata.translate_summaries": True,
     "network.proxy": "",
     "ai.base_url": "",
     "ai.api_key": "",

@@ -173,6 +173,7 @@ describe("HistoryView", () => {
     await vi.waitFor(() => expect(document.querySelector("[data-test=reorganize]")).not.toBeNull());
     (document.querySelector("[data-test=reorganize]") as HTMLElement).click();
     await vi.waitFor(() => expect(document.querySelector("[data-test=reorganize-submit]")).not.toBeNull());
+    expect(document.querySelector("[data-test=reorganize-note]")?.textContent).toContain("不可恢复");
     (document.querySelector("[data-test=reorganize-submit]") as HTMLElement).click();
     await vi.waitFor(() => expect(notifyState.queue.map((entry) => entry.text).join()).toContain("来源文件已不在原处，未重新整理"));
     wrapper.unmount();
@@ -219,6 +220,21 @@ describe("HistoryView", () => {
     const params = calls.filter((call) => call.path === "/api/history/groups")[1].url.searchParams;
     expect(params.get("missing_metadata")).toBe("true");
     expect(params.has("status")).toBe(false);
+  });
+
+  it("filters what deserves a second look: the AI's picks, or one source's entries", async () => {
+    const { calls } = api();
+    const { wrapper, router } = await mountView(HistoryView, "/history");
+    await vi.waitFor(() => expect(calls.some((call) => call.path === "/api/history/groups")).toBe(true));
+    expect(wrapper.text()).not.toContain("undefined");
+    await router.replace({ query: { status: "ai_picked" } });
+    await vi.waitFor(() => expect(calls.filter((call) => call.path === "/api/history/groups").length).toBe(2));
+    let params = calls.filter((call) => call.path === "/api/history/groups")[1].url.searchParams;
+    expect([params.get("ai_picked"), params.has("status")]).toEqual(["true", false]);
+    await router.replace({ query: { status: "source:anilist" } });
+    await vi.waitFor(() => expect(calls.filter((call) => call.path === "/api/history/groups").length).toBe(3));
+    params = calls.filter((call) => call.path === "/api/history/groups")[2].url.searchParams;
+    expect([params.get("source"), params.has("status")]).toEqual(["anilist", false]);
   });
 
   it("fills in metadata by hand for the organized volumes of a folder", async () => {

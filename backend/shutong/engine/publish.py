@@ -9,6 +9,7 @@ from typing import Callable
 
 from shutong.store.journal import JournalStore
 
+from .discard import discard, trash_enabled
 from .fingerprint import sha256_file
 
 STATE_DIR = ".shutong"
@@ -134,6 +135,8 @@ class Publisher:
             self.journal.mark_staged(item_id, digest, size)
             if overwrite:
                 final.parent.mkdir(parents=True, exist_ok=True)
+                if trash_enabled():
+                    discard(final)  # the replaced file goes to the trash on the desktop
                 os.replace(staged, final)
                 method = "replace"
             else:

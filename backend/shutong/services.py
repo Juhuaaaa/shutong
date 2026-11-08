@@ -19,6 +19,7 @@ from shutong.store.settings import SettingsStore
 @dataclass(frozen=True)
 class EngineConfig:
     ai_threshold: float = 0.85
+    translate_summaries: bool = False  # English (AniList) summaries in Chinese, by the AI
 
 
 @dataclass
@@ -61,5 +62,6 @@ def build_services(db: Database, *, opener=None, sleep=time.sleep) -> Services:
             opener=ai_opener,
         )
         ai = AuditedAi(provider, AiCallStore(db))
-    config = EngineConfig(ai_threshold=settings.get("ai.threshold"))
+    config = EngineConfig(ai_threshold=settings.get("ai.threshold"),
+                          translate_summaries=bool(settings.get("metadata.translate_summaries")))
     return Services(db, sources, ai, config)

@@ -38,6 +38,35 @@ describe("LibraryCard", () => {
     expect((wrapper.find("[data-test=library-dir] input").element as HTMLInputElement).value).toBe("/选的");
   });
 
+  it("asks before a setting that deletes files for good", async () => {
+    vi.mocked(ask).mockClear();
+    vi.mocked(ask).mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+    fakeApi({});
+    const wrapper = card();
+    await flush();
+    const overwrite = wrapper.findComponent("[data-test=overwrite]") as unknown as { vm: { $emit: (n: string, v: string) => void } };
+    overwrite.vm.$emit("update:modelValue", "always");
+    await flush();
+    expect(vi.mocked(ask).mock.calls[0][1]).toContain("不可恢复");
+    expect((wrapper.findComponent("[data-test=overwrite]") as unknown as { props: () => { modelValue: string } }).props().modelValue).toBe("never");
+    overwrite.vm.$emit("update:modelValue", "larger");
+    await flush();
+    expect((wrapper.findComponent("[data-test=overwrite]") as unknown as { props: () => { modelValue: string } }).props().modelValue).toBe("larger");
+  });
+
+  it("in the desktop app, replaced files go to the trash, so nothing to ask", async () => {
+    vi.mocked(ask).mockClear();
+    fakeApi({});
+    const wrapper = card();
+    useAuth().desktop = true;
+    await flush();
+    const overwrite = wrapper.findComponent("[data-test=overwrite]") as unknown as { vm: { $emit: (n: string, v: string) => void } };
+    overwrite.vm.$emit("update:modelValue", "always");
+    await flush();
+    expect(vi.mocked(ask)).not.toHaveBeenCalled();
+    expect(wrapper.text()).toContain("回收站");
+  });
+
   it("in the desktop app, opens the library folder instead of scanning", async () => {
     const openPath = vi.fn();
     vi.stubGlobal("shutong", { openPath });
