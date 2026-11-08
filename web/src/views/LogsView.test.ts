@@ -12,7 +12,7 @@ describe("LogsView", () => {
     const lines = [entry(1, "INFO", "开始任务：扫描 #1"), entry(2, "ERROR", "失败：迷宫饭 Vol.01.zip")];
     let release: (() => void) | null = null;
     fakeApi({
-      "GET /api/libraries": [],
+      "GET /api/libraries": [{ id: 1, name: "漫画", kind: "manga" }], "GET /api/libraries/1/summary": { counts: {} },
       "GET /api/settings": { "log.level": "INFO" },
       "GET /api/logs": async (_: unknown, url: URL) => {
         const level = url.searchParams.get("level");
@@ -39,7 +39,7 @@ describe("LogsView", () => {
     let batch = [entry(1, "INFO", "开始任务：扫描 #1"), entry(2, "ERROR", "失败：迷宫饭 Vol.01.zip")];
     const levels: (string | null)[] = [];
     fakeApi({
-      "GET /api/libraries": [],
+      "GET /api/libraries": [{ id: 1, name: "漫画", kind: "manga" }], "GET /api/libraries/1/summary": { counts: {} },
       "GET /api/settings": { "log.level": "INFO" },
       "GET /api/logs": (_: unknown, url: URL) => {
         const after = Number(url.searchParams.get("after") ?? 0);

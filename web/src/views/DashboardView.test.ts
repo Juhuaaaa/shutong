@@ -23,7 +23,7 @@ describe("DashboardView in the desktop app", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it("says to drop files and offers no scanning", async () => {
-    fakeApi({ "GET /api/dashboard": data, "GET /api/libraries": [] });
+    fakeApi({ "GET /api/dashboard": data, "GET /api/libraries": [{ id: 1, name: "漫画", kind: "manga" }], "GET /api/libraries/1/summary": { counts: {} } });
     const { wrapper, pinia } = await mountView(DashboardView, "/");
     useAuth(pinia).desktop = true;
     await vi.waitFor(() => expect(wrapper.find("[data-test=drop-hint]").exists()).toBe(true));
@@ -36,7 +36,7 @@ describe("DashboardView", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it("shows the numbers of each library", async () => {
-    fakeApi({ "GET /api/dashboard": data, "GET /api/libraries": [] });
+    fakeApi({ "GET /api/dashboard": data, "GET /api/libraries": [{ id: 1, name: "漫画", kind: "manga" }], "GET /api/libraries/1/summary": { counts: {} } });
     const { wrapper } = await mountView(DashboardView, "/");
     await vi.waitFor(() => expect(wrapper.find("[data-test=library-stats]").exists()).toBe(true));
     const [manga, novel] = wrapper.findAll("[data-test=library-stats]");
@@ -49,7 +49,7 @@ describe("DashboardView", () => {
   });
 
   it("links recent folders to their history", async () => {
-    fakeApi({ "GET /api/dashboard": data, "GET /api/libraries": [] });
+    fakeApi({ "GET /api/dashboard": data, "GET /api/libraries": [{ id: 1, name: "漫画", kind: "manga" }], "GET /api/libraries/1/summary": { counts: {} } });
     const { wrapper, router } = await mountView(DashboardView, "/");
     await vi.waitFor(() => expect(wrapper.find("[data-test=recent]").exists()).toBe(true));
     const recent = wrapper.find("[data-test=recent]");
@@ -63,7 +63,7 @@ describe("DashboardView", () => {
 
   it("scans a library from the quick actions", async () => {
     const { calls } = fakeApi({
-      "GET /api/dashboard": data, "GET /api/libraries": [],
+      "GET /api/dashboard": data, "GET /api/libraries": [{ id: 1, name: "漫画", kind: "manga" }], "GET /api/libraries/1/summary": { counts: {} },
       "POST /api/libraries/1/scan": { job_id: 7 },
       "GET /api/jobs/7": { id: 7, kind: "scan", state: "done", result: { counts: { planned: 2 } } },
     });
@@ -74,7 +74,7 @@ describe("DashboardView", () => {
   });
 
   it("shows the error instead of an empty page", async () => {
-    fakeApi({ "GET /api/dashboard": status(500, "数据库坏了"), "GET /api/libraries": [] });
+    fakeApi({ "GET /api/dashboard": status(500, "数据库坏了"), "GET /api/libraries": [{ id: 1, name: "漫画", kind: "manga" }], "GET /api/libraries/1/summary": { counts: {} } });
     const { wrapper } = await mountView(DashboardView, "/");
     await vi.waitFor(() => expect(wrapper.text()).toContain("数据库坏了"));
   });

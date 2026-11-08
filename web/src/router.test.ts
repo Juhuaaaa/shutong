@@ -39,11 +39,19 @@ describe("router guard", () => {
     expect(router.currentRoute.value.name).toBe("dashboard");
   });
 
-  it("does not send a library-less web version to the welcome page", async () => {
+  it("opens the web version on the welcome page too until it has a library, and keeps its upload page", async () => {
     fakeApi({ "GET /api/auth/status": { configured: true, logged_in: true, desktop: false }, "GET /api/libraries": [] });
     const router = createAppRouter(createMemoryHistory());
     await router.push("/");
-    expect(router.currentRoute.value.name).toBe("dashboard");
+    expect(router.currentRoute.value.name).toBe("welcome");
+  });
+
+  it("lets the web version with a library use its upload page", async () => {
+    fakeApi({ "GET /api/auth/status": { configured: true, logged_in: true, desktop: false },
+      "GET /api/libraries": [{ id: 1 }], "GET /api/libraries/1/summary": { counts: {} } });
+    const router = createAppRouter(createMemoryHistory());
+    await router.push("/upload");
+    expect(router.currentRoute.value.name).toBe("upload");
   });
 
   it("sends old per-library review and history links to the merged pages", async () => {

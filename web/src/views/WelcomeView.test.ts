@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { mountView } from "@/test-mount";
 import { fakeApi, flush, status } from "@/test-utils";
+import { useAuth } from "@/stores/auth";
 import WelcomeView from "./WelcomeView.vue";
 
 const settings = { "GET /api/settings": {}, "GET /api/ai/calls": [] };
@@ -14,7 +15,9 @@ function stubBridge() {
 
 async function open(routes: Record<string, unknown>) {
   const api = fakeApi({ ...settings, ...routes });
-  const { wrapper, router } = await mountView(WelcomeView, "/welcome");
+  const { wrapper, router, pinia } = await mountView(WelcomeView, "/welcome");
+  // The desktop app is the one with the bridge (stubBridge); without it this is the web version on a server.
+  useAuth(pinia).desktop = "shutong" in window;
   await flush();
   return { api, wrapper, router };
 }
@@ -33,6 +36,40 @@ describe("WelcomeView", () => {
       expect.objectContaining({ kind: "novel", source_dir: "", source_policy: "keep", library_dir: "/文档/书童库/novel" }),
     ]);
     expect(wrapper.find("[data-test=step-ai]").exists()).toBe(true);
+  });
+
+  it("on a server, asks for the folders as the container sees them, and leaves out a library not wanted", async () => {
+    const { api, wrapper } = await open({ "GET /api/libraries": [], "POST /api/libraries": { id: 1 },
+      "GET /api/libraries/1/summary": { counts: {} } });
+    expect(wrapper.find("[data-test=dir-manga]").exists()).toBe(false);  // the desktop's folder pickers
+    expect(wrapper.find("[data-test=next-libraries]").attributes("disabled")).toBeDefined();
+    await wrapper.find("[data-test=source-manga] input").setValue("/data/下载/漫画");
+    await wrapper.find("[data-test=library-manga] input").setValue("/data/书库/漫画");
+    await wrapper.find("[data-test=want-novel] input").setValue(false);
+    expect(wrapper.find("[data-test=source-novel]").exists()).toBe(false);
+    await wrapper.find("[data-test=next-libraries]").trigger("click");
+    await flush();
+    const created = api.calls.filter((call) => call.method === "POST" && call.path === "/api/libraries").map((call) => call.body);
+    expect(created).toEqual([expect.objectContaining({ kind: "manga", source_dir: "/data/下载/漫画",
+      library_dir: "/data/书库/漫画", source_policy: "keep" })]);
+    expect(wrapper.find("[data-test=step-ai]").exists()).toBe(true);
+  });
+
+  it("on a server, ends with how files come in there", async () => {
+    const { wrapper } = await open({ "GET /api/libraries": [], "POST /api/libraries": { id: 1 },
+      "GET /api/libraries/1/summary": { counts: {} }, "GET /api/metadata/sources": [{ name: "bangumi", label: "Bangumi", enabled: true }] });
+    for (const kind of ["manga", "novel"]) {
+      await wrapper.find(`[data-test=source-${kind}] input`).setValue(`/data/下载/${kind}`);
+      await wrapper.find(`[data-test=library-${kind}] input`).setValue(`/data/书库/${kind}`);
+    }
+    await wrapper.find("[data-test=next-libraries]").trigger("click");
+    await flush();
+    await wrapper.find("[data-test=later-ai]").trigger("click");
+    await flush();
+    await wrapper.find("[data-test=next-bangumi]").trigger("click");
+    await flush();
+    expect(wrapper.find("[data-test=step-done]").text()).toContain("扫描");
+    expect(wrapper.find("[data-test=step-done]").text()).not.toContain("拖进窗口");
   });
 
   async function atAiStep(routes: Record<string, unknown>) {
@@ -94,7 +131,10 @@ describe("WelcomeView", () => {
 
   it("tells what is sent to the AI, and AI can wait", async () => {
     stubBridge();
-    const { wrapper, router } = await open({ "GET /api/libraries": [], "POST /api/libraries": { id: 1 }, "GET /api/libraries/1/summary": { counts: {} } });
+    const created: object[] = [];  // the library list once one was made, as the server would answer
+    const { wrapper, router } = await open({ "GET /api/libraries": () => created,
+      "POST /api/libraries": (body: object) => { created.push({ id: 1, ...body }); return { id: 1 }; },
+      "GET /api/libraries/1/summary": { counts: {} } });
     await wrapper.find("[data-test=next-libraries]").trigger("click");
     await flush();
     expect(wrapper.find("[data-test=privacy]").text()).toContain("文件名");
