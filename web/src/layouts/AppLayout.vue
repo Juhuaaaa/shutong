@@ -13,6 +13,8 @@ import DropOverlay from "@/components/DropOverlay.vue";
 import JobIndicator from "@/components/JobIndicator.vue";
 import OriginalsPrompt from "@/components/OriginalsPrompt.vue";
 import UpdateBanner from "@/components/UpdateBanner.vue";
+import { bridge } from "@/composables/desktop";
+import { isNewer, latestRelease, type Release } from "@/composables/update";
 import { useThemeMode } from "@/composables/themeMode";
 import { useAuth } from "@/stores/auth";
 import { useJobs } from "@/stores/jobs";
@@ -56,6 +58,33 @@ async function logout() {
   await auth.logout();
   await router.push("/login");
 }
+
+/** A newer release than this one: the desktop app hears of it from its own check, a server's page asks GitHub. */
+const latest = ref<Release | null>(null);
+const update = computed(() => (latest.value && auth.version && isNewer(latest.value.version, auth.version) ? latest.value : null));
+
+function localStore(): Storage | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+watch(() => [auth.version, auth.desktop] as const, ([version, desktop]) => {
+  if (!version || latest.value) return;
+  const desktopBridge = desktop ? bridge() : null;
+  if (desktopBridge) desktopBridge.onUpdate((found) => (latest.value = found));
+  else void latestRelease(window.fetch.bind(window), localStore()).then((found) => (latest.value = found));
+}, { immediate: true });
+
+function openUpdate(event: MouseEvent) {
+  const desktopBridge = auth.desktop ? bridge() : null;
+  if (desktopBridge && update.value) {
+    event.preventDefault(); // the desktop window opens links in the browser through the bridge
+    desktopBridge.openExternal(update.value.url);
+  }
+}
 </script>
 
 <template>
@@ -83,6 +112,15 @@ async function logout() {
         </VListItem>
       </template>
     </VList>
+    <template #append>
+      <div class="nav-foot">
+        <span class="st-muted text-caption" data-test="app-version">{{ t("nav.version", { version: auth.version }) }}</span>
+        <a v-if="update" :href="update.url" target="_blank" rel="noopener noreferrer" class="update text-caption"
+          data-test="app-update" @click="openUpdate">
+          {{ t("nav.newVersion", { version: update.version }) }}
+        </a>
+      </div>
+    </template>
   </VNavigationDrawer>
 
   <VAppBar flat height="64" class="bar">
@@ -108,6 +146,9 @@ async function logout() {
 </template>
 
 <style scoped>
+.nav-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 24px 16px; }
+.nav-foot .update { color: rgb(var(--v-theme-primary)); font-weight: 600; text-decoration: none; }
+.nav-foot .update:hover { text-decoration: underline; }
 .nav { background: rgb(var(--v-theme-surface)); box-shadow: var(--st-shadow); }
 .brand { display: flex; align-items: center; gap: 12px; padding: 20px 20px 12px; }
 .brand-name { font-size: 18px; font-weight: 700; }

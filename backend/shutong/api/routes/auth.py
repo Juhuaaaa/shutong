@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel
 
+from shutong import __version__
 from shutong.api.auth import COOKIE, SESSION_SECONDS
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -19,6 +20,7 @@ class AuthStatus(BaseModel):
     configured: bool
     logged_in: bool
     desktop: bool = False
+    version: str = __version__
 
 
 class Ok(BaseModel):

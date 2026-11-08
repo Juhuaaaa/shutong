@@ -444,6 +444,8 @@ const en: typeof zhCN = {
     tagline: "Manga and light novels",
     settings: "Settings",
     logs: "Logs",
+    version: "Version {version}",
+    newVersion: "New: {version} ›",
     logout: "Log out",
     menu: "Menu",
   },
