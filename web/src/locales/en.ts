@@ -290,7 +290,6 @@ const en: typeof zhCN = {
     serverKind: "Type",
     serverEmail: "Email",
     serverKomgaTip: "By default Komga adds the volume number to the series name, showing \"Title (3)\". Turn off \"Append volume to series title\" in the Komga library settings.",
-    serverDefaultName: "Home",
     serverUrl: "Address",
     serverUser: "Username",
     serverPassword: "Password",

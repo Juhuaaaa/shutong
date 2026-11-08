@@ -199,6 +199,6 @@ describe("SettingsView", () => {
     expect(document.body.textContent).toContain("邮箱");
     (document.querySelector("[data-test=server-save]") as HTMLElement).click();
     await vi.waitFor(() => expect(calls.some((call) => call.method === "POST")).toBe(true));
-    expect(calls.find((call) => call.method === "POST")?.body).toMatchObject({ kind: "komga" });
+    expect(calls.find((call) => call.method === "POST")?.body).toMatchObject({ kind: "komga", name: "komga" });
   });
 });

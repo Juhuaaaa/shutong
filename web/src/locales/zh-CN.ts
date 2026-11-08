@@ -288,7 +288,6 @@ export default {
     serverKind: "类型",
     serverEmail: "邮箱",
     serverKomgaTip: "Komga 默认会把卷号拼进系列名，显示成「书名 (3)」。建议在 Komga 的库设置里关掉「在系列标题中添加卷号」。",
-    serverDefaultName: "家里",
     serverUrl: "地址",
     serverUser: "用户名",
     serverPassword: "密码",
