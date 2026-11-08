@@ -151,6 +151,10 @@ export const metadata = {
     request<Subject>("GET", `/api/metadata/subjects/${encodeURIComponent(ref.source)}/${encodeURIComponent(ref.id)}`),
 };
 
+export const folders = {
+  list: (path: string) => request<S["FolderList"]>("GET", "/api/folders", { query: { path } }),
+};
+
 export const settings = {
   get: () => request<Settings>("GET", "/api/settings"),
   update: (changes: Settings) => request<Settings>("PATCH", "/api/settings", { body: changes }),

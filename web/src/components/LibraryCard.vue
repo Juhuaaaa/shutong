@@ -6,6 +6,7 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { items, libraries as api, servers as serverApi, type Library, type LibraryPatch, type Run, type Server } from "@/api";
 import { ApiError } from "@/api/client";
+import PathField from "./PathField.vue";
 import { ask } from "@/composables/confirm";
 import { shortTime } from "@/composables/format";
 import { bridge } from "@/composables/desktop";
@@ -246,11 +247,12 @@ function cancel() {
             <VTextField v-model="form.name" :label="t('library.name')" data-test="name" />
             <VSelect v-if="!library" v-model="form.kind" :label="t('library.kind')"
               :items="[{ title: t('library.manga'), value: 'manga' }, { title: t('library.novel'), value: 'novel' }]" />
-            <VTextField v-if="!auth.desktop" v-model="form.source_dir" :label="t('library.sourceDir')" placeholder="/media/downloads/manga"
-              :hint="t('library.sourceDirHint')" persistent-hint data-test="source-dir" />
-            <VTextField v-model="form.library_dir" :label="t('library.libraryDir')" placeholder="/media/manga"
-              data-test="library-dir" :append-inner-icon="auth.desktop ? mdiFolderOpenOutline : undefined"
-              @click:append-inner="pickLibraryDir" />
+            <PathField v-if="!auth.desktop" v-model="form.source_dir" :label="t('library.sourceDir')" placeholder="/media/downloads/manga"
+              :hint="t('library.sourceDirHint')" data-test="source-dir" />
+            <VTextField v-if="auth.desktop" v-model="form.library_dir" :label="t('library.libraryDir')" placeholder="/media/manga"
+              data-test="library-dir" :append-inner-icon="mdiFolderOpenOutline" @click:append-inner="pickLibraryDir" />
+            <PathField v-else v-model="form.library_dir" :label="t('library.libraryDir')" placeholder="/media/manga"
+              data-test="library-dir" />
           </div>
         </section>
         <section>
@@ -260,7 +262,7 @@ function cancel() {
               data-test="policy" @update:model-value="pickPolicy" />
             <VSelect :model-value="form.overwrite_policy" :label="t('library.overwriteLabel')" :items="overwrites"
               :hint="overwriteHint" persistent-hint data-test="overwrite" @update:model-value="pickOverwrite" />
-            <VTextField v-if="form.source_policy === 'archive' && !auth.desktop" v-model="form.archive_dir" :label="t('library.archiveDir')"
+            <PathField v-if="form.source_policy === 'archive' && !auth.desktop" v-model="form.archive_dir" :label="t('library.archiveDir')"
               :error-messages="archiveMissing ? t('library.archiveMissing') : undefined" />
           </div>
           <div class="grid switches">

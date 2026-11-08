@@ -55,6 +55,21 @@ describe("WelcomeView", () => {
     expect(wrapper.find("[data-test=step-ai]").exists()).toBe(true);
   });
 
+  it("on a server, skips making libraries and remembers it", async () => {
+    const { api, wrapper } = await open({ "GET /api/libraries": [], "PATCH /api/settings": {} });
+    await wrapper.find("[data-test=skip-libraries]").trigger("click");
+    await flush();
+    expect(api.calls.find((call) => call.method === "PATCH")?.body).toEqual({ "welcome.done": true });
+    expect(api.calls.some((call) => call.method === "POST")).toBe(false);
+    expect(wrapper.find("[data-test=step-ai]").exists()).toBe(true);
+  });
+
+  it("has no skip in the desktop app, which needs its libraries", async () => {
+    stubBridge();
+    const { wrapper } = await open({ "GET /api/libraries": [] });
+    expect(wrapper.find("[data-test=skip-libraries]").exists()).toBe(false);
+  });
+
   it("on a server, ends with how files come in there", async () => {
     const { wrapper } = await open({ "GET /api/libraries": [], "POST /api/libraries": { id: 1 },
       "GET /api/libraries/1/summary": { counts: {} }, "GET /api/metadata/sources": [{ name: "bangumi", label: "Bangumi", enabled: true }] });

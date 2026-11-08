@@ -180,6 +180,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/folders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Folders
+         * @description The folders directly in ``path``, by name; no files, nothing hidden. Only ever lists, never changes anything.
+         */
+        get: operations["folders_api_folders_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/history/groups": {
         parameters: {
             query?: never;
@@ -1057,6 +1077,15 @@ export interface components {
             };
             /** Kind */
             kind: string;
+        };
+        /** FolderList */
+        FolderList: {
+            /** Folders */
+            folders: string[];
+            /** Parent */
+            parent: string | null;
+            /** Path */
+            path: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -2041,6 +2070,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TrashedOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    folders_api_folders_get: {
+        parameters: {
+            query?: {
+                path?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FolderList"];
                 };
             };
             /** @description Validation Error */

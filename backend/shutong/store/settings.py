@@ -19,6 +19,7 @@ DEFAULTS: Dict[str, Any] = {
     "ai.threshold": 0.85,
     "ai.use_proxy": False,
     "log.level": "INFO",
+    "welcome.done": False,  # the first-run wizard was finished or skipped: a server without libraries stays out of it
 }
 
 _UNSET = object()
