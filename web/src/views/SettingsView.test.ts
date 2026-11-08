@@ -21,7 +21,8 @@ function api(extra: Record<string, unknown> = {}) {
 }
 
 function input(selector: string) {
-  return document.querySelector(`[data-test=${selector}] input`) as HTMLInputElement;
+  // A combobox carries a hidden input too: the one typed into is the visible one.
+  return document.querySelector(`[data-test=${selector}] input:not([type=hidden])`) as HTMLInputElement;
 }
 
 async function type(selector: string, value: string) {
@@ -96,6 +97,20 @@ describe("SettingsView", () => {
     (document.querySelector("[data-test=save-metadata]") as HTMLElement).click();
     await vi.waitFor(() => expect(calls.some((call) => call.method === "PATCH")).toBe(true));
     expect(calls.find((call) => call.method === "PATCH")?.body).toEqual({ "bangumi.image_base_url": "https://img.mirror.example" });
+  });
+
+  it("offers the official Bangumi addresses and known mirrors, and names the personal token", async () => {
+    api({ "GET /api/settings": { ...settings, "metadata.sources": ["bangumi"] } });
+    const { wrapper } = await mountView(SettingsView, "/settings/metadata");
+    await vi.waitFor(() => expect(input("bangumi-url")).not.toBeNull());
+    expect(document.body.textContent).toContain("个人令牌");
+    expect(document.body.textContent).not.toContain("Access Token");
+    expect(document.querySelector("[data-test=bangumi-token-link]")?.getAttribute("href")).toBe("https://next.bgm.tv/demo/access-token");
+    // The lists only render when opened: read what each field offers.
+    const offered = (selector: string) => (wrapper.findComponent(`[data-test=${selector}]`) as unknown as
+      { props: (name: string) => string[] }).props("items");
+    expect(offered("bangumi-url")).toEqual(["https://api.bgm.tv", "https://bgmapi.anibt.net"]);
+    expect(offered("bangumi-image-url")).toEqual(["https://lain.bgm.tv", "https://bgmimg.anibt.net"]);
   });
 
   it("still opens the metadata tab from an old Bangumi link", async () => {

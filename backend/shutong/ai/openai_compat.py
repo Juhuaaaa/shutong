@@ -4,8 +4,8 @@ import http.client
 import json
 from typing import Any, Callable, Dict, Optional, Tuple
 from urllib.request import Request, urlopen
+from shutong.net import USER_AGENT  # noqa: F401  (also imported from here by other modules)
 
-USER_AGENT = "shutong/0.1 (https://github.com/Juhuaaaa/shutong)"
 
 
 class AiError(Exception):

@@ -7,6 +7,11 @@ from urllib.request import ProxyHandler, build_opener, urlopen
 import socks
 from sockshandler import SocksiPyHandler
 
+from shutong import __version__
+
+# Bangumi asks API users for developer ID, app name, version and the home page of an open project.
+USER_AGENT = "Juhuaaaa/shutong/{0} (https://github.com/Juhuaaaa/shutong)".format(__version__)
+
 _SCHEMES = ("http", "https", "socks5", "socks5h")
 _EXAMPLE = "例如 http://192.168.1.2:7890 或 socks5://192.168.1.2:7891"
 
