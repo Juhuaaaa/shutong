@@ -20,7 +20,7 @@ from shutong.servers.base import MediaServer
 from shutong.servers.kavita import server_for
 from shutong.services import Services, build_services
 from shutong.store.db import Database
-from shutong.store.records import ItemStore, LibraryStore
+from shutong.store.records import ItemStore, LibraryStore, RunStore
 from shutong.store.settings import SettingsStore
 from shutong.store.servers import ServerRecord
 
@@ -85,6 +85,9 @@ def create_app(data_dir: Path, *, inline_jobs: bool = False,
 def _startup(db: Database, services_factory) -> None:
     """Settle interrupted publications and fill missing group keys before serving."""
     Organizer(services_factory(db)).recover()
+    closed = RunStore(db).close_interrupted()
+    if closed:
+        log.info("有 %d 次扫描被重启打断，已记为中断；没整理完的文件下次扫描会继续", closed)
     _backfill_group_keys(db)
 
 

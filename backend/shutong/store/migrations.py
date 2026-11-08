@@ -205,4 +205,14 @@ MIGRATIONS: tuple[str, ...] = (
       WHERE kind = 'manga' AND include_edition = 1;
     ALTER TABLE libraries DROP COLUMN include_edition;
     """,
+    # A scan of thousands of organized files read every one of them again to fingerprint it: a file whose size and
+    # modified time are what they were keeps the fingerprint it had.
+    """
+    CREATE TABLE fingerprint_cache (
+      path TEXT PRIMARY KEY,
+      size INTEGER NOT NULL,
+      mtime_ns INTEGER NOT NULL,
+      fingerprint TEXT NOT NULL
+    );
+    """,
 )
