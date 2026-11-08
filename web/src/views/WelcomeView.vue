@@ -6,7 +6,7 @@ import { useRouter } from "vue-router";
 import { libraries as api } from "@/api";
 import { ApiError } from "@/api/client";
 import AiSettings from "@/components/settings/AiSettings.vue";
-import BangumiSettings from "@/components/settings/BangumiSettings.vue";
+import MetadataSettings from "@/components/settings/MetadataSettings.vue";
 import { bridge } from "@/composables/desktop";
 import { useLibraries } from "@/stores/libraries";
 
@@ -24,7 +24,7 @@ onMounted(async () => {
 });
 
 const aiForm = ref<InstanceType<typeof AiSettings> | null>(null);
-const bangumiForm = ref<InstanceType<typeof BangumiSettings> | null>(null);
+const bangumiForm = ref<InstanceType<typeof MetadataSettings> | null>(null);
 
 /** Going on keeps what was typed; the form's own save button is easy to miss. */
 async function saveAndGo(form: { commit(): Promise<boolean> } | null, next: number) {
@@ -88,7 +88,7 @@ async function createLibraries() {
       <section v-else-if="step === 3" data-test="step-bangumi">
         <h2 class="text-subtitle-1 font-weight-medium mb-2">{{ t("desktop.welcome.bangumi.title") }}</h2>
         <p class="st-muted mb-6">{{ t("desktop.welcome.bangumi.text") }}</p>
-        <BangumiSettings ref="bangumiForm" />
+        <MetadataSettings ref="bangumiForm" />
         <div class="actions">
           <VBtn color="primary" data-test="next-bangumi" @click="saveAndGo(bangumiForm, 4)">{{ t("desktop.welcome.next") }}</VBtn>
         </div>

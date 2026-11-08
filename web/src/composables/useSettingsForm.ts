@@ -28,7 +28,7 @@ export function useSettingsForm(keys: string[]) {
       const value = values[key];
       if (secretSet[key]) {
         if (value !== "") changed[key] = value;
-      } else if (value !== initial.value[key] && !(value === null && initial.value[key] === "")) {
+      } else if (!same(value, initial.value[key]) && !(value === null && initial.value[key] === "")) {
         changed[key] = value;
       }
     }
@@ -52,4 +52,9 @@ export function useSettingsForm(keys: string[]) {
   }
 
   return { values, secretSet, load, changes, save, apply, field };
+}
+
+/** Lists (the metadata source order) compare by content, not by identity. */
+function same(a: unknown, b: unknown): boolean {
+  return Array.isArray(a) || Array.isArray(b) ? JSON.stringify(a) === JSON.stringify(b) : a === b;
 }

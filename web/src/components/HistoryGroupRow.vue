@@ -33,7 +33,9 @@ const editing = ref<Item[] | null>(null);
 const coverWall = ref<Item[] | null>(null);
 const broken = ref(false);
 
-const cover = computed(() => (props.group.subject_id ? `https://api.bgm.tv/v0/subjects/${props.group.subject_id}/image?type=small` : null));
+// Only a Bangumi cover can be found from the id alone; other sources show the placeholder.
+const cover = computed(() => (props.group.subject_id && (props.group.subject_source ?? "bangumi") === "bangumi"
+  ? `https://api.bgm.tv/v0/subjects/${props.group.subject_id}/image?type=small` : null));
 // Where the first organized file of this group went.
 const outputFolder = computed(() => {
   const target = items.value.find((item) => item.target_path)?.target_path;

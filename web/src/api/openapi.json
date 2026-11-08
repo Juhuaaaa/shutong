@@ -195,17 +195,6 @@
       },
       "Confirm": {
         "properties": {
-          "bgm": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Bgm"
-          },
           "edition": {
             "anyOf": [
               {
@@ -228,6 +217,16 @@
             "default": false,
             "title": "Skip Metadata",
             "type": "boolean"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SubjectRefIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "title": {
             "anyOf": [
@@ -341,17 +340,6 @@
       },
       "EditMetadata": {
         "properties": {
-          "bgm": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Bgm"
-          },
           "fields": {
             "anyOf": [
               {
@@ -370,6 +358,16 @@
             },
             "title": "Item Ids",
             "type": "array"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SubjectRefIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -462,13 +460,24 @@
           "subject_id": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
             "title": "Subject Id"
+          },
+          "subject_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject Source"
           },
           "total": {
             "title": "Total",
@@ -485,6 +494,7 @@
           "folder",
           "series",
           "subject_id",
+          "subject_source",
           "counts",
           "total",
           "updated_at",
@@ -590,13 +600,24 @@
           "subject_id": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
             "title": "Subject Id"
+          },
+          "subject_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject Source"
           },
           "target_path": {
             "anyOf": [
@@ -623,6 +644,7 @@
           "source_name",
           "parsed",
           "subject_id",
+          "subject_source",
           "target_path",
           "plan",
           "error",
@@ -712,13 +734,24 @@
           "subject_id": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
             "title": "Subject Id"
+          },
+          "subject_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject Source"
           },
           "target_path": {
             "anyOf": [
@@ -745,6 +778,7 @@
           "source_name",
           "parsed",
           "subject_id",
+          "subject_source",
           "target_path",
           "plan",
           "error",
@@ -1583,13 +1617,24 @@
           "subject_id": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
             "title": "Subject Id"
+          },
+          "subject_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject Source"
           }
         },
         "required": [
@@ -1597,6 +1642,7 @@
           "group_key",
           "series",
           "subject_id",
+          "subject_source",
           "image",
           "published",
           "at"
@@ -1668,17 +1714,6 @@
       },
       "Reorganize": {
         "properties": {
-          "bgm": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Bgm"
-          },
           "edition": {
             "anyOf": [
               {
@@ -1696,6 +1731,16 @@
             },
             "title": "Item Ids",
             "type": "array"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SubjectRefIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "title": {
             "anyOf": [
@@ -1739,7 +1784,7 @@
           },
           "candidates": {
             "items": {
-              "type": "integer"
+              "$ref": "#/components/schemas/SubjectRefOut"
             },
             "title": "Candidates",
             "type": "array"
@@ -2162,6 +2207,29 @@
         "title": "SkippedPath",
         "type": "object"
       },
+      "SourceOut": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "label",
+          "enabled"
+        ],
+        "title": "SourceOut",
+        "type": "object"
+      },
       "Storage": {
         "properties": {
           "free": {
@@ -2192,6 +2260,13 @@
       },
       "SubjectOut": {
         "properties": {
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Aliases",
+            "type": "array"
+          },
           "image": {
             "anyOf": [
               {
@@ -2230,9 +2305,13 @@
             ],
             "title": "Release Date"
           },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
           "subject_id": {
             "title": "Subject Id",
-            "type": "integer"
+            "type": "string"
           },
           "summary": {
             "title": "Summary",
@@ -2249,6 +2328,10 @@
             ],
             "title": "Total Volumes"
           },
+          "web_url": {
+            "title": "Web Url",
+            "type": "string"
+          },
           "writers": {
             "items": {
               "type": "string"
@@ -2259,6 +2342,9 @@
         },
         "required": [
           "subject_id",
+          "source",
+          "web_url",
+          "aliases",
           "name",
           "name_cn",
           "summary",
@@ -2270,6 +2356,43 @@
           "image"
         ],
         "title": "SubjectOut",
+        "type": "object"
+      },
+      "SubjectRefIn": {
+        "description": "A subject chosen by hand: which source, and its id there (numbers are accepted and kept as text).",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "id"
+        ],
+        "title": "SubjectRefIn",
+        "type": "object"
+      },
+      "SubjectRefOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "id"
+        ],
+        "title": "SubjectRefOut",
         "type": "object"
       },
       "Summary": {
@@ -4332,6 +4455,22 @@
               "title": "Kind",
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "source",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source"
+            }
           }
         ],
         "responses": {
@@ -4366,17 +4505,52 @@
         ]
       }
     },
-    "/api/metadata/subjects/{subject_id}": {
+    "/api/metadata/sources": {
       "get": {
-        "operationId": "subject_api_metadata_subjects__subject_id__get",
+        "description": "Switched-on sources in the order they are asked, then the others.",
+        "operationId": "sources_api_metadata_sources_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SourceOut"
+                  },
+                  "title": "Response Sources Api Metadata Sources Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Sources",
+        "tags": [
+          "metadata"
+        ]
+      }
+    },
+    "/api/metadata/subjects/{source}/{subject_id}": {
+      "get": {
+        "operationId": "subject_api_metadata_subjects__source___subject_id__get",
         "parameters": [
+          {
+            "in": "path",
+            "name": "source",
+            "required": true,
+            "schema": {
+              "title": "Source",
+              "type": "string"
+            }
+          },
           {
             "in": "path",
             "name": "subject_id",
             "required": true,
             "schema": {
               "title": "Subject Id",
-              "type": "integer"
+              "type": "string"
             }
           }
         ],

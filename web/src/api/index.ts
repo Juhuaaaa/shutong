@@ -14,6 +14,8 @@ export type Job = S["JobOut"];
 export type JobRef = S["JobRef"];
 export type ReviewGroup = S["ReviewGroup"];
 export type Subject = S["SubjectOut"];
+export type SubjectRef = S["SubjectRefOut"];
+export type MetadataSource = S["SourceOut"];
 export type Server = S["ServerOut"];
 export type ServerIn = S["ServerIn"];
 export type ServerPatch = S["ServerPatch"];
@@ -29,9 +31,9 @@ export type LogPage = S["LogPage"];
 export interface Choices {
   title?: string | null;
   edition?: string | null;
-  bgm?: number | null;
+  subject?: SubjectRef | null;
   volumes?: Record<string, string>;
-  /** Organize under the title without looking for a Bangumi subject. */
+  /** Organize under the title without looking for a metadata subject. */
   skip_metadata?: boolean;
 }
 
@@ -117,7 +119,7 @@ export const items = {
   retry: (itemIds: number[]) => request<JobRef>("POST", "/api/items/retry", { body: { item_ids: itemIds } }),
   reorganize: (itemIds: number[], choices: Choices) =>
     request<JobRef>("POST", "/api/items/reorganize", { body: { item_ids: itemIds, ...choices } }),
-  editMetadata: (itemIds: number[], choice: { bgm: number } | { fields: MetadataFields }) =>
+  editMetadata: (itemIds: number[], choice: { subject: SubjectRef } | { fields: MetadataFields }) =>
     request<JobRef>("POST", "/api/items/metadata", { body: { item_ids: itemIds, ...choice } }),
   coverOptions: (itemId: number) => request<S["CoverOptionsOut"]>("GET", `/api/items/${itemId}/cover-options`),
   coverUrl: (itemId: number, width: number, stamp: string | number, page?: string) =>
@@ -140,8 +142,11 @@ export const review = {
 };
 
 export const metadata = {
-  search: (q: string, kind: "manga" | "novel") => request<Subject[]>("GET", "/api/metadata/search", { query: { q, kind } }),
-  subject: (id: number) => request<Subject>("GET", `/api/metadata/subjects/${id}`),
+  sources: () => request<MetadataSource[]>("GET", "/api/metadata/sources"),
+  search: (q: string, kind: "manga" | "novel", source?: string) =>
+    request<Subject[]>("GET", "/api/metadata/search", { query: { q, kind, source } }),
+  subject: (ref: SubjectRef) =>
+    request<Subject>("GET", `/api/metadata/subjects/${encodeURIComponent(ref.source)}/${encodeURIComponent(ref.id)}`),
 };
 
 export const settings = {

@@ -250,7 +250,8 @@ describe("HistoryView", () => {
   });
 
   it("picks another Bangumi subject for a folder", async () => {
-    const subject = { subject_id: 302561, name: "나 혼자만 레벨업", name_cn: "我独自升级", summary: "", writers: [],
+    const subject = { subject_id: "302561", source: "bangumi", web_url: "https://bgm.tv/subject/302561", aliases: [],
+      name: "나 혼자만 레벨업", name_cn: "我独自升级", summary: "", writers: [],
       publisher: "", platform: "漫画", release_date: null, total_volumes: 14, image: null };
     const { calls } = api({
       "GET /api/metadata/search": [subject],
@@ -273,7 +274,8 @@ describe("HistoryView", () => {
     await wrapper.vm.$nextTick();
     (document.querySelector("[data-test=metadata-submit]") as HTMLElement).click();
     await vi.waitFor(() => expect(calls.some((call) => call.path === "/api/items/metadata")).toBe(true));
-    expect(calls.find((call) => call.path === "/api/items/metadata")!.body).toEqual({ item_ids: [1, 2], bgm: 302561 });
+    expect(calls.find((call) => call.path === "/api/items/metadata")!.body).toEqual({ item_ids: [1, 2],
+      subject: { source: "bangumi", id: "302561" } });
   });
 
   it("shows the source folder only when it differs from the series name", async () => {

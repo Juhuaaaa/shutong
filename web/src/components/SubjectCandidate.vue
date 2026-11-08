@@ -2,6 +2,7 @@
 import { mdiCheckCircle, mdiOpenInNew } from "@mdi/js";
 import { ref } from "vue";
 import type { Subject } from "@/api";
+import { sourceLabel } from "@/composables/volume";
 
 defineProps<{ subject: Subject; selected: boolean }>();
 const emit = defineEmits<{ pick: [] }>();
@@ -16,15 +17,16 @@ const broken = ref(false);
         @error="broken = true" />
     </div>
     <div class="info">
-      <strong class="name">{{ subject.name_cn || subject.name }}</strong>
+      <strong class="name">{{ subject.name_cn || subject.aliases[0] || subject.name }}</strong>
       <span class="line">{{ subject.name }}</span>
       <span class="line">
         {{ [subject.writers.join("、"), subject.publisher, subject.platform, subject.release_date?.slice(0, 4)].filter(Boolean).join(" · ") }}
       </span>
-      <span class="line">#{{ subject.subject_id }}<template v-if="subject.total_volumes"> · {{ $t("review.volumes", { count: subject.total_volumes }) }}</template></span>
+      <span class="line"><span class="source" data-test="candidate-source">{{ sourceLabel(subject.source) }}</span> #{{ subject.subject_id }}<template v-if="subject.total_volumes"> · {{ $t("review.volumes", { count: subject.total_volumes }) }}</template></span>
     </div>
-    <a :href="`https://bgm.tv/subject/${subject.subject_id}`" target="_blank" rel="noopener noreferrer" class="open"
-      :title="$t('review.openBangumi')" :aria-label="$t('review.openBangumi')" data-test="candidate-open"
+    <a v-if="subject.web_url" :href="subject.web_url" target="_blank" rel="noopener noreferrer" class="open"
+      :title="$t('review.openSource', { source: sourceLabel(subject.source) })"
+      :aria-label="$t('review.openSource', { source: sourceLabel(subject.source) })" data-test="candidate-open"
       @click.stop @keydown.stop>
       <VIcon :icon="mdiOpenInNew" size="16" />
     </a>
@@ -45,6 +47,7 @@ const broken = ref(false);
 .info { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
 .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 20px; }
 .line { font-size: 12px; opacity: 0.65; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.source { font-weight: 600; }
 .check { position: absolute; top: 8px; right: 8px; }
 .open {
   position: absolute; right: 6px; bottom: 6px; display: grid; place-items: center; width: 28px; height: 28px;

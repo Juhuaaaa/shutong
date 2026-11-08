@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { items as itemApi, type Item, type MetadataFields, type Subject } from "@/api";
+import { items as itemApi, type Item, type MetadataFields, type Subject, type SubjectRef } from "@/api";
+import { sameSubject } from "@/composables/volume";
 import type { ApiError } from "@/api/client";
 import { useJobs } from "@/stores/jobs";
 import SubjectCandidate from "./SubjectCandidate.vue";
@@ -15,9 +16,9 @@ const jobs = useJobs();
 const DATE = /^\d{4}(-\d{1,2}(-\d{1,2})?)?$/;
 const known = computed(() => (props.items[0]?.plan?.metadata ?? {}) as Record<string, unknown>);
 // Books without a subject are the ones to fill in by hand; the others most likely need another subject.
-const tab = ref<"bangumi" | "manual">(props.items.some((item) => item.subject_id) ? "bangumi" : "manual");
+const tab = ref<"source" | "manual">(props.items.some((item) => item.subject_id) ? "source" : "manual");
 const candidates = ref<Subject[]>([]);
-const picked = ref<number | null>(null);
+const picked = ref<SubjectRef | null>(null);
 const busy = ref(false);
 const error = ref("");
 
@@ -43,15 +44,15 @@ const form = reactive({
 
 const badDate = computed(() => Boolean(form.release_date.trim()) && !DATE.test(form.release_date.trim()));
 const empty = computed(() => Object.values(form).every((value) => !value.trim()));
-const ready = computed(() => (tab.value === "bangumi" ? picked.value !== null : !empty.value && !badDate.value));
+const ready = computed(() => (tab.value === "source" ? picked.value !== null : !empty.value && !badDate.value));
 
 function names(value: string) {
   return value.split(/[,，、;；]/).map((name) => name.trim()).filter(Boolean);
 }
 
 async function submit() {
-  const choice: { bgm: number } | { fields: MetadataFields } = tab.value === "bangumi"
-    ? { bgm: picked.value as number }
+  const choice: { subject: SubjectRef } | { fields: MetadataFields } = tab.value === "source"
+    ? { subject: picked.value as SubjectRef }
     : { fields: { localized_series: novel ? "" : form.localized_series.trim(), writers: names(form.writers),
       publisher: form.publisher.trim(), release_date: form.release_date.trim(), genres: names(form.genres),
       summary: form.summary.trim() } };
@@ -73,16 +74,17 @@ async function submit() {
     <VCard class="pa-2" data-test="metadata-dialog">
       <VCardTitle>{{ t("history.metadataTitle", { count: items.length }) }}</VCardTitle>
       <VTabs v-model="tab" color="primary" density="compact" class="px-4">
-        <VTab value="bangumi" data-test="tab-bangumi">{{ t("history.metadataBangumi") }}</VTab>
+        <VTab value="source" data-test="tab-source">{{ t("history.metadataSource") }}</VTab>
         <VTab value="manual" data-test="tab-manual">{{ t("history.metadataManual") }}</VTab>
       </VTabs>
       <VCardText class="d-flex flex-column ga-3 body">
         <VAlert type="info" variant="tonal" density="compact" rounded="lg">{{ t("history.metadataNote") }}</VAlert>
-        <template v-if="tab === 'bangumi'">
+        <template v-if="tab === 'source'">
           <SubjectSearch :kind="kind" :initial="title" @results="candidates = $event" @error="error = $event" />
           <div v-if="candidates.length" class="candidates" role="radiogroup">
-            <SubjectCandidate v-for="entry in candidates" :key="entry.subject_id" :subject="entry"
-              :selected="picked === entry.subject_id" @pick="picked = entry.subject_id" />
+            <SubjectCandidate v-for="entry in candidates" :key="`${entry.source}:${entry.subject_id}`" :subject="entry"
+              :selected="sameSubject(picked, { source: entry.source, id: entry.subject_id })"
+              @pick="picked = { source: entry.source, id: entry.subject_id }" />
           </div>
         </template>
         <template v-else>

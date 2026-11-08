@@ -80,7 +80,7 @@ const shown = computed(() => {
   const libraryId = Number(open.slice(0, split));
   if (split < 1 || !Number.isInteger(libraryId)) return groups.value;
   const folder = open.slice(split + 1);
-  return [{ library_id: libraryId, group_key: folder, folder, series: null, subject_id: null,
+  return [{ library_id: libraryId, group_key: folder, folder, series: null, subject_id: null, subject_source: null,
     counts: {}, total: 0, updated_at: "", item_ids: [], missing_metadata: 0 } as HistoryGroup, ...groups.value];
 });
 </script>

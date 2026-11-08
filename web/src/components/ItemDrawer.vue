@@ -7,6 +7,7 @@ import { items as itemApi, type ItemDetail } from "@/api";
 import type { ApiError } from "@/api/client";
 import { eventDetail } from "@/composables/eventDetail";
 import { shortTime } from "@/composables/format";
+import { sourceLabel, subjectUrl } from "@/composables/volume";
 import { notify } from "@/composables/notify";
 import { useJobs } from "@/stores/jobs";
 import { useLibraries } from "@/stores/libraries";
@@ -80,9 +81,14 @@ async function reorganized(result: Record<string, number>) {
         <dt>{{ t("history.status") }}</dt><dd><StatusTag :status="item.status" :reason="item.review_reason" /></dd>
         <dt>{{ t("history.source") }}</dt><dd>{{ item.source_path }}</dd>
         <dt>{{ t("history.target") }}</dt><dd>{{ item.target_path ?? "—" }}</dd>
-        <dt>Bangumi</dt>
-        <dd>
-          <a v-if="item.subject_id" :href="`https://bgm.tv/subject/${item.subject_id}`" target="_blank" rel="noopener">{{ item.subject_id }}</a>
+        <dt>{{ t("history.subject") }}</dt>
+        <dd data-test="item-subject">
+          <template v-if="item.subject_id">
+            {{ sourceLabel(item.subject_source ?? "bangumi") }}
+            <a v-if="subjectUrl(item.subject_source, item.subject_id)" :href="subjectUrl(item.subject_source, item.subject_id)"
+              target="_blank" rel="noopener">{{ item.subject_id }}</a>
+            <template v-else>{{ item.subject_id }}</template>
+          </template>
           <template v-else>—</template>
         </dd>
         <dt>{{ t("history.parsed") }}</dt>
