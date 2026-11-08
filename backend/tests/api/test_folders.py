@@ -20,7 +20,8 @@ class FolderRoutesTests(ApiCase):
         self.assertEqual(body["folders"], ["下载", "书库"])  # no files, no hidden folders
 
     def test_the_root_has_no_parent(self):
-        self.assertIsNone(self.folders("/").json()["parent"])
+        root = self.root.anchor  # "/" here, a drive such as "D:\\" on Windows
+        self.assertIsNone(self.folders(root).json()["parent"])
 
     def test_refuses_what_is_not_a_folder(self):
         self.assertEqual(self.folders(self.root / "nas" / "missing").status_code, 404)
