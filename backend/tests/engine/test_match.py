@@ -133,7 +133,17 @@ class MatchTests(unittest.TestCase):
         source = FakeSource(error=HTTPError("https://api.bgm.tv/v0/subjects/9", 404, "Not Found", {}, io.BytesIO()))
         result = match_subject(source, kind="manga", title_hint="迷宫饭", forced_id=9)
         self.assertEqual((result.method, result.retry, result.config_error), ("none", False, False))
-        self.assertEqual(result.error, "Bangumi 返回错误：404 Not Found")
+        self.assertEqual(result.error, "Bangumi 上没有编号 9 的条目")
+
+    def test_a_malformed_answer_reads_in_chinese(self):
+        result = match_subject(FakeSource(error=ValueError("Bangumi search response must contain a data list")),
+                               kind="manga", title_hint="迷宫饭", forced_id=None)
+        self.assertEqual(result.error, "Bangumi 返回的数据格式不对，可能是接口临时出问题，稍后可以重新识别")
+
+    def test_a_chosen_id_the_source_does_not_have(self):
+        result = match_subject(FakeSource(subjects={}), kind="manga", title_hint="迷宫饭", forced_id="12")
+        self.assertEqual(result.error, "Bangumi 上没有编号 12 的条目")
+        self.assertEqual(result.source, "bangumi")
 
     def test_auth_failure_is_a_configuration_error(self):
         for code in (401, 403):
@@ -146,7 +156,7 @@ class MatchTests(unittest.TestCase):
         result = match_subject(FakeSource(error=ValueError("Bangumi response is not valid JSON")),
                                kind="manga", title_hint="迷宫饭", forced_id=None)
         self.assertEqual((result.method, result.retry), ("none", False))
-        self.assertIn("JSON", result.error)
+        self.assertIn("格式不对", result.error)
 
     def test_blank_title_skips_search(self):
         source = FakeSource()

@@ -32,6 +32,7 @@ from shutong.engine.recognition import Recognition
 from shutong.engine.states import TRANSITIONS, ItemStatus, ReviewReason
 from shutong.engine.template import DEFAULT_TEMPLATE
 from shutong.metadata.base import Subject, SubjectRef
+from shutong.metadata.registry import LABELS, NUMERIC_IDS
 from shutong.services import Services
 from shutong.store.ai_calls import AiCallStore
 from shutong.store.journal import JournalStore
@@ -790,7 +791,7 @@ class Organizer:
         if result.method in ("rule", "auto", "ai"):
             self._remember_source(library, entry, result.subject, sub_series=sub_series)
             if result.method == "ai":
-                self.items.add_event(item_id, "ai_adopted", _suggestion_json(result.suggestion))
+                self.items.add_event(item_id, "ai_adopted", _suggestion_json(result.suggestion, result.source))
                 if result.suggestion.call_id is not None:
                     self.ai_calls.mark_adopted(result.suggestion.call_id)
             self.items.transition(item_id, ItemStatus.MATCHED, event="matched",
@@ -799,7 +800,7 @@ class Organizer:
                                   subject_id=result.subject.subject_id, subject_source=result.subject.source)
             return result.subject
         if result.suggestion is not None:
-            self.items.add_event(item_id, "ai_suggestion", _suggestion_json(result.suggestion))
+            self.items.add_event(item_id, "ai_suggestion", _suggestion_json(result.suggestion, result.source))
         # No subject settled: the user decides in review (pick one, or organize without metadata). Offer what
         # the AI looked at, its own guess first.
         suggestion = result.suggestion
@@ -1162,6 +1163,8 @@ def validate_choices(*, title=None, edition=None, subject: Optional[SubjectRef] 
             raise ValueError("条目的来源和编号都不能为空")
         if sources is not None and subject.source not in sources:
             raise ValueError("没有这个数据源：{0}".format(subject.source))
+        if subject.source in NUMERIC_IDS and not (str(subject.id).isdigit() and int(subject.id) > 0):
+            raise ValueError("{0} 的条目编号要是正整数：{1}".format(LABELS.get(subject.source, subject.source), subject.id))
     for volume in volumes.values():
         parse_volume_text(volume)
 
@@ -1238,9 +1241,12 @@ def _reading_json(reading: Reading) -> dict:
             "reason": series.reason, "meets_threshold": False, "call_id": reading.call_id, "problem": reading.problem}
 
 
-def _suggestion_json(suggestion) -> dict:
-    return {key: getattr(suggestion, key) for key in
+def _suggestion_json(suggestion, source: str = "") -> dict:
+    data = {key: getattr(suggestion, key) for key in
             ("subject_id", "title", "edition", "confidence", "reason", "meets_threshold", "call_id", "problem")}
+    if source and suggestion.subject_id:
+        data["source"] = source  # which source the picked id belongs to
+    return data
 
 
 def _parsed_json(parse: ParseResult, reading: Optional[Reading]) -> dict:

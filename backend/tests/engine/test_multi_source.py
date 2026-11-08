@@ -80,6 +80,15 @@ class MultiSourceTests(OrganizerFixture):
         [item] = self.all_items()
         self.assertEqual((item.status, item.subject_source), (ItemStatus.PLANNED, "b"))
 
+    def test_ai_suggestion_names_its_source(self):
+        other = subject(5, "地下城美食", total=2)
+        a = Named("a", [other], {5: other})
+        self.zip("迷宫饭/Vol.01.zip")
+        self.organizer_with(a, ai=ReaderAi(choose_confidence=0.5)).scan(self.library.id)
+        [item] = self.all_items()
+        suggestion = [event for event in self.items.events(item.id) if event.kind == "ai_suggestion"][-1]
+        self.assertEqual((suggestion.detail["source"], suggestion.detail["subject_id"]), ("a", "5"))
+
     def test_all_sources_empty_goes_to_review(self):
         self.zip("迷宫饭/Vol.01.zip")
         self.organizer_with(Named("a"), Named("b")).scan(self.library.id)

@@ -68,6 +68,13 @@ describe("SettingsView", () => {
     expect(calls.find((call) => call.method === "PATCH")?.body).toEqual({ "metadata.sources": ["anilist", "bangumi"] });
   });
 
+  it("shows the sources the server really asks, whatever was stored", async () => {
+    api({ "GET /api/settings": { ...settings, "metadata.sources": ["douban"] } });
+    await mountView(SettingsView, "/settings/metadata");
+    await vi.waitFor(() => expect(document.querySelector("[data-test=source-switch-bangumi] input")).not.toBeNull());
+    expect((document.querySelector("[data-test=source-switch-bangumi] input") as HTMLInputElement).checked).toBe(true);
+  });
+
   it("still opens the metadata tab from an old Bangumi link", async () => {
     api();
     await mountView(SettingsView, "/settings/bangumi");

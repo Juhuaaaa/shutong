@@ -1,5 +1,6 @@
 """Find the metadata subject for a series: chosen → automatic pick → AI suggestion, source by source."""
 from dataclasses import dataclass
+import logging
 from typing import Dict, List, Optional, Sequence, Tuple
 from urllib.error import HTTPError
 
@@ -9,6 +10,7 @@ from shutong.metadata.rank import Scored, fits_kind, is_volume_entry, match_key,
 from .ai_assist import AiSuggestion, SourceContext, _effective_threshold, choose_own_entry, choose_subject
 
 
+log = logging.getLogger("shutong.match")
 _OFFERED_LIMIT = 15
 
 
@@ -23,6 +25,7 @@ class MatchResult:
     config_error: bool = False  # e.g. a bad Bangumi token: tell the user, do not blame the item
     offered: Tuple[Subject, ...] = ()  # what the AI was asked to choose from
     label: str = ""  # the source asked, for messages
+    source: str = ""  # its name
     ai_says_none: bool = False  # the AI is sure no candidate is the work
 
     @property
@@ -48,11 +51,17 @@ def label_of(source) -> str:
     return getattr(source, "label", None) or source.name
 
 
+def missing_subject(label: str, subject_id) -> str:
+    return "{0} 上没有编号 {1} 的条目".format(label, subject_id)
+
+
 def _source_errors(source, error: Exception) -> Tuple[str, bool]:
     """The message for a failed request, and whether it is the user's configuration (401/403)."""
     if isinstance(error, HTTPError):
         return "{0} 返回错误：{1} {2}".format(label_of(source), error.code, error.reason), error.code in (401, 403)
-    return "{0} 返回的数据无法读取：{1}".format(label_of(source), error), False
+    # The technical detail goes to the log; the user gets what they can act on.
+    log.warning("%s 返回的数据无法读取：%r", label_of(source), error)
+    return "{0} 返回的数据格式不对，可能是接口临时出问题，稍后可以重新识别".format(label_of(source)), False
 
 
 def _namesake_originals(title: str, found: Sequence[Subject], kind: str) -> List[str]:
@@ -134,19 +143,25 @@ def match_subject(
     """
     label = label_of(source)
     if forced_id is None and not title_hint.strip():
-        return MatchResult(None, "none", error="没有书名，无法搜索 {0}".format(label), label=label)
+        return MatchResult(None, "none", error="没有书名，无法搜索 {0}".format(label), label=label, source=source.name)
     found: List = []
     ranked: Tuple[Scored, ...] = ()
     try:
         if forced_id is not None:
-            return MatchResult(source.get(forced_id), "rule", label=label)
+            try:
+                return MatchResult(source.get(forced_id), "rule", label=label, source=source.name)
+            except (KeyError, HTTPError) as error:
+                if isinstance(error, HTTPError) and error.code != 404:
+                    raise
+                return MatchResult(None, "none", error=missing_subject(label, forced_id), label=label,
+                                   source=source.name)
         queries = list(dict.fromkeys([title_hint] + [title for title in search_titles if title.strip()]))
         for query in queries:
             results = source.search(query, kind)
             query_ranked = rank(query, results, kind)
             chosen = pick(query_ranked)
             if chosen is not None:
-                return MatchResult(chosen, "auto", query_ranked, label=label)
+                return MatchResult(chosen, "auto", query_ranked, label=label, source=source.name)
             known = {subject.subject_id for subject in found}
             found.extend(subject for subject in results if subject.subject_id not in known)
             ranked += tuple(scored for scored in query_ranked
@@ -157,14 +172,14 @@ def match_subject(
             query_ranked = rank(query, source.search(query, kind), kind)
             chosen = pick(query_ranked)
             if chosen is not None:
-                return MatchResult(chosen, "auto", query_ranked, label=label)
+                return MatchResult(chosen, "auto", query_ranked, label=label, source=source.name)
     except MetadataUnavailable as error:
-        return MatchResult(None, "none", retry=True, error=str(error), label=label)
+        return MatchResult(None, "none", retry=True, error=str(error), label=label, source=source.name)
     except Exception as error:  # 404s and malformed responses must not abort a whole scan
         message, config_error = _source_errors(source, error)
-        return MatchResult(None, "none", error=message, config_error=config_error, label=label)
+        return MatchResult(None, "none", error=message, config_error=config_error, label=label, source=source.name)
     if ai is None or context is None:
-        return MatchResult(None, "none", ranked, label=label)
+        return MatchResult(None, "none", ranked, label=label, source=source.name)
     offered = [scored.subject for scored in ranked]
     offered += [s for s in found if fits_kind(s, kind) and s not in offered]
     offered = (offered or [s for s in found if not is_volume_entry(s)])[:_OFFERED_LIMIT]
@@ -179,10 +194,10 @@ def match_subject(
             memo[key] = suggestion
     if suggestion.meets_threshold:
         subject = next(s for s in offered if s.subject_id == suggestion.subject_id)
-        return MatchResult(subject, "ai", ranked, suggestion, offered=tuple(offered), label=label)
+        return MatchResult(subject, "ai", ranked, suggestion, offered=tuple(offered), label=label, source=source.name)
     says_none = suggestion.problem is None and suggestion.subject_id is None \
         and suggestion.confidence >= _effective_threshold(threshold)
-    return MatchResult(None, "none", ranked, suggestion, offered=tuple(offered), label=label, ai_says_none=says_none)
+    return MatchResult(None, "none", ranked, suggestion, offered=tuple(offered), label=label, source=source.name, ai_says_none=says_none)
 
 
 def match_across(sources: Sequence[MetadataSource], **options) -> MatchResult:

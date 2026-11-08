@@ -1,3 +1,4 @@
+from urllib.error import HTTPError
 from typing import Any, Callable, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
@@ -7,7 +8,9 @@ from shutong.api.auth import require_login
 from shutong.api.schemas import CancelResult, ItemDetail, ItemPage, JobRef, SubjectRefIn, ai_call_out, item_out
 from shutong.engine import covers
 from shutong.engine.metadata_edit import ManualMetadata
+from shutong.engine.match import label_of, missing_subject
 from shutong.engine.organizer import Organizer, validate_choices
+from shutong.metadata.base import MetadataUnavailable
 from shutong.servers.notify import notify_published, redone_series
 from shutong.engine.states import ItemStatus, ReviewReason
 from shutong.store.ai_calls import AiCallStore
@@ -60,6 +63,18 @@ def selected(body: Selection) -> List[int]:
     if not body.item_ids:
         raise HTTPException(422, "没有选择条目")
     return list(dict.fromkeys(body.item_ids))
+
+
+def _require_subject(source, subject) -> None:
+    """Before the job starts: a subject the source does not have is the user's to fix, not a failed job."""
+    try:
+        source.get(subject.id)
+    except MetadataUnavailable:
+        raise HTTPException(503, "{0} 暂时无法访问".format(label_of(source)))
+    except (KeyError, HTTPError) as error:
+        if isinstance(error, HTTPError) and error.code != 404:
+            raise HTTPException(502, "{0} 返回错误：{1}".format(label_of(source), error.code))
+        raise HTTPException(404, missing_subject(label_of(source), subject.id))
 
 
 def check_choices(body, request: Request):
@@ -207,13 +222,15 @@ def edit_metadata(body: EditMetadata, request: Request) -> JobRef:
     ids = selected(body)
     if (body.subject is None) == (body.fields is None):
         raise HTTPException(422, "要选一个条目或手填元数据")
-    sources = request.app.state.services_factory(request.app.state.db).sources.names
+    registry = request.app.state.services_factory(request.app.state.db).sources
     try:
         subject = body.subject.ref() if body.subject is not None else None
         if subject is not None:
-            validate_choices(subject=subject, sources=sources)
+            validate_choices(subject=subject, sources=registry.names)
     except ValueError as error:
         raise HTTPException(422, str(error))
+    if subject is not None:
+        _require_subject(registry.get(subject.source), subject)
     try:
         manual = ManualMetadata.from_json(body.fields) if body.fields is not None else None
     except ValueError as error:

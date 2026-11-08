@@ -69,6 +69,16 @@ describe("ReviewView", () => {
       .toMatchObject({ subject: { source: "anilist", id: "30002" } });
   });
 
+  it("says which source the AI's pick comes from, and adopts it from there", async () => {
+    api([group(1, { ai_suggestion: { title: "Berserk", edition: null, subject_id: "30002", source: "anilist",
+      confidence: 0.6, reason: "原名一致", problem: null } })]);
+    const { wrapper } = await mountView(ReviewView, "/review");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("AniList 30002"));
+    const adopt = wrapper.findAll("button").find((button) => button.text() === "采纳建议");
+    await adopt!.trigger("click");
+    expect(wrapper.find("[data-test=subject]").text()).toContain("AniList");
+  });
+
   it("fills the entry id from a candidate", async () => {
     api([group(1, { candidates: [{ source: "bangumi", id: "27684" }] })]);
     const { wrapper } = await mountView(ReviewView, "/review");

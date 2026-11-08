@@ -89,6 +89,20 @@ class MetadataSourcesApiTests(ApiCase):
             "item_ids": group["item_ids"], "subject": {"source": "anilist", "id": ""}})
         self.assertEqual(blank.status_code, 422)
 
+    def test_bad_ids_are_refused_up_front(self):
+        library, group = self.scan_into_review()
+        for bad in ("abc", "0", "-3"):
+            with self.subTest(bad=bad):
+                response = self.client.post("/api/review/confirm", json={
+                    "item_ids": group["item_ids"], "subject": {"source": "anilist", "id": bad}})
+                self.assertEqual(response.status_code, 422)
+                self.assertIn("编号", response.json()["detail"])
+
+    def test_edit_metadata_with_a_missing_subject_is_404(self):
+        response = self.client.post("/api/items/metadata", json={
+            "item_ids": [1], "subject": {"source": "anilist", "id": "404"}})
+        self.assertEqual((response.status_code, response.json()["detail"]), (404, "AniList 上没有编号 404 的条目"))
+
     def test_review_legacy_int_candidates(self):
         library, group = self.scan_into_review()
         with self.app.state.db.connect() as connection:

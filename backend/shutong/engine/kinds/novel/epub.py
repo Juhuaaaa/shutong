@@ -513,17 +513,6 @@ def manifest_problems(package: ET.Element) -> Tuple[str, ...]:
     return tuple(problems)
 
 
-def has_bangumi_link(path: Path) -> bool:
-    """Return whether an EPUB already carries the Bangumi subject link."""
-    try:
-        with zipfile.ZipFile(path) as archive:
-            package_name = find_package_document(archive)
-            data = _read_member(archive, archive.getinfo(package_name))
-    except (OSError, ValueError, zipfile.BadZipFile):
-        return False
-    return "bgm.tv/subject/" in data.decode("utf-8", "replace")
-
-
 def validate_package(path: Path) -> Tuple[str, ...]:
     """Open an EPUB and report defects that make strict readers reject it."""
     path = Path(path)

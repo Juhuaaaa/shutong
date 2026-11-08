@@ -21,12 +21,8 @@ const onCount = computed(() => sources.value.filter((source) => source.enabled).
 
 async function load() {
   await form.load();
-  const known = await metadata.sources();
-  const on = (enabledNames.value ?? []).filter((name) => known.some((source) => source.name === name));
-  sources.value = [
-    ...on.map((name) => ({ ...known.find((source) => source.name === name)!, enabled: true })),
-    ...known.filter((source) => !on.includes(source.name)).map((source) => ({ ...source, enabled: false })),
-  ];
+  // What the server really asks, in its order: a stored name it no longer knows is not shown as switched on.
+  sources.value = await metadata.sources();
 }
 onMounted(() => load().catch((error: ApiError) => notify.error(error.detail)));
 
