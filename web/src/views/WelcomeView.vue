@@ -3,9 +3,10 @@ import { mdiFolderOpenOutline } from "@mdi/js";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { libraries as api } from "@/api";
+import { libraries as api, settings } from "@/api";
 import { ApiError } from "@/api/client";
 import AiSettings from "@/components/settings/AiSettings.vue";
+import PathField from "@/components/PathField.vue";
 import MetadataSettings from "@/components/settings/MetadataSettings.vue";
 import { bridge } from "@/composables/desktop";
 import { useAuth } from "@/stores/auth";
@@ -45,6 +46,21 @@ async function saveAndGo(form: { commit(): Promise<boolean> } | null, next: numb
 async function pick(kind: (typeof KINDS)[number]) {
   const picked = await bridge()?.pickFolder(dirs[kind] || undefined);
   if (picked) dirs[kind] = picked;
+}
+
+/** Remembered on the server: a server without libraries is not brought back here at every visit. */
+async function markDone() {
+  await settings.update({ "welcome.done": true }).catch(() => {});
+}
+
+async function skipLibraries() {
+  await markDone();
+  step.value = 2;
+}
+
+async function finish() {
+  await markDone();
+  await router.push({ name: libraries.list.length ? "dashboard" : "libraries" });
 }
 
 async function createLibraries() {
@@ -89,15 +105,18 @@ async function createLibraries() {
             <VSwitch v-model="server[kind].want" :label="t(`desktop.welcome.libraries.${kind}`)" hide-details
               :data-test="`want-${kind}`" />
             <template v-if="server[kind].want">
-              <VTextField v-model="server[kind].source" :label="t('desktop.welcome.server.source')"
-                :placeholder="`/data/downloads/${kind}`" persistent-placeholder :data-test="`source-${kind}`" />
-              <VTextField v-model="server[kind].library" :label="t('desktop.welcome.server.library')"
-                :placeholder="`/data/library/${kind}`" persistent-placeholder :data-test="`library-${kind}`" />
+              <PathField v-model="server[kind].source" :label="t('desktop.welcome.server.source')"
+                :placeholder="`/data/downloads/${kind}`" :data-test="`source-${kind}`" />
+              <PathField v-model="server[kind].library" :label="t('desktop.welcome.server.library')"
+                :placeholder="`/data/library/${kind}`" :data-test="`library-${kind}`" />
             </template>
           </div>
         </template>
         <VAlert v-if="error" type="error" variant="tonal" density="compact" rounded="lg" class="mb-4" data-test="error">{{ error }}</VAlert>
         <div class="actions">
+          <VBtn v-if="!auth.desktop" variant="text" :disabled="saving" data-test="skip-libraries" @click="skipLibraries">
+            {{ t("desktop.welcome.skip") }}
+          </VBtn>
           <VBtn color="primary" :loading="saving" :disabled="!ready" data-test="next-libraries"
             @click="createLibraries">{{ t("desktop.welcome.next") }}</VBtn>
         </div>
@@ -128,7 +147,7 @@ async function createLibraries() {
         <h2 class="text-subtitle-1 font-weight-medium mb-2">{{ t("desktop.welcome.done.title") }}</h2>
         <p class="st-muted mb-6">{{ t(auth.desktop ? "desktop.welcome.done.text" : "desktop.welcome.done.server") }}</p>
         <div class="actions">
-          <VBtn color="primary" data-test="finish" @click="router.push({ name: 'dashboard' })">{{ t("desktop.welcome.finish") }}</VBtn>
+          <VBtn color="primary" data-test="finish" @click="finish">{{ t("desktop.welcome.finish") }}</VBtn>
         </div>
       </section>
     </VCard>

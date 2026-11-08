@@ -135,6 +135,7 @@ const en: typeof zhCN = {
       title: "Welcome to Shutong",
       next: "Next",
       later: "Set up later",
+      skip: "Skip, set up under Libraries later",
       finish: "Get started",
       libraries: {
         title: "Where should organized files go?",

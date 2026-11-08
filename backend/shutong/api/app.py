@@ -12,8 +12,8 @@ from shutong.engine import discard
 from shutong.api.auth import Auth
 from shutong.api.watcher import SourceWatcher
 from shutong.api.jobs import JobRunner
-from shutong.api.routes import (ai_calls, auth, dashboard, history, logs, items, jobs, libraries, metadata, review, servers,
-                                settings)
+from shutong.api.routes import (ai_calls, auth, dashboard, folders, history, logs, items, jobs, libraries, metadata,
+                                review, servers, settings)
 from shutong.engine.organizer import Organizer, review_group
 from shutong.logs import setup_logging
 from shutong.servers.base import MediaServer
@@ -72,7 +72,7 @@ def create_app(data_dir: Path, *, inline_jobs: bool = False,
     _startup(db, services_factory)
     _log_errors(app)
     for module in (auth, jobs, dashboard, logs, libraries, items, history, review, metadata, settings, ai_calls, servers,
-                   desktop):
+                   folders, desktop):
         app.include_router(module.router)
     if web_dist is not None and Path(web_dist).is_dir():
         _serve_web(app, Path(web_dist))

@@ -133,6 +133,7 @@ export default {
       title: "欢迎使用书童",
       next: "下一步",
       later: "稍后配置",
+      skip: "跳过，稍后在「库」里建",
       finish: "开始使用",
       libraries: {
         title: "整理好的文件放在哪里",

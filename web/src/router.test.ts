@@ -46,6 +46,14 @@ describe("router guard", () => {
     expect(router.currentRoute.value.name).toBe("welcome");
   });
 
+  it("leaves a web version whose wizard was skipped alone, libraries or not", async () => {
+    fakeApi({ "GET /api/auth/status": { configured: true, logged_in: true, desktop: false }, "GET /api/libraries": [],
+      "GET /api/settings": { "welcome.done": true } });
+    const router = createAppRouter(createMemoryHistory());
+    await router.push("/");
+    expect(router.currentRoute.value.name).toBe("dashboard");
+  });
+
   it("lets the web version with a library use its upload page", async () => {
     fakeApi({ "GET /api/auth/status": { configured: true, logged_in: true, desktop: false },
       "GET /api/libraries": [{ id: 1 }], "GET /api/libraries/1/summary": { counts: {} } });
