@@ -96,6 +96,23 @@ async function pickLibraryDir() {
   if (picked) form.library_dir = picked;
 }
 
+/** On a server a removed file is gone for good: say so before such a setting is chosen. The desktop uses the trash. */
+async function deletesForGood(text: string): Promise<boolean> {
+  return auth.desktop || ask(t("library.deleteConfirmTitle"), text, true);
+}
+
+async function pickPolicy(value: string) {
+  if (value === "delete" && !(await deletesForGood(t("library.deletePolicyConfirm")))) return;
+  form.source_policy = value;
+}
+
+async function pickOverwrite(value: string) {
+  if (value !== "never" && !(await deletesForGood(t("library.overwriteConfirm")))) return;
+  form.overwrite_policy = value;
+}
+
+const overwriteHint = computed(() => t(`library.${auth.desktop ? "overwriteHintDesktop" : "overwriteHint"}.${form.overwrite_policy}`));
+
 watch(uploadOnly, (only) => {
   if (!only || auth.desktop) return;
   if (form.source_policy === "keep") form.source_policy = "delete";
@@ -239,9 +256,10 @@ function cancel() {
         <section>
           <div class="section-title">{{ t("library.organize") }}</div>
           <div class="grid">
-            <VSelect v-if="!auth.desktop" v-model="form.source_policy" :label="t('library.policyLabel')" :items="policies" />
-            <VSelect v-model="form.overwrite_policy" :label="t('library.overwriteLabel')" :items="overwrites"
-              :hint="t(`library.overwriteHint.${form.overwrite_policy}`)" persistent-hint data-test="overwrite" />
+            <VSelect v-if="!auth.desktop" :model-value="form.source_policy" :label="t('library.policyLabel')" :items="policies"
+              data-test="policy" @update:model-value="pickPolicy" />
+            <VSelect :model-value="form.overwrite_policy" :label="t('library.overwriteLabel')" :items="overwrites"
+              :hint="overwriteHint" persistent-hint data-test="overwrite" @update:model-value="pickOverwrite" />
             <VTextField v-if="form.source_policy === 'archive' && !auth.desktop" v-model="form.archive_dir" :label="t('library.archiveDir')"
               :error-messages="archiveMissing ? t('library.archiveMissing') : undefined" />
           </div>

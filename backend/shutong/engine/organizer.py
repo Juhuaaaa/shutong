@@ -15,6 +15,7 @@ import unicodedata
 
 from shutong.engine.ai_assist import SourceContext, _effective_threshold, _safe_name
 from shutong.engine.ai_recognize import AiNotConfigured, FileReading, Reading, SeriesReading, batches, read_batch
+from shutong.engine.discard import discard
 from shutong.engine.disposal import DisposalContext, dispose_source, remove_tree
 from shutong.engine import failure
 from shutong.engine.fingerprint import fingerprint
@@ -369,7 +370,7 @@ class Organizer:
                 continue
             target = library.library_dir / item.target_path if item.target_path else None
             if target is not None and os.path.lexists(target):
-                remove_tree(target)
+                discard(target)  # into the trash on the desktop
                 counts["deleted"] += 1
             self.items.add_event(item.id, "target_deleted",
                                  {"target": item.target_path.as_posix() if item.target_path else None})
@@ -978,9 +979,7 @@ class Organizer:
         old = Path(replaces)
         if old != item.target_path:
             try:
-                (library.library_dir / old).unlink()
-            except FileNotFoundError:
-                pass
+                discard(library.library_dir / old)  # into the trash on the desktop
             except OSError as error:
                 self.items.add_event(item.id, "replaced_file_kept", {"file": replaces, "error": str(error)})
         for owner in self.items.published_at(library.id, old):

@@ -173,6 +173,7 @@ describe("HistoryView", () => {
     await vi.waitFor(() => expect(document.querySelector("[data-test=reorganize]")).not.toBeNull());
     (document.querySelector("[data-test=reorganize]") as HTMLElement).click();
     await vi.waitFor(() => expect(document.querySelector("[data-test=reorganize-submit]")).not.toBeNull());
+    expect(document.querySelector("[data-test=reorganize-note]")?.textContent).toContain("不可恢复");
     (document.querySelector("[data-test=reorganize-submit]") as HTMLElement).click();
     await vi.waitFor(() => expect(notifyState.queue.map((entry) => entry.text).join()).toContain("来源文件已不在原处，未重新整理"));
     wrapper.unmount();
