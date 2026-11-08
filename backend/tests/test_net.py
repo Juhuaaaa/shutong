@@ -71,3 +71,17 @@ class MakeOpenerTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class UserAgentTests(unittest.TestCase):
+    def test_names_the_developer_the_app_its_version_and_home(self):
+        """Bangumi asks API users for developer ID, app name, version and the project's home page."""
+        from shutong import __version__
+        from shutong.net import USER_AGENT
+        self.assertEqual(USER_AGENT, "Juhuaaaa/shutong/{0} (https://github.com/Juhuaaaa/shutong)".format(__version__))
+
+    def test_every_client_sends_it(self):
+        from shutong.ai import openai_compat
+        from shutong.metadata import anilist, bangumi
+        from shutong.net import USER_AGENT
+        self.assertEqual({bangumi.USER_AGENT, openai_compat.USER_AGENT, anilist.USER_AGENT}, {USER_AGENT})

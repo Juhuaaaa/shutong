@@ -20,9 +20,9 @@ from urllib.request import Request, urlopen
 from shutong.store.cache import CacheStore
 
 from .base import MetadataUnavailable, Subject
+from shutong.net import USER_AGENT  # noqa: F401  (also imported from here by other modules)
 
 log = logging.getLogger("shutong.bangumi")
-USER_AGENT = "shutong/0.1 (https://github.com/Juhuaaaa/shutong)"
 _RETRYABLE_HTTP_CODES = {429, 500, 502, 503, 504}
 _RETRY_DELAYS = (1, 2, 4)
 _MAX_ATTEMPTS = 3

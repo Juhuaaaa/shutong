@@ -56,6 +56,16 @@ function note(name: string): string {
   return te(`settings.sourceNotes.${name}`) ? t(`settings.sourceNotes.${name}`) : "";
 }
 
+// Known addresses to pick from; any other can still be typed in.
+const API_ADDRESSES = ["https://api.bgm.tv", "https://bgmapi.anibt.net"];
+const IMAGE_ADDRESSES = ["https://lain.bgm.tv", "https://bgmimg.anibt.net"];
+const OFFICIAL = new Set(["https://api.bgm.tv", "https://lain.bgm.tv"]);
+const TOKEN_PAGE = "https://next.bgm.tv/demo/access-token";
+
+function addressProps(address: string) {
+  return { title: address, subtitle: t(OFFICIAL.has(address) ? "settings.addressOfficial" : "settings.addressMirror") };
+}
+
 async function save() {
   try {
     notify.success((await form.save()) ? t("settings.saved") : t("settings.nothingChanged"));
@@ -109,18 +119,26 @@ async function clear(key: string) {
     <VSwitch v-model="translate" :label="t('settings.translateSummaries')" :hint="t('settings.translateSummariesHint')"
       persistent-hint class="mt-2" data-test="translate-summaries" />
     <div class="text-subtitle-2 mt-4">Bangumi</div>
-    <VTextField v-model="baseUrl" :label="t('settings.bangumiUrl')" :hint="t('settings.bangumiUrlHint')" persistent-hint
-      data-test="bangumi-url" />
-    <VTextField v-model="imageUrl" :label="t('settings.bangumiImageUrl')" :hint="t('settings.bangumiImageUrlHint')"
-      persistent-hint :placeholder="'https://lain.bgm.tv'" persistent-placeholder data-test="bangumi-image-url" />
+    <div class="addresses" data-test="bangumi-addresses">
+      <VCombobox v-model="baseUrl" :items="API_ADDRESSES" :item-props="addressProps" :label="t('settings.bangumiUrl')"
+        :hint="t('settings.bangumiUrlHint')" persistent-hint data-test="bangumi-url" />
+      <VCombobox v-model="imageUrl" :items="IMAGE_ADDRESSES" :item-props="addressProps" :label="t('settings.bangumiImageUrl')"
+        :hint="t('settings.bangumiImageUrlHint')" persistent-hint placeholder="https://lain.bgm.tv" persistent-placeholder
+        clearable data-test="bangumi-image-url" @click:clear="imageUrl = ''" />
+    </div>
     <SecretField v-model="token" :label="t('settings.bangumiToken')"
       :hint="t('settings.bangumiTokenHint')" :is-set="!!form.secretSet['bangumi.token']" clear-test="clear-bangumi-token"
       @clear="clear('bangumi.token')" />
+    <a :href="TOKEN_PAGE" target="_blank" rel="noopener noreferrer" class="token-link text-caption" data-test="bangumi-token-link">
+      {{ t("settings.bangumiTokenApply") }}
+    </a>
     <div class="actions"><VBtn color="primary" data-test="save-metadata" @click="save">{{ t("common.save") }}</VBtn></div>
   </div>
 </template>
 
 <style scoped>
+.addresses { display: flex; flex-direction: column; gap: 8px; }
+.token-link { color: rgb(var(--v-theme-primary)); margin: -4px 0 0 16px; }
 .form { max-width: 600px; display: flex; flex-direction: column; gap: 8px; }
 .sources { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
 .source {

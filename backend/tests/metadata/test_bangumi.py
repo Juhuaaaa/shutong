@@ -10,6 +10,7 @@ import unittest
 from urllib.error import HTTPError, URLError
 
 from shutong.metadata.bangumi import BangumiSettings, BangumiSource, normalize_subject
+from shutong.net import USER_AGENT
 from shutong.metadata.base import MetadataUnavailable
 from shutong.store.cache import CacheStore
 from shutong.store.db import Database
@@ -110,7 +111,7 @@ class BangumiTests(unittest.TestCase):
         self.assertEqual(timeout, 60)
         self.assertEqual(request.full_url, "https://api.example.test/v0/search/subjects?limit=8")
         self.assertEqual(request.get_method(), "POST")
-        self.assertEqual(request.get_header("User-agent"), "shutong/0.1 (https://github.com/Juhuaaaa/shutong)")
+        self.assertEqual(request.get_header("User-agent"), USER_AGENT)
         self.assertEqual(request.get_header("Authorization"), "Bearer bangumi-secret")
         self.assertEqual(
             json.loads(request.data.decode("utf-8")),
