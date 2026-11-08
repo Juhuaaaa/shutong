@@ -6,6 +6,12 @@ export interface State {
   port?: number;
   lastUpdateCheck?: number;
   knownUpdate?: Update;
+  /** The version that last ran: a different one means the cached page may name bundles that are gone. */
+  appVersion?: string;
+}
+
+export function cacheIsStale(state: State, version: string): boolean {
+  return state.appVersion !== version;
 }
 
 export function readState(path: string): State {

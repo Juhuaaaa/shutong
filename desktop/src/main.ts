@@ -6,7 +6,7 @@ import { Backend, BackendCommand, BackendError, startBackend, stopBackend } from
 import { buildMenu, TUTORIAL_URL } from "./menu";
 import { externalAllowed, isAllowedNavigation } from "./navigation";
 import { Original, trashOriginals } from "./originals";
-import { readState, State, writeState } from "./state";
+import { cacheIsStale, readState, State, writeState } from "./state";
 import { isNewer, latestRelease, shouldCheck, Update } from "./update";
 
 const COOKIE = "shutong_session";
@@ -198,7 +198,11 @@ async function start(): Promise<void> {
     backend.process.once("exit", () => {
       if (!quitting) void failed(new Error("后端意外退出"));
     });
-    state = { ...state, port: backend.port };
+    if (cacheIsStale(state, app.getVersion())) {
+      // An upgrade renames the page's bundles: a page cached by the last version would ask for files that are gone.
+      await session.defaultSession.clearCache();
+    }
+    state = { ...state, port: backend.port, appVersion: app.getVersion() };
     writeState(statePath(), state);
     const origin = `http://127.0.0.1:${backend.port}`;
     await session.defaultSession.cookies.set({ url: origin, name: COOKIE, value: token, httpOnly: true, sameSite: "strict" });

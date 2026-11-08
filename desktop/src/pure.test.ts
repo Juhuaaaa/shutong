@@ -5,7 +5,16 @@ import path from "node:path";
 import { parseReadyLine, startBackend } from "./backend";
 import { externalAllowed, isAllowedNavigation } from "./navigation";
 import { selectTrashable, trashOriginals } from "./originals";
+import { cacheIsStale } from "./state";
 import { isNewer, latestRelease, shouldCheck } from "./update";
+
+describe("cacheIsStale", () => {
+  it("drops the page cache once after every upgrade, and from versions that did not remember theirs", () => {
+    expect(cacheIsStale({}, "0.2.1")).toBe(true);
+    expect(cacheIsStale({ appVersion: "0.2.0" }, "0.2.1")).toBe(true);
+    expect(cacheIsStale({ appVersion: "0.2.1" }, "0.2.1")).toBe(false);
+  });
+});
 
 describe("parseReadyLine", () => {
   it("reads the port", () => expect(parseReadyLine('SHUTONG_READY {"port": 43210}')).toEqual({ port: 43210 }));

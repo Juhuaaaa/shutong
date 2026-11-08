@@ -102,6 +102,10 @@ def _backfill_group_keys(db: Database) -> None:
         log.info("给 %d 个旧条目补上了来源目录分组", filled)
 
 
+# The page is checked with the server every time: after an upgrade it must name the new bundles.
+_NO_CACHE = {"Cache-Control": "no-cache"}
+
+
 def _serve_web(app: FastAPI, root: Path) -> None:
     index = root / "index.html"
 
@@ -111,5 +115,10 @@ def _serve_web(app: FastAPI, root: Path) -> None:
             raise HTTPException(404, "接口不存在")
         candidate = (root / path).resolve()
         if path and candidate.is_file() and root.resolve() in candidate.parents:
-            return FileResponse(candidate)
-        return FileResponse(index)
+            if path.startswith("assets/"):  # names carry a content hash: a new build is new names
+                return FileResponse(candidate, headers={"Cache-Control": "public, max-age=31536000, immutable"})
+            return FileResponse(candidate, headers=_NO_CACHE if candidate == index.resolve() else None)
+        if path.startswith("assets/"):
+            # A bundle an older page asks for: a 404 lets the page reload itself, the page served as a script would not.
+            raise HTTPException(404, "文件不存在")
+        return FileResponse(index, headers=_NO_CACHE)
