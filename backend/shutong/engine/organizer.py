@@ -37,6 +37,7 @@ from shutong.metadata.base import Subject, SubjectRef
 from shutong.metadata.registry import LABELS, NUMERIC_IDS
 from shutong.services import Services
 from shutong.store.ai_calls import AiCallStore
+from shutong.store.fingerprints import FingerprintCache
 from shutong.store.cache import CacheStore
 from shutong.store.journal import JournalStore
 from shutong.store.records import Item, ItemStore, Library, LibraryStore, RunStore
@@ -81,6 +82,7 @@ class Organizer:
         self.runs = RunStore(db)
         self.items = ItemStore(db)
         self.ai_calls = AiCallStore(db)
+        self.fingerprints = FingerprintCache(db)
         # AI answers for the current run, keyed by source path; one call per batch of a folder's names.
         self._readings: Dict[str, Reading] = {}
         # Subject choices for the current run, keyed by source folder: one call per series, not per volume.
@@ -125,7 +127,11 @@ class Organizer:
         if self.services.ai is None:
             raise AiNotConfigured()
         adapter = adapter_for(library)
-        return self._scan_entries(library, adapter, adapter.scan(library.source_dir).entries, trigger, on_planned)
+        entries = adapter.scan(library.source_dir).entries
+        run_id = self._scan_entries(library, adapter, entries, trigger, on_planned)
+        # A full look at the source folder: what it no longer holds need not be remembered.
+        self.fingerprints.forget_except(Path(library.source_dir), (entry.path for entry in entries))
+        return run_id
 
     def scan_paths(self, library_id: int, entries: Sequence[SourceEntry],
                    on_planned: Optional[Callable[[List[int]], None]] = None) -> int:
@@ -175,7 +181,7 @@ class Organizer:
             todo: List[Tuple[int, SourceEntry]] = []
             for entry in entries:
                 try:
-                    source_fingerprint = fingerprint(entry.path)
+                    source_fingerprint = self._scan_fingerprint(entry.path)
                 except OSError:
                     self._advance()
                     continue  # vanished or unreadable between scan and fingerprint; next scan sees it
@@ -560,6 +566,21 @@ class Organizer:
         return counts
 
     # ---- sources that moved or went away ------------------------------------------------------
+
+    def _scan_fingerprint(self, path: Path) -> str:
+        """A file unchanged since the last scan (same size, same modified time) is not read again.
+
+        Folders are fingerprinted from their files' names and sizes, which is no read at all.
+        """
+        if path.is_dir():
+            return fingerprint(path)
+        stat = os.stat(path)
+        known = self.fingerprints.lookup(path, stat.st_size, stat.st_mtime_ns)
+        if known is not None:
+            return known
+        found = fingerprint(path)
+        self.fingerprints.remember(path, stat.st_size, stat.st_mtime_ns, found)
+        return found
 
     def _follow(self, library: Library, item: Item, entry: SourceEntry) -> Item:
         """A scan found the item's bytes at ``entry.path``: renamed (or respelled) sources keep their item."""

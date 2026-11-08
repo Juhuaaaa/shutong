@@ -236,6 +236,12 @@ class RunStore:
                 (now_iso(), _dumps(counts), run_id),
             )
 
+    def close_interrupted(self) -> int:
+        """At startup: a run still open was cut short (a restart, an upgrade); its files are picked up next scan."""
+        with self.db.connect() as connection:
+            return connection.execute("UPDATE runs SET finished_at = ?, counts = ? WHERE finished_at IS NULL",
+                                      (now_iso(), _dumps({"interrupted": 1}))).rowcount
+
 
 class ItemStore:
     def __init__(self, db: Database) -> None:

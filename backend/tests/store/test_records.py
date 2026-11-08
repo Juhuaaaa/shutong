@@ -28,6 +28,15 @@ class RecordStoreTests(unittest.TestCase):
         self.assertEqual(loaded.archive_dir, Path("/b/原档轻小说"))
         self.assertEqual(loaded.source_policy, "archive")
 
+    def test_runs_cut_short_are_closed_as_interrupted(self):
+        open_run = self.runs.create(self.lib.id, "manual")
+        done = self.runs.create(self.lib.id, "manual")
+        self.runs.finish(done, {"known": 3})
+        self.assertEqual(self.runs.close_interrupted(), 1)
+        self.assertEqual(self.runs.counts(open_run), {"interrupted": 1})
+        self.assertEqual(self.runs.counts(done), {"known": 3})
+        self.assertEqual(self.runs.close_interrupted(), 0)
+
     def test_run_finish_records_counts(self):
         run_id = self.runs.create(self.lib.id, "manual")
         self.runs.finish(run_id, {"published": 3})
