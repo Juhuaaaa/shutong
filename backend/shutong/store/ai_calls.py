@@ -2,7 +2,9 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import sqlite3
-from typing import Callable, List, Optional
+from typing import Callable, Dict, List, Optional
+
+from shutong.ai.openai_compat import Usage
 
 from .db import Database
 
@@ -40,14 +42,26 @@ class AiCallStore:
         response_text: Optional[str],
         error: Optional[str],
         duration_ms: int,
+        usage: Optional[Usage] = None,
     ) -> int:
         with self.db.connect() as connection:
             return connection.execute(
                 "INSERT INTO ai_calls(item_id, purpose, model, request_json, response_text, error,"
-                " duration_ms, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                " duration_ms, created_at, prompt_tokens, completion_tokens, cached_tokens)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (item_id, purpose, model, request_json, response_text, error, duration_ms,
-                 self.clock().isoformat()),
+                 self.clock().isoformat(), *((usage.prompt, usage.completion, usage.cached) if usage else
+                                             (None, None, None))),
             ).lastrowid
+
+    def usage(self, since: Optional[datetime] = None) -> Dict[str, int]:
+        """Calls and the tokens they took; ``measured`` counts the calls whose provider said how many."""
+        with self.db.connect() as connection:
+            row = connection.execute(
+                "SELECT count(*), count(prompt_tokens), coalesce(sum(prompt_tokens), 0),"
+                " coalesce(sum(completion_tokens), 0), coalesce(sum(cached_tokens), 0)"
+                " FROM ai_calls WHERE created_at >= ?", (since.isoformat() if since else "",)).fetchone()
+        return dict(zip(("calls", "measured", "prompt_tokens", "completion_tokens", "cached_tokens"), row))
 
     def count_since(self, moment: datetime) -> int:
         with self.db.connect() as connection:

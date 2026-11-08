@@ -3,7 +3,7 @@ import { mdiCheck, mdiLanConnect } from "@mdi/js";
 import { onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
-import { aiCalls, settings as api, type AiCall } from "@/api";
+import { aiCalls, settings as api, type AiCall, type AiUsage } from "@/api";
 import type { ApiError } from "@/api/client";
 import { ask } from "@/composables/confirm";
 import { shortTime } from "@/composables/format";
@@ -20,6 +20,8 @@ const apiKey = form.field<string>("ai.api_key");
 const model = form.field<string>("ai.model");
 const useProxy = form.field<boolean>("ai.use_proxy");
 const calls = ref<AiCall[]>([]);
+const usage = ref<AiUsage | null>(null);
+const count = (value: number) => value.toLocaleString("en-US");
 const testing = ref(false);
 
 onMounted(async () => {
@@ -29,6 +31,7 @@ onMounted(async () => {
   } catch (error) {
     notify.error((error as ApiError).detail ?? String(error));
   }
+  usage.value = await aiCalls.usage().catch(() => null);  // only a summary: the page works without it
 });
 
 function setThreshold(value: string) {
@@ -101,6 +104,11 @@ async function clear(key: string) {
     </div>
   </div>
   <div class="section-title">{{ t("settings.aiRecent") }}</div>
+  <div v-if="usage && usage.calls" class="hint mb-2" data-test="ai-usage">
+    {{ t("settings.aiUsage", { calls: count(usage.calls), prompt: count(usage.prompt_tokens),
+                               cached: count(usage.cached_tokens), completion: count(usage.completion_tokens) }) }}
+    <template v-if="usage.measured < usage.calls">{{ t("settings.aiUsageUnmeasured", { count: count(usage.calls - usage.measured) }) }}</template>
+  </div>
   <VTable density="comfortable" class="calls">
     <thead>
       <tr>

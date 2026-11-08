@@ -36,13 +36,15 @@ class AuditedAi:
             self._record(item_id, purpose, request_json, None, str(error), started)
             log.warning("AI 调用出错（%s，%s）：%s", purpose, self.provider.model, error)
             raise AiError("AI provider failed: {0}".format(error)) from error
-        call_id = self._record(item_id, purpose, request_json, raw, None, started)
+        last_usage = getattr(self.provider, "last_usage", None)
+        call_id = self._record(item_id, purpose, request_json, raw, None, started,
+                               last_usage() if callable(last_usage) else None)
         log.info("AI 调用（%s，%s）用时 %.1f 秒", purpose, self.provider.model, time.monotonic() - started)
         return result, call_id
 
-    def _record(self, item_id, purpose, request_json, response_text, error, started) -> int:
+    def _record(self, item_id, purpose, request_json, response_text, error, started, usage=None) -> int:
         return self.calls.record(
             item_id=item_id, purpose=purpose, model=self.provider.model, request_json=request_json,
             response_text=response_text, error=error,
-            duration_ms=int((time.monotonic() - started) * 1000),
+            duration_ms=int((time.monotonic() - started) * 1000), usage=usage,
         )

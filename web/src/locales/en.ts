@@ -313,6 +313,8 @@ const en: typeof zhCN = {
     aiThresholdHint: "At or above this confidence a file goes straight into the library; below it, to review. Default 0.85, minimum 0.8.",
     aiOk: "Connected",
     aiRecent: "Recent AI calls",
+    aiUsage: "{calls} calls so far, tokens: {prompt} in ({cached} of them cached), {completion} out.",
+    aiUsageUnmeasured: "{count} of them have no usage (older calls, or the provider did not say).",
     aiPurpose: "Purpose",
     aiResult: "Result",
     aiAdopted: "Adopted",

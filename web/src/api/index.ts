@@ -173,4 +173,14 @@ export const servers = {
 
 export const aiCalls = {
   recent: (limit = 20) => request<AiCall[]>("GET", "/api/ai/calls", { query: { limit } }),
+  usage: () => request<AiUsage>("GET", "/api/ai/usage"),
 };
+
+export interface AiUsage {
+  calls: number;
+  /** Calls whose provider said how many tokens they took. */
+  measured: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  cached_tokens: number;
+}

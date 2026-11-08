@@ -116,6 +116,39 @@
         "title": "AiTestResult",
         "type": "object"
       },
+      "AiUsageOut": {
+        "properties": {
+          "cached_tokens": {
+            "title": "Cached Tokens",
+            "type": "integer"
+          },
+          "calls": {
+            "title": "Calls",
+            "type": "integer"
+          },
+          "completion_tokens": {
+            "title": "Completion Tokens",
+            "type": "integer"
+          },
+          "measured": {
+            "title": "Measured",
+            "type": "integer"
+          },
+          "prompt_tokens": {
+            "title": "Prompt Tokens",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "calls",
+          "measured",
+          "prompt_tokens",
+          "completion_tokens",
+          "cached_tokens"
+        ],
+        "title": "AiUsageOut",
+        "type": "object"
+      },
       "AuthStatus": {
         "properties": {
           "configured": {
@@ -132,7 +165,7 @@
             "type": "boolean"
           },
           "version": {
-            "default": "0.2.1",
+            "default": "0.3.0",
             "title": "Version",
             "type": "string"
           }
@@ -2653,6 +2686,28 @@
           }
         },
         "summary": "List Calls",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/ai/usage": {
+      "get": {
+        "description": "Every call so far and the tokens they took.",
+        "operationId": "usage_api_ai_usage_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiUsageOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Usage",
         "tags": [
           "ai"
         ]
