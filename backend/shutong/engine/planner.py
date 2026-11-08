@@ -19,7 +19,8 @@ from shutong.engine.kinds.novel.naming import (
 from shutong.engine.metadata_build import bangumi_id, manga_metadata, metadata_to_json, novel_metadata
 from shutong.engine.recognition import Directives, Recognition
 from shutong.engine.states import ReviewReason
-from shutong.engine.template import render
+from shutong.engine.template import UNKNOWN_AUTHOR, render, uses_edition
+from shutong.engine.text import path_safe
 from shutong.metadata.base import Subject
 
 _SP_NUMBER = re.compile(r"SP(\d+)", re.IGNORECASE)
@@ -60,15 +61,16 @@ class _Draft:
     width: int
     directives: Directives
     special_index: Optional[int] = None
+    edition: Optional[str] = None  # in the series name: the template asks for the edition
 
 
 def plan_batch(kind: str, library_dir: Path, template: str, inputs: Sequence[PlanInput], *,
-               include_edition: bool = True,
                owner_of: Callable[[Path], Optional[int]] = lambda target: None,
                overwrite: str = "never", rename: bool = True,
                published: Mapping[Tuple[str, str], Path] = {},
                source_time: Callable[[Path], Optional[float]] = lambda target: None) -> List[PlanDecision]:
-    """``include_edition=False`` names series by title alone; ``{edition}`` stays usable in templates.
+    """A series is named by its title alone unless the template uses ``{edition}``: then each edition is a
+    series of its own (迷宫饭[bili电子版]), in its folder name and in the metadata media servers read.
 
     ``owner_of`` names the item a library file was published from: a file that came from another
     source is not this item's, however well its metadata matches.
@@ -79,6 +81,7 @@ def plan_batch(kind: str, library_dir: Path, template: str, inputs: Sequence[Pla
     ``rename=False`` keeps the source's file name; ``published`` then finds volumes the names do not show.
     """
     library_dir = Path(library_dir)
+    include_edition = kind == "manga" and uses_edition(template)
     drafts = [_draft(item, include_edition) for item in inputs]
     spellings = _existing_spellings(library_dir)
     for draft in drafts:
@@ -208,12 +211,26 @@ def _keep_reason(overwrite: str, source: Path, current: Path, current_time: Opti
         return "比较不了文件，保留库里的"
 
 
-def _draft(item: PlanInput, include_edition: bool = True) -> _Draft:
+def _draft(item: PlanInput, include_edition: bool = False) -> _Draft:
     parse = item.recognition.parse
     title = parse.title_hint
-    series = build_output_name(title, parse.edition if include_edition else None)
+    edition = parse.edition if include_edition else None
+    series = build_output_name(title, edition)
     directives = item.recognition.directives
-    return _Draft(item, series, title, directives.width or 2, directives)
+    return _Draft(item, series, title, directives.width or 2, directives, edition=edition)
+
+
+_EDITION_SUFFIX = re.compile(r"\[[^\[\]]*\]$")
+
+
+def _series_title(draft: "_Draft") -> str:
+    """``{series}`` in a template: the series name without the edition, which ``{edition}`` adds where wanted."""
+    return _EDITION_SUFFIX.sub("", draft.series) if draft.edition else draft.series
+
+
+def _author(item: PlanInput) -> str:
+    writers = [writer.strip() for writer in item.subject.writers if writer and writer.strip()]
+    return path_safe(writers[0]) if writers else UNKNOWN_AUTHOR
 
 
 def _spelling_key(name: str) -> str:
@@ -245,7 +262,8 @@ def _fields(kind: str, draft: _Draft, volume, item: PlanInput) -> Dict[str, Opti
         volume_text = name[len(draft.series) + 1: -len(".epub")]
     release = item.subject.release_date or ""
     return {
-        "series": draft.series,
+        "series": _series_title(draft),
+        "author": _author(item),
         "title": draft.title,
         "edition": item.recognition.parse.edition,
         "volume": volume_text,
@@ -256,7 +274,8 @@ def _fields(kind: str, draft: _Draft, volume, item: PlanInput) -> Dict[str, Opti
 
 
 def _series_dir(library_dir: Path, template: str, draft: _Draft) -> Path:
-    fields = {"series": draft.series, "title": draft.title, "edition": draft.source.recognition.parse.edition,
+    fields = {"series": _series_title(draft), "author": _author(draft.source),
+              "title": draft.title, "edition": draft.source.recognition.parse.edition,
               "volume": "SP00", "ext": draft.source.output_suffix,
               "bgm": bangumi_id(draft.source.subject),
               "year": None}
@@ -325,7 +344,8 @@ def _existing_matches(kind: str, final: Path, series: str, volume, metadata) -> 
 def _dir_is_per_series(template: str) -> bool:
     """Does the template put each series in its own directory?"""
     def parent(series: str) -> Path:
-        return render(template, {"series": series, "title": series, "volume": "Vol.01", "ext": ".x"}).parent
+        return render(template, {"series": series, "title": series, "author": "a", "edition": "e", "volume": "Vol.01",
+                                 "ext": ".x"}).parent
     return parent("a") != parent("b")
 
 

@@ -962,11 +962,6 @@
             ],
             "title": "Archive Dir"
           },
-          "include_edition": {
-            "default": true,
-            "title": "Include Edition",
-            "type": "boolean"
-          },
           "kind": {
             "enum": [
               "manga",
@@ -1081,10 +1076,6 @@
             "title": "Id",
             "type": "integer"
           },
-          "include_edition": {
-            "title": "Include Edition",
-            "type": "boolean"
-          },
           "kind": {
             "title": "Kind",
             "type": "string"
@@ -1158,7 +1149,6 @@
           "source_policy",
           "archive_dir",
           "pdf_to_cbz",
-          "include_edition",
           "overwrite_policy",
           "rename_files",
           "available",
@@ -1181,17 +1171,6 @@
               }
             ],
             "title": "Archive Dir"
-          },
-          "include_edition": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Include Edition"
           },
           "library_dir": {
             "anyOf": [

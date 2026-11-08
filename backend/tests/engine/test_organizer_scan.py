@@ -2,6 +2,8 @@ from pathlib import Path
 import tempfile
 import unittest
 
+from shutong.engine.template import EDITION_TEMPLATE
+
 from shutong.metadata.base import SubjectRef
 from unittest import mock
 import zipfile
@@ -164,6 +166,7 @@ class OrganizerScanTests(OrganizerFixture):
     def test_ai_title_and_edition_name_the_series(self):
         ai = ReaderAi(series={"[九井谅子][迷宫饭][Vol.01-Vol.14][完结][bili]": {"title": "迷宫饭", "edition": "bili电子版"}})
         self.zip("[九井谅子][迷宫饭][Vol.01-Vol.14][完结][bili]/Vol.01.zip")
+        LibraryStore(self.db).update(self.library.id, naming_template=EDITION_TEMPLATE)
         self.organizer(ai=ai).scan(self.library.id)
         [item] = self.all_items()
         self.assertEqual((item.status, item.subject_id), (ItemStatus.PLANNED, "133315"))

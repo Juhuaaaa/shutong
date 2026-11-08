@@ -163,11 +163,6 @@ class RecordStoreTests(unittest.TestCase):
         self.assertEqual(keys, ["迷宫饭", "迷宫饭", "s"])
         self.assertEqual(self.items.backfill_group_keys(lambda library_id, path: "x"), 0)
 
-    def test_include_edition_defaults_true_and_can_be_disabled(self):
-        self.assertTrue(self.lib.include_edition)
-        plain = self.libraries.create("无版本", "manga", Path("/s3"), Path("/l3"), include_edition=False)
-        self.assertFalse(plain.include_edition)
-        self.assertTrue(self.libraries.update(plain.id, include_edition=True).include_edition)
 
     def test_pdf_to_cbz_defaults_true_and_can_be_disabled(self):
         self.assertTrue(self.lib.pdf_to_cbz)

@@ -25,7 +25,10 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{ saved: [library: Library]; cancel: []; scan: [] }>();
 const { t } = useI18n();
 const auth = useAuth();
-const templateVars = computed(() => `{series} {title}${form.kind === "manga" ? " {edition}" : ""} {volume} {year} {bgm} {ext}`);
+const templateVars = computed(() => `{series} {title}${form.kind === "manga" ? " {edition}" : ""} {author} {volume} {year} {bgm} {ext}`);
+/** The default template with the edition after the title, for a library that keeps editions apart. */
+const DEFAULT_TEMPLATE = "{series}/{series} {volume}{ext}";
+const EDITION_TEMPLATE = "{series}{edition:[%s]}/{series}{edition:[%s]} {volume}{ext}";
 
 const open = ref(props.expanded || props.library === null);
 
@@ -38,7 +41,6 @@ const initial = {
   source_policy: props.library?.source_policy ?? "keep",
   archive_dir: props.library?.archive_dir ?? "",
   pdf_to_cbz: props.library?.pdf_to_cbz ?? true,
-  include_edition: props.library?.include_edition ?? true,
   overwrite_policy: props.library?.overwrite_policy ?? "never",
   rename_files: props.library?.rename_files ?? true,
   server_id: props.library?.server_id ?? null,
@@ -246,8 +248,6 @@ function cancel() {
           <div class="grid switches">
             <VSwitch v-if="!auth.desktop" v-model="form.watch" :label="t('library.watch')" :disabled="uploadOnly"
               :hint="uploadOnly ? t('library.watchNeedsSource') : t('library.watchHint')" persistent-hint data-test="watch" />
-            <VSwitch v-if="form.kind === 'manga'" v-model="form.include_edition" :label="t('library.includeEdition')" :hint="t('library.includeEditionHint')"
-              persistent-hint data-test="include-edition" />
             <VSwitch v-if="form.kind === 'manga'" v-model="form.pdf_to_cbz" :label="t('library.pdfToCbz')"
               :hint="t('library.pdfToCbzHint')" persistent-hint />
           </div>
@@ -256,8 +256,11 @@ function cancel() {
           <div class="section-title">{{ t("library.naming") }}</div>
           <VSwitch v-model="form.rename_files" :label="t('library.renameFiles')" :hint="t('library.renameFilesHint')"
             persistent-hint class="mb-4" data-test="rename-files" />
-          <VTextField v-model="form.naming_template" :label="t('library.template')" :placeholder="t('library.templateDefault')"
+          <VTextField v-model="form.naming_template" :label="t('library.template')" :placeholder="t('library.templateDefault', { template: DEFAULT_TEMPLATE })"
             :hint="form.rename_files ? t('library.templateHint', { vars: templateVars }) : t('library.templateFolderHint', { vars: templateVars })" persistent-hint :error-messages="templateError || undefined" data-test="template" />
+          <div v-if="form.kind === 'manga'" class="st-muted text-caption mt-1" data-test="edition-hint">
+            {{ t("library.templateEditionHint") }} <code>{{ EDITION_TEMPLATE }}</code>
+          </div>
           <div v-for="example in examples" :key="example.source" class="example">
             <span class="st-muted">{{ example.source }}</span> → {{ example.target }}
           </div>

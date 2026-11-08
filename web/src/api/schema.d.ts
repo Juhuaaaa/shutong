@@ -1210,11 +1210,6 @@ export interface components {
             /** Archive Dir */
             archive_dir?: string | null;
             /**
-             * Include Edition
-             * @default true
-             */
-            include_edition: boolean;
-            /**
              * Kind
              * @enum {string}
              */
@@ -1273,8 +1268,6 @@ export interface components {
             available: boolean;
             /** Id */
             id: number;
-            /** Include Edition */
-            include_edition: boolean;
             /** Kind */
             kind: string;
             /** Library Dir */
@@ -1304,8 +1297,6 @@ export interface components {
         LibraryPatch: {
             /** Archive Dir */
             archive_dir?: string | null;
-            /** Include Edition */
-            include_edition?: boolean | null;
             /** Library Dir */
             library_dir?: string | null;
             /** Name */
