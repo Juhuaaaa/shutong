@@ -266,6 +266,7 @@ export default {
       bangumi: "中文书名、简介都有，推荐排第一",
       anilist: "按日文或英文原名搜索，简介是英文；适合补 Bangumi 上没有的作品",
     },
+    keepOneSource: "至少要开一个数据源",
     moveUp: "上移",
     moveDown: "下移",
     bangumiUrl: "API 地址",
