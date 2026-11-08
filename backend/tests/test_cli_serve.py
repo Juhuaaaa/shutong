@@ -39,6 +39,22 @@ class ServeTests(unittest.TestCase):
         self.assertIn("书童", client.get("/review").text)
         self.assertEqual(client.get("/api/libraries").status_code, 401)
 
+    def test_the_page_is_never_served_stale(self):
+        # An upgrade renames the bundles: a cached index.html would point at files that are gone.
+        dist = self.root / "dist"
+        (dist / "assets").mkdir(parents=True)
+        (dist / "index.html").write_text("<html>书童</html>", encoding="utf-8")
+        (dist / "assets" / "app-abc123.js").write_text("console.log(1)", encoding="utf-8")
+        with mock.patch.dict("os.environ", {"SHUTONG_WEB": str(dist)}):
+            code, captured = self.run_serve()
+        client = TestClient(captured["app"])
+        for path in ("/", "/review", "/index.html"):
+            with self.subTest(path=path):
+                self.assertEqual(client.get(path).headers["cache-control"], "no-cache")
+        self.assertIn("immutable", client.get("/assets/app-abc123.js").headers["cache-control"])
+        # A bundle an old page asks for is a 404, not the page itself served as JavaScript.
+        self.assertEqual(client.get("/assets/app-old999.js").status_code, 404)
+
     def test_default_web_dir_is_the_repo_build(self):
         self.assertEqual(cli.default_web_dir(), Path(cli.__file__).resolve().parents[2] / "web" / "dist")
 
