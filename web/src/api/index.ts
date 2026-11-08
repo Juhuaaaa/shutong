@@ -98,6 +98,7 @@ export const libraries = {
 export interface MetadataFields {
   localized_series: string;
   writers: string[];
+  illustrators?: string[];
   publisher: string;
   release_date: string;
   genres: string[];

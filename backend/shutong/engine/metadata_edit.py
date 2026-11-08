@@ -70,6 +70,7 @@ class ManualMetadata:
     release_date: str = ""
     genres: Tuple[str, ...] = ()
     summary: str = ""
+    illustrators: Tuple[str, ...] = ()  # light novels only: ComicInfo has the artists among the writers
 
     @classmethod
     def from_json(cls, data: Mapping[str, Any]) -> "ManualMetadata":
@@ -80,6 +81,7 @@ class ManualMetadata:
             release_date=_date(data.get("release_date")),
             genres=_names(data.get("genres"), "标签"),
             summary=_text(data.get("summary"), _SUMMARY_LIMIT, "简介"),
+            illustrators=_names(data.get("illustrators"), "插画"),
         )
         if manual == cls():
             raise ValueError("至少填一项元数据")
@@ -87,7 +89,8 @@ class ManualMetadata:
 
     def to_json(self) -> dict:
         return {"localized_series": self.localized_series, "writers": list(self.writers), "publisher": self.publisher,
-                "release_date": self.release_date, "genres": list(self.genres), "summary": self.summary}
+                "release_date": self.release_date, "genres": list(self.genres), "summary": self.summary,
+                "illustrators": list(self.illustrators)}
 
 
 def apply_manual(metadata: Metadata, manual: ManualMetadata) -> Metadata:
@@ -96,7 +99,8 @@ def apply_manual(metadata: Metadata, manual: ManualMetadata) -> Metadata:
         return replace(metadata, localized_series=manual.localized_series, writers=manual.writers,
                        publisher=manual.publisher, release_date=manual.release_date or None,
                        genres=manual.genres, summary=manual.summary)
-    return replace(metadata, authors=manual.writers, publisher=manual.publisher, date=manual.release_date,
+    return replace(metadata, authors=manual.writers, illustrators=manual.illustrators, publisher=manual.publisher,
+                   date=manual.release_date,
                    genres=manual.genres, description=manual.summary)
 
 

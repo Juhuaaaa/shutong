@@ -259,6 +259,7 @@ const en: typeof zhCN = {
     fields: {
       localized: "Original title",
       writers: "Authors",
+      illustrators: "Illustrators",
       publisher: "Publisher",
       date: "Release date",
       badDate: "Write 2016, 2016-08 or 2016-08-01",

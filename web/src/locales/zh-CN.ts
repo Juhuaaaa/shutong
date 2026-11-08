@@ -257,6 +257,7 @@ export default {
     fields: {
       localized: "原名",
       writers: "作者",
+      illustrators: "插画",
       publisher: "出版社",
       date: "发售日期",
       badDate: "写成 2016、2016-08 或 2016-08-01",
