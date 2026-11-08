@@ -5,7 +5,7 @@ itself: a wrong guess there would cost the user a file, here it costs one more r
 """
 import os
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Dict, Iterable, Optional, Tuple
 
 from .db import Database
 
@@ -19,6 +19,14 @@ class FingerprintCache:
             row = connection.execute("SELECT fingerprint FROM fingerprint_cache WHERE path = ? AND size = ? AND mtime_ns = ?",
                                      (str(path), size, mtime_ns)).fetchone()
         return row[0] if row else None
+
+    def load_under(self, root: Path) -> Dict[str, Tuple[int, int, str]]:
+        """Everything remembered under ``root`` in one query: ``{path: (size, mtime_ns, fingerprint)}``."""
+        prefix = str(root).rstrip("/\\") + os.sep
+        with self.db.connect() as connection:
+            return {row[0]: (row[1], row[2], row[3]) for row in connection.execute(
+                "SELECT path, size, mtime_ns, fingerprint FROM fingerprint_cache WHERE substr(path, 1, ?) = ?",
+                (len(prefix), prefix))}
 
     def remember(self, path: Path, size: int, mtime_ns: int, fingerprint: str) -> None:
         with self.db.connect() as connection:

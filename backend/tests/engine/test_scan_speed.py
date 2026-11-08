@@ -64,3 +64,25 @@ class ForgetTests(OrganizerFixture):
         with self.db.connect() as connection:
             paths = [row[0] for row in connection.execute("SELECT path FROM fingerprint_cache")]
         self.assertEqual(paths, [str(kept)])
+
+
+class PreloadTests(OrganizerFixture):
+    def test_known_files_are_told_apart_without_a_query_each(self):
+        for n in range(1, 4):
+            self.zip("迷宫饭/迷宫饭 Vol.0{0}.zip".format(n))
+        self.organizer().scan(self.library.id)
+        from shutong.store.fingerprints import FingerprintCache
+        from shutong.store.records import ItemStore
+        with mock.patch.object(FingerprintCache, "lookup", side_effect=AssertionError("one query per file")), \
+                mock.patch.object(ItemStore, "find_by_fingerprint", side_effect=AssertionError("one query per file")):
+            self.organizer().scan(self.library.id)
+        self.assertEqual([item.status for item in self.all_items()], [ItemStatus.PLANNED] * 3)
+
+    def test_a_copy_in_another_folder_in_the_same_scan_is_known(self):
+        self.zip("迷宫饭/迷宫饭 Vol.01.zip")
+        first = self.source_dir / "迷宫饭" / "迷宫饭 Vol.01.zip"
+        copy = self.source_dir / "备份" / "迷宫饭 Vol.01.zip"
+        copy.parent.mkdir()
+        copy.write_bytes(first.read_bytes())
+        self.organizer().scan(self.library.id)
+        self.assertEqual(len(self.all_items()), 1)
