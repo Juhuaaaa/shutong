@@ -40,8 +40,8 @@ export function createAppRouter(history: RouterHistory = createWebHistory()) {
       }
     }
     if (!auth.loggedIn) return { path: "/login", query: { next: to.fullPath } };
-    if (auth.desktop && to.name !== "welcome") {
-      if (to.name === "upload") return { name: "dashboard" }; // the whole window takes drops
+    if (to.name !== "welcome") {
+      if (auth.desktop && to.name === "upload") return { name: "dashboard" }; // the whole window takes drops
       const libraries = useLibraries();
       if (!libraries.loaded) await libraries.refresh().catch(() => {});
       if (libraries.loaded && !libraries.list.length) return { name: "welcome" };

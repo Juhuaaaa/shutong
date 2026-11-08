@@ -13,7 +13,7 @@ const settings = {
 
 function api(extra: Record<string, unknown> = {}) {
   return fakeApi({
-    "GET /api/libraries": [], "GET /api/settings": settings, "PATCH /api/settings": (body: object) => ({ ...settings, ...body }),
+    "GET /api/libraries": [{ id: 1, name: "漫画", kind: "manga" }], "GET /api/libraries/1/summary": { counts: {} }, "GET /api/settings": settings, "PATCH /api/settings": (body: object) => ({ ...settings, ...body }),
     "GET /api/ai/calls": [], "GET /api/servers": [],
     "GET /api/metadata/sources": [{ name: "bangumi", label: "Bangumi", enabled: true }, { name: "anilist", label: "AniList", enabled: false }],
     ...extra,

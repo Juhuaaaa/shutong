@@ -152,7 +152,17 @@ const en: typeof zhCN = {
         title: "Metadata sources (optional)",
         text: "Shutong looks works up on Bangumi by default and can add AniList. Bangumi works without a token; with one, it can also see entries that need a login.",
       },
-      done: { title: "All set", text: "Drop manga or light novel files and folders on the window to start organizing." },
+      server: {
+        title: "Libraries",
+        text: "Use the paths as the container sees them (the folders docker-compose mounts, such as under /data). The source folder holds downloaded files, the library folder the organized ones, which Kavita or Komga read. A missing library folder is created; originals are left alone. Switch off a library you do not need.",
+        source: "Source folder (downloaded files)",
+        library: "Library folder (organized files)",
+      },
+      done: {
+        title: "All set",
+        text: "Drop manga or light novel files and folders on the window to start organizing.",
+        server: "Put files into a source folder, then press Scan under Libraries, or upload them on the Upload page. To link Kavita or Komga, add it under Settings → Media servers.",
+      },
     },
   },
   error: { network: "Network error. Check that the service is running" },
