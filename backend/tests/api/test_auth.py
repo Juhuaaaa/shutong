@@ -1,5 +1,7 @@
 import time
 import unittest
+
+from shutong import __version__
 from unittest import mock
 
 from .helpers import PASSWORD, ApiCase
@@ -7,11 +9,11 @@ from .helpers import PASSWORD, ApiCase
 
 class AuthTests(ApiCase):
     def test_first_status_is_unconfigured(self):
-        self.assertEqual(self.client.get("/api/auth/status").json(), {"configured": False, "logged_in": False, "desktop": False})
+        self.assertEqual(self.client.get("/api/auth/status").json(), {"configured": False, "logged_in": False, "desktop": False, "version": __version__})
 
     def test_setup_logs_in_and_only_works_once(self):
         self.login()
-        self.assertEqual(self.client.get("/api/auth/status").json(), {"configured": True, "logged_in": True, "desktop": False})
+        self.assertEqual(self.client.get("/api/auth/status").json(), {"configured": True, "logged_in": True, "desktop": False, "version": __version__})
         again = self.client.post("/api/auth/setup", json={"password": "another password"})
         self.assertEqual((again.status_code, again.json()["detail"]), (409, "密码已设置"))
 

@@ -967,6 +967,11 @@ export interface components {
             desktop: boolean;
             /** Logged In */
             logged_in: boolean;
+            /**
+             * Version
+             * @default 0.2.1
+             */
+            version: string;
         };
         /** Body_upload_api_libraries__library_id__upload_post */
         Body_upload_api_libraries__library_id__upload_post: {

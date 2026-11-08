@@ -7,12 +7,14 @@ export const useAuth = defineStore("auth", () => {
   const loggedIn = ref(false);
   const checked = ref(false);
   const desktop = ref(false);
+  const version = ref("");
 
   async function refresh() {
     const status = await api.status();
     configured.value = status.configured;
     loggedIn.value = status.logged_in;
     desktop.value = status.desktop ?? false;
+    version.value = status.version ?? "";
     checked.value = true;
     return status;
   }
@@ -40,5 +42,5 @@ export const useAuth = defineStore("auth", () => {
     loggedIn.value = false;
   }
 
-  return { configured, loggedIn, checked, desktop, refresh, login, setup, logout, expired };
+  return { version, configured, loggedIn, checked, desktop, refresh, login, setup, logout, expired };
 });

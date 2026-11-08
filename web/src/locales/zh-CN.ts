@@ -442,6 +442,8 @@ export default {
     tagline: "漫画与轻小说整理",
     settings: "设置",
     logs: "日志",
+    version: "版本 {version}",
+    newVersion: "新版本 {version} ›",
     logout: "退出",
     menu: "菜单",
   },

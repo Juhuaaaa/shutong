@@ -130,6 +130,11 @@
           "logged_in": {
             "title": "Logged In",
             "type": "boolean"
+          },
+          "version": {
+            "default": "0.2.1",
+            "title": "Version",
+            "type": "string"
           }
         },
         "required": [

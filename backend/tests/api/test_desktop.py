@@ -1,4 +1,5 @@
 """Desktop mode: no login, a random token in a cookie, and nothing but the app's own window gets in."""
+from shutong import __version__
 from pathlib import Path
 from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
@@ -37,7 +38,7 @@ class DesktopCase(ApiCase):
 class AuthTests(DesktopCase):
     def test_token_cookie_is_logged_in(self):
         self.assertEqual(self.window.get("/api/auth/status").json(),
-                         {"configured": True, "logged_in": True, "desktop": True})
+                         {"configured": True, "logged_in": True, "desktop": True, "version": __version__})
         self.assertEqual(self.window.get("/api/libraries").status_code, 200)
 
     def test_wrong_or_missing_token_is_refused(self):
