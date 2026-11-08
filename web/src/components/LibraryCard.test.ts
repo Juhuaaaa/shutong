@@ -133,7 +133,7 @@ describe("LibraryCard", () => {
     await flush();
     expect(wrapper.find("[data-test=include-edition]").exists()).toBe(false);
     expect(wrapper.text()).toContain("{author}");
-    expect(wrapper.text()).toContain("{series}{edition:[%s]}/{series}{edition:[%s]} {volume}{ext}");
+    expect(wrapper.find("[data-test=template-guide]").attributes("href")).toContain("docs/guide.md#6-命名模板");
     expect(wrapper.find("[data-test=template] input").attributes("placeholder")).toBe("留空使用默认模板 {series}/{series} {volume}{ext}");
   });
 

@@ -64,7 +64,7 @@ const en: typeof zhCN = {
     counts: "To review {review}  Failed {failed}",
     empty: "No libraries yet. Create one first",
     scanDone: "Scan finished: {executed} added, {review} to review, {published} already in the library",
-    templateEditionHint: "Editions share one series by default. To keep them apart, such as \"Delicious in Dungeon[digital]\", use",
+    templateGuide: "How to write a naming template (variables, keeping editions apart…)",
     pdfToCbzHint: "Splits a PDF into images and packs them as a CBZ; off keeps the PDF as it is",
     templateHint: "Variables: {vars}",
     templateFolderHint: "Renaming is off: the template only decides the folder. Variables: {vars}",

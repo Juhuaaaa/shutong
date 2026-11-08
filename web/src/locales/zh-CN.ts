@@ -62,7 +62,7 @@ export default {
     counts: "复核 {review}　整理出错 {failed}",
     empty: "还没有库，先新建一个",
     scanDone: "扫描完成：入库 {executed}、待复核 {review}、已在库中 {published}",
-    templateEditionHint: "默认不带版本，不同版本归到同一个系列。想按版本分开，如「迷宫饭[bili电子版]」，模板写成",
+    templateGuide: "命名模板怎么写？（变量、按版本分开等写法）",
     pdfToCbzHint: "PDF 拆成图片打包成 CBZ，关掉则原样保留 PDF",
     templateHint: "可用变量：{vars}",
     templateFolderHint: "重命名已关闭：模板只决定放在哪个目录。可用变量：{vars}",
