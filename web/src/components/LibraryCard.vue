@@ -26,9 +26,9 @@ const emit = defineEmits<{ saved: [library: Library]; cancel: []; scan: [] }>();
 const { t } = useI18n();
 const auth = useAuth();
 const templateVars = computed(() => `{series} {title}${form.kind === "manga" ? " {edition}" : ""} {author} {volume} {year} {bgm} {ext}`);
-/** The default template with the edition after the title, for a library that keeps editions apart. */
 const DEFAULT_TEMPLATE = "{series}/{series} {volume}{ext}";
-const EDITION_TEMPLATE = "{series}{edition:[%s]}/{series}{edition:[%s]} {volume}{ext}";
+/** The guide's naming template section: variables, formats and common templates live there, not in the form. */
+const GUIDE_TEMPLATES = "https://github.com/Juhuaaaa/shutong/blob/main/docs/guide.md#6-命名模板";
 
 const open = ref(props.expanded || props.library === null);
 
@@ -258,9 +258,9 @@ function cancel() {
             persistent-hint class="mb-4" data-test="rename-files" />
           <VTextField v-model="form.naming_template" :label="t('library.template')" :placeholder="t('library.templateDefault', { template: DEFAULT_TEMPLATE })"
             :hint="form.rename_files ? t('library.templateHint', { vars: templateVars }) : t('library.templateFolderHint', { vars: templateVars })" persistent-hint :error-messages="templateError || undefined" data-test="template" />
-          <div v-if="form.kind === 'manga'" class="st-muted text-caption mt-1" data-test="edition-hint">
-            {{ t("library.templateEditionHint") }} <code>{{ EDITION_TEMPLATE }}</code>
-          </div>
+          <a :href="GUIDE_TEMPLATES" target="_blank" rel="noopener noreferrer" class="text-caption guide-link" data-test="template-guide">
+            {{ t("library.templateGuide") }}
+          </a>
           <div v-for="example in examples" :key="example.source" class="example">
             <span class="st-muted">{{ example.source }}</span> → {{ example.target }}
           </div>
@@ -284,6 +284,7 @@ function cancel() {
 </template>
 
 <style scoped>
+.guide-link { display: inline-block; margin-top: 4px; color: rgb(var(--v-theme-primary)); }
 /* Opening the settings only makes the card taller; it keeps its place and width in the grid. */
 .library-card { padding: 20px; display: flex; flex-direction: column; container-type: inline-size; }
 .head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
