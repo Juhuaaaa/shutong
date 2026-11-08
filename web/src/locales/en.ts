@@ -364,6 +364,10 @@ const en: typeof zhCN = {
     confirmed: "Confirmed, adding to the library",
     empty: "Nothing to review",
     reidentify: "Read again",
+    adoptAll: "Adopt AI suggestions ({groups} groups)",
+    adoptAllTitle: "Adopt the AI's suggestions for {groups} groups?",
+    adoptAllText: "Confirms these groups ({files} files) with the title or entry the AI suggested, then organizes them. Only groups listed now whose problem the suggestion settles; unsure volumes and conflicts are yours to handle one by one.",
+    adopted: "Adopted {groups} groups: {executed} organized, {review} still in review",
     reidentifyGroup: "Read this group again",
     reidentifyAll: "Read all again",
     reidentifyAllTitle: "Read all {count} entries in review again?",
@@ -447,7 +451,7 @@ const en: typeof zhCN = {
     cancelled: "Stopped. What was not finished continues at the next scan",
     failed: "Task failed",
     lost: "The task was lost (the service may have restarted). Refresh to see the result",
-    kind: { scan: "Scan", execute: "Add to library", confirm: "Review", reorganize: "Reorganize", retry: "Retry", reidentify: "Read again", metadata: "Edit metadata", refresh_metadata: "Refresh metadata", cover: "Set cover" },
+    kind: { scan: "Scan", execute: "Add to library", confirm: "Review", reorganize: "Reorganize", retry: "Retry", reidentify: "Read again", adopt: "Adopt AI suggestions", metadata: "Edit metadata", refresh_metadata: "Refresh metadata", cover: "Set cover" },
   },
 };
 

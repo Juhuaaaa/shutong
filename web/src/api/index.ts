@@ -140,6 +140,7 @@ export const review = {
     request<JobRef>("POST", "/api/review/confirm", { body: { item_ids: itemIds, ...choices } }),
   reidentify: (target: { item_ids: number[] } | { library_id: number }) =>
     request<JobRef>("POST", "/api/review/reidentify", { body: target }),
+  adopt: (itemIds: number[]) => request<JobRef>("POST", "/api/review/adopt", { body: { item_ids: itemIds } }),
 };
 
 export const metadata = {

@@ -362,6 +362,10 @@ export default {
     confirmed: "已确认，正在整理入库",
     empty: "没有需要复核的条目",
     reidentify: "重新识别",
+    adoptAll: "采纳 AI 建议（{groups} 组）",
+    adoptAllTitle: "采纳 {groups} 组的 AI 建议？",
+    adoptAllText: "按 AI 给出的书名或条目确认这些组（共 {files} 个文件），然后直接整理入库。只包括当前列表里、AI 建议能解决问题的组；卷号不确定和冲突的组要你逐个处理。",
+    adopted: "采纳了 {groups} 组：入库 {executed}，仍待复核 {review}",
     reidentifyGroup: "重新识别本组",
     reidentifyAll: "全部重新识别",
     reidentifyAllTitle: "重新识别全部 {count} 个待复核条目？",
@@ -445,6 +449,6 @@ export default {
     cancelled: "已停止，没整理完的下次扫描会接着做",
     failed: "任务失败",
     lost: "任务已丢失（服务可能重启过），请刷新后查看结果",
-    kind: { scan: "扫描", execute: "入库", confirm: "复核确认", reorganize: "重新整理", retry: "重试", reidentify: "重新识别", metadata: "编辑元数据", refresh_metadata: "刷新元数据", cover: "设置封面" },
+    kind: { scan: "扫描", execute: "入库", confirm: "复核确认", reorganize: "重新整理", retry: "重试", reidentify: "重新识别", adopt: "采纳 AI 建议", metadata: "编辑元数据", refresh_metadata: "刷新元数据", cover: "设置封面" },
   },
 };

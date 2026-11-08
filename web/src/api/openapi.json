@@ -1,6 +1,22 @@
 {
   "components": {
     "schemas": {
+      "Adopt": {
+        "properties": {
+          "item_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Item Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "item_ids"
+        ],
+        "title": "Adopt",
+        "type": "object"
+      },
       "AiCallOut": {
         "properties": {
           "adopted": {
@@ -1749,6 +1765,11 @@
       },
       "ReviewGroup": {
         "properties": {
+          "adoptable": {
+            "default": false,
+            "title": "Adoptable",
+            "type": "boolean"
+          },
           "ai_suggestion": {
             "anyOf": [
               {
@@ -4585,6 +4606,48 @@
         "summary": "Subject",
         "tags": [
           "metadata"
+        ]
+      }
+    },
+    "/api/review/adopt": {
+      "post": {
+        "description": "Confirm what the AI suggested for every group the given items belong to, where that settles the group.",
+        "operationId": "adopt_api_review_adopt_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Adopt"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRef"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Adopt",
+        "tags": [
+          "review"
         ]
       }
     },

@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from shutong.api.auth import require_login
 from shutong.api.routes.items import auto_execute, check_choices, planned_ids, require_ai, submit
 from shutong.api.schemas import JobRef, ReviewGroup, SubjectRefIn, ref_out
+from shutong.metadata.base import SubjectRef
 from shutong.engine.organizer import Organizer, review_group
 from shutong.engine.states import ItemStatus, ReviewReason
 from shutong.store.records import ItemStore, LibraryStore
@@ -29,10 +30,79 @@ class Reidentify(BaseModel):
     library_id: Optional[int] = None
 
 
+class Adopt(BaseModel):
+    item_ids: List[int]
+
+
 @router.get("/groups", response_model=List[ReviewGroup])
 def groups(request: Request, library_id: Optional[int] = None, reason: Optional[ReviewReason] = None) -> List[dict]:
     """Items waiting for review, one group per source folder; a fixed handful of queries in one connection."""
+    found = _review_groups(request.app.state.db, library_id=library_id, reason=reason)
+    for group in found:
+        group["adoptable"] = adoptable_choices(group) is not None
+    return found
+
+
+def adoptable_choices(group: dict) -> Optional[dict]:
+    """What confirming the AI's suggestion for a group would choose, when that settles why it is in review.
+
+    A volume the AI was unsure of, or a target already taken, is not settled by a title or an entry: None.
+    """
+    suggestion = group.get("ai_suggestion")
+    reasons = set(group.get("reasons") or ())
+    if not suggestion or suggestion.get("problem") or reasons & {"volume", "conflict"}:
+        return None
+    choices: dict = {}
+    if suggestion.get("subject_id"):
+        subject_id = str(suggestion["subject_id"])
+        source = suggestion.get("source") or next(
+            (ref["source"] for ref in group.get("candidates") or () if ref["id"] == subject_id), "bangumi")
+        choices["subject"] = SubjectRef(source, subject_id)
+    if "naming" in reasons and suggestion.get("title"):
+        choices["title"] = suggestion["title"]
+        if suggestion.get("edition"):
+            choices["edition"] = suggestion["edition"]
+    if "naming" in reasons and "title" not in choices and "subject" not in choices:
+        return None
+    if "metadata" in reasons and "subject" not in choices:
+        return None
+    return choices or None
+
+
+@router.post("/adopt", response_model=JobRef)
+def adopt(body: Adopt, request: Request) -> JobRef:
+    """Confirm what the AI suggested for every group the given items belong to, where that settles the group."""
+    ids = set(body.item_ids)
+    if not ids:
+        raise HTTPException(422, "没有选择条目")
     db = request.app.state.db
+    chosen = [(group["item_ids"], choices) for group in _review_groups(db, only=ids)
+              for choices in [adoptable_choices(group)] if choices is not None]
+    if not chosen:
+        raise HTTPException(422, "这些组没有可以直接采纳的 AI 建议")
+
+    def work(organizer: Organizer) -> dict:
+        counts = {"groups": 0, "replanned": 0, "skipped": 0}
+        for item_ids, choices in chosen:
+            if organizer.should_stop():
+                break
+            try:
+                result = organizer.confirm(item_ids, **choices)
+            except ValueError as error:  # a suggestion that is no longer valid: leave that group for a person
+                organizer.items.add_event(item_ids[0], "adopt_refused", {"error": str(error)})
+                counts["skipped"] += len(item_ids)
+                continue
+            counts["groups"] += 1
+            counts["replanned"] += result["replanned"]
+            counts["skipped"] += result["skipped"]
+        every = [item_id for item_ids, _ in chosen for item_id in item_ids]
+        return auto_execute(request.app, organizer, counts, planned_ids(request.app, every))
+
+    return submit(request, "adopt", work)
+
+
+def _review_groups(db, *, library_id: Optional[int] = None, reason: Optional[ReviewReason] = None,
+                   only: Optional[set] = None) -> List[dict]:
     conditions, values = ["status = ?"], [ItemStatus.NEEDS_REVIEW.value]
     if library_id is not None:
         conditions.append("library_id = ?")
@@ -43,6 +113,8 @@ def groups(request: Request, library_id: Optional[int] = None, reason: Optional[
     with db.connect() as connection:
         rows = connection.execute("SELECT id, library_id, group_key, source_path, review_reason FROM items WHERE "
                                   + " AND ".join(conditions) + " ORDER BY id", values).fetchall()
+    if only is not None:
+        rows = [row for row in rows if row["id"] in only]
     found = _group_rows(db, rows)  # may look a library up: outside the connection, which holds the write lock
     firsts = [group["first"] for group in found.values()]
     parsed, events = {}, {}

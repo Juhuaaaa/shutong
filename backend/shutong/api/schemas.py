@@ -183,6 +183,7 @@ class ReviewGroup(BaseModel):
     item_ids: List[int]
     sample_names: List[str]
     candidates: List[SubjectRefOut]
+    adoptable: bool = False  # confirming the AI's suggestion would settle this group
     ai_suggestion: Optional[dict]
 
 
