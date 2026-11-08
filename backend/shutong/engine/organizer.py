@@ -83,6 +83,7 @@ class Organizer:
         self.items = ItemStore(db)
         self.ai_calls = AiCallStore(db)
         self.fingerprints = FingerprintCache(db)
+        self._known_prints: Dict[str, Tuple[int, int, str]] = {}  # loaded for a full scan of a source folder
         # AI answers for the current run, keyed by source path; one call per batch of a folder's names.
         self._readings: Dict[str, Reading] = {}
         # Subject choices for the current run, keyed by source folder: one call per series, not per volume.
@@ -128,7 +129,12 @@ class Organizer:
             raise AiNotConfigured()
         adapter = adapter_for(library)
         entries = adapter.scan(library.source_dir).entries
-        run_id = self._scan_entries(library, adapter, entries, trigger, on_planned)
+        # What earlier scans of this folder remembered, read at once: a few MB for tens of thousands of files.
+        self._known_prints = self.fingerprints.load_under(Path(library.source_dir))
+        try:
+            run_id = self._scan_entries(library, adapter, entries, trigger, on_planned)
+        finally:
+            self._known_prints = {}
         # A full look at the source folder: what it no longer holds need not be remembered.
         self.fingerprints.forget_except(Path(library.source_dir), (entry.path for entry in entries))
         return run_id
@@ -154,6 +160,7 @@ class Organizer:
         known = 0
         everything: List[int] = []
         seen = set()
+        index = self.items.fingerprint_index(library_id)  # one query instead of one per file
 
         def settle(todo: List[Tuple[int, SourceEntry]]) -> List[Tuple[int, SourceEntry]]:
             """Recognise, plan and publish; returns the files still waiting for the AI."""
@@ -185,7 +192,12 @@ class Organizer:
                 except OSError:
                     self._advance()
                     continue  # vanished or unreadable between scan and fingerprint; next scan sees it
-                existing = self.items.find_by_fingerprint(library_id, source_fingerprint)
+                light = index.get(source_fingerprint)
+                if light is not None and _settled_in_place(light, entry.path):
+                    known += 1  # organized from this very path: nothing to load
+                    self._advance()
+                    continue
+                existing = self.items.get(light[0]) if light is not None else None
                 if existing is not None and existing.id not in seen:
                     existing = self._follow(library, existing, entry)
                 # Same bytes seen earlier in this very scan (a copy in another folder), or already settled.
@@ -199,6 +211,7 @@ class Organizer:
                                                      source_root=entry.root)
                 todo.append((item.id, entry))
                 seen.add(item.id)
+                index[source_fingerprint] = (item.id, item.status.value, str(item.source_path), item.error)
             if not todo:
                 continue
             everything.extend(item_id for item_id, _ in todo)
@@ -575,7 +588,10 @@ class Organizer:
         if path.is_dir():
             return fingerprint(path)
         stat = os.stat(path)
-        known = self.fingerprints.lookup(path, stat.st_size, stat.st_mtime_ns)
+        remembered = self._known_prints.get(str(path))
+        if remembered is not None and remembered[:2] == (stat.st_size, stat.st_mtime_ns):
+            return remembered[2]
+        known = None if str(path) in self._known_prints else self.fingerprints.lookup(path, stat.st_size, stat.st_mtime_ns)
         if known is not None:
             return known
         found = fingerprint(path)
@@ -1199,6 +1215,13 @@ def validate_choices(*, title=None, edition=None, subject: Optional[SubjectRef] 
 def _lockable(entry: SourceEntry) -> bool:
     """Files in a series folder share a source; loose files (dropped ones too) are each on their own."""
     return entry.series_folder is not None and (entry.root is None or entry.path.parent != entry.root)
+
+
+def _settled_in_place(light: Tuple[int, str, str, Optional[str]], path: Path) -> bool:
+    """A known file needing nothing: its item is past recognition and was organized from this same path."""
+    _, status, source_path, _ = light
+    return ItemStatus(status) not in _RESUMABLE and ItemStatus(status) is not ItemStatus.CANCELLED \
+        and source_path == str(path)
 
 
 def _ref_json(subject: Optional[SubjectRef]) -> Optional[dict]:

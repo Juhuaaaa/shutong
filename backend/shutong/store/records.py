@@ -429,6 +429,15 @@ class ItemStore:
             rows = connection.execute("SELECT * FROM items WHERE status = ? ORDER BY id", (status.value,)).fetchall()
         return [_item(row) for row in rows]
 
+    def fingerprint_index(self, library_id: int) -> Dict[str, Tuple[int, str, str, Optional[str]]]:
+        """Every item of a library by fingerprint, in one query: ``{fingerprint: (id, status, source_path, error)}``.
+
+        Light on purpose: a scan tells thousands of known files apart with it and loads a whole item only when needed.
+        """
+        with self.db.connect() as connection:
+            return {row[0]: (row[1], row[2], row[3], row[4]) for row in connection.execute(
+                "SELECT fingerprint, id, status, source_path, error FROM items WHERE library_id = ?", (library_id,))}
+
     def find_by_fingerprint(self, library_id: int, fingerprint: str) -> Optional[Item]:
         with self.db.connect() as connection:
             row = connection.execute(
