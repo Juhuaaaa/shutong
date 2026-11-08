@@ -24,6 +24,7 @@ class OfflineSource:
             values = dict(_DEFAULTS, **entry)
             values["writers"] = tuple(values["writers"])
             values["genres"] = tuple(values["genres"])
+            values["illustrators"] = tuple(values.get("illustrators") or ())
             subject = Subject(**values)
             self.subjects[subject.subject_id] = subject
 

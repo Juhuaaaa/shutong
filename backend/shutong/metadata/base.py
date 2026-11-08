@@ -79,6 +79,8 @@ class Subject:
     # Other names (English, romanized, synonyms), best first: shown when there is no Chinese name.
     aliases: Tuple[str, ...] = ()
     image: str = ""
+    # Illustrators of a light novel, kept apart from the writers.
+    illustrators: Tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not isinstance(self.subject_id, str):

@@ -65,6 +65,7 @@ class KavitaMetadata:
     language: str = "zh"
     authors: Tuple[str, ...] = ()
     publisher: str = ""
+    illustrators: Tuple[str, ...] = ()
     genres: Tuple[str, ...] = ()
     description: str = ""
     date: str = ""
@@ -230,8 +231,7 @@ def _apply_metadata(
 
     _set_title(metadata_element, metadata.title)
     _set_language(metadata_element, metadata.language)
-    if metadata.authors:
-        _add_authors_if_missing(metadata_element, metadata.authors)
+    _set_people(metadata_element, metadata.authors, metadata.illustrators, major)
     if metadata.publisher:
         _set_single_text(metadata_element, "publisher", metadata.publisher)
     if metadata.description:
@@ -293,17 +293,100 @@ def _set_language(metadata_element: ET.Element, language: str) -> None:
     element.text = language
 
 
-def _add_authors_if_missing(
-    metadata_element: ET.Element, authors: Tuple[str, ...]
+# Roles the source speaks for: these people are replaced when it names the authors. A translator or
+# an editor the file lists stays.
+_REPLACED_ROLES = frozenset({"", "aut", "author", "creator", "cre", "ill", "illustrator", "art", "artist"})
+
+
+def _set_people(
+    metadata_element: ET.Element,
+    authors: Tuple[str, ...],
+    illustrators: Tuple[str, ...],
+    major: int,
 ) -> None:
-    if metadata_element.findall(DC + "creator"):
-        return
-    for author in authors:
-        author = author.strip()
-        if not author:
-            continue
-        element = ET.SubElement(metadata_element, DC + "creator")
-        element.text = author
+    """Write the source's authors and illustrators, each marked with its role.
+
+    Kavita takes a role only from a ``marc:relators`` refinement, in EPUB 2 files as well, and counts every
+    creator without one as a writer; EPUB 2's own ``opf:role`` is written too, for other readers.
+    Without authors from the source the file's own creators stay.
+    """
+    authors = _clean_names(authors)
+    illustrators = _clean_names(illustrators)
+    metas = metadata_element.findall(OPF + "meta")
+    roles = {}
+    for item in metas:
+        if (_attr(item, "property") or "").strip() == "role":
+            refines = (_attr(item, "refines") or "").strip()
+            if refines.startswith("#"):
+                roles[refines[1:]] = (item.text or _attr(item, "content") or "").strip().lower()
+
+    def role_of(creator: ET.Element) -> str:
+        identifier = (_attr(creator, "id") or "").strip()
+        if identifier in roles:
+            return roles[identifier]
+        return (_attr(creator, "role") or "").strip().lower()
+
+    creators = metadata_element.findall(DC + "creator")
+    if authors:
+        for creator in creators:
+            if role_of(creator) not in _REPLACED_ROLES:
+                continue
+            identifier = (_attr(creator, "id") or "").strip()
+            if identifier:
+                for item in metas:
+                    if (_attr(item, "refines") or "").strip() == "#" + identifier:
+                        metadata_element.remove(item)
+            metadata_element.remove(creator)
+        creators = metadata_element.findall(DC + "creator")
+    else:
+        named = {(creator.text or "").strip() for creator in creators}
+        illustrators = tuple(name for name in illustrators if name not in named)
+
+    used = {(_attr(item, "id") or "").strip() for item in metadata_element.iter()} - {""}
+
+    def new_id() -> str:
+        number = 1
+        while "shutong-creator-%d" % number in used:
+            number += 1
+        used.add("shutong-creator-%d" % number)
+        return "shutong-creator-%d" % number
+
+    def mark(creator: ET.Element, role: str) -> None:
+        identifier = (_attr(creator, "id") or "").strip()
+        if not identifier:
+            identifier = new_id()
+            creator.set("id", identifier)
+        refinement = ET.SubElement(metadata_element, OPF + "meta")
+        refinement.set("refines", "#" + identifier)
+        refinement.set("property", "role")
+        refinement.set("scheme", "marc:relators")
+        refinement.text = role
+
+    # A role the file gives only as opf:role is one Kavita would not see.
+    for creator in creators:
+        identifier = (_attr(creator, "id") or "").strip()
+        attribute = (_attr(creator, "role") or "").strip()
+        if attribute and identifier not in roles:
+            mark(creator, attribute)
+        if major >= 3 and OPF + "role" in creator.attrib:
+            del creator.attrib[OPF + "role"]
+
+    for names, role in ((authors, "aut"), (illustrators, "ill")):
+        for name in names:
+            creator = ET.SubElement(metadata_element, DC + "creator")
+            creator.text = name
+            if major < 3:
+                creator.set(OPF + "role", role)
+            mark(creator, role)
+
+
+def _clean_names(names: Tuple[str, ...]) -> Tuple[str, ...]:
+    cleaned = []
+    for name in names:
+        name = (name or "").strip()
+        if name and name not in cleaned:
+            cleaned.append(name)
+    return tuple(cleaned)
 
 
 def _set_single_text(metadata_element: ET.Element, tag: str, value: str) -> None:
