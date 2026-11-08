@@ -4,7 +4,7 @@ import tempfile
 import unittest
 
 from shutong.ai.audit import AuditedAi
-from shutong.ai.openai_compat import AiError
+from shutong.ai.openai_compat import AiError, Usage
 from shutong.store.ai_calls import AiCallStore
 from shutong.store.db import Database
 
@@ -54,6 +54,18 @@ class AuditTests(unittest.TestCase):
         self.assertEqual((rows[0]["model"], rows[0]["error"], rows[0]["response_text"]), ("m-1", None, '{"raw": true}'))
         self.assertEqual((rows[1]["response_text"], rows[1]["error"]), ("```oops```", "bad json"))
         self.assertIn('"b"', rows[1]["request_json"])
+
+    def test_token_usage_is_recorded_and_added_up(self):
+        provider = FakeProvider([{"a": 1}, {"a": 2}, {"a": 3}])
+        usages = [Usage(prompt=1000, completion=100, cached=600), None, Usage(prompt=500, completion=50, cached=0)]
+        provider.last_usage = lambda: usages[len(provider.requests) - 1]
+        ai = AuditedAi(provider, self.calls, clock=self.clock)
+        for _ in range(3):
+            ai.complete_json("p", "s", {})
+        self.assertEqual(self.calls.usage(), {"calls": 3, "measured": 2, "prompt_tokens": 1500,
+                                              "completion_tokens": 150, "cached_tokens": 600})
+        self.clock.now = self.clock.now.replace(hour=23, minute=30)
+        self.assertEqual(self.calls.usage(since=self.clock.now)["calls"], 0)
 
     def test_no_daily_limit(self):
         provider = FakeProvider([{"a": n} for n in range(300)])

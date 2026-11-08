@@ -129,6 +129,18 @@ describe("SettingsView", () => {
     }
   });
 
+  it("adds up the tokens the AI calls took", async () => {
+    api({ "GET /api/ai/usage": { calls: 1234, measured: 1200, prompt_tokens: 2_345_678, completion_tokens: 123_456,
+      cached_tokens: 1_000_000 } });
+    await mountView(SettingsView, "/settings/ai");
+    await vi.waitFor(() => expect(document.querySelector("[data-test=ai-usage]")).not.toBeNull());
+    const text = document.querySelector("[data-test=ai-usage]")!.textContent!;
+    expect(text).toContain("1,234 次调用");
+    expect(text).toContain("输入 2,345,678");
+    expect(text).toContain("缓存命中 1,000,000");
+    expect(text).toContain("输出 123,456");
+  });
+
   it("has no daily limit and sends the AI proxy switch", async () => {
     const { calls } = api();
     await mountView(SettingsView, "/settings/ai");

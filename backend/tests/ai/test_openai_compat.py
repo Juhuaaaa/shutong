@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from shutong.ai.openai_compat import AiError, AiSettings, OpenAICompatProvider, strict_json
+from shutong.ai.openai_compat import AiError, AiSettings, OpenAICompatProvider, Usage, strict_json
 
 
 class FakeResponse:
@@ -46,6 +46,24 @@ class ProviderTests(unittest.TestCase):
                          ("m-1", 0, {"type": "json_object"}))
         self.assertEqual(body["messages"][0], {"role": "system", "content": "系统提示"})
         self.assertEqual(json.loads(body["messages"][1]["content"]), {"名字": "迷宫饭"})
+
+    def test_reads_the_token_usage_of_the_last_call(self):
+        body = envelope('{"ok": true}')
+        body["usage"] = {"prompt_tokens": 1200, "completion_tokens": 80, "prompt_cache_hit_tokens": 1000}
+        provider = self.provider(body)
+        self.assertIsNone(provider.last_usage())
+        provider.complete_json("s", {})
+        self.assertEqual(provider.last_usage(), Usage(prompt=1200, completion=80, cached=1000))
+        # the OpenAI way of naming cached tokens
+        body["usage"] = {"prompt_tokens": 10, "completion_tokens": 2, "prompt_tokens_details": {"cached_tokens": 4}}
+        provider = self.provider(body)
+        provider.complete_json("s", {})
+        self.assertEqual(provider.last_usage(), Usage(prompt=10, completion=2, cached=4))
+
+    def test_a_reply_without_usage_has_none(self):
+        provider = self.provider(envelope('{"ok": true}'))
+        provider.complete_json("s", {})
+        self.assertIsNone(provider.last_usage())
 
     def test_rejects_fenced_content(self):
         with self.assertRaises(AiError):

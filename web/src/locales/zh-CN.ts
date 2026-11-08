@@ -311,6 +311,8 @@ export default {
     aiThresholdHint: "AI 的把握达到这个值就直接入库，低于它的放进复核。默认 0.85，最低 0.8。",
     aiOk: "连接正常",
     aiRecent: "最近的 AI 调用",
+    aiUsage: "累计 {calls} 次调用，用掉 token：输入 {prompt}（其中缓存命中 {cached}），输出 {completion}。",
+    aiUsageUnmeasured: "其中 {count} 次没有用量数据（较早的调用，或接口没返回）。",
     aiPurpose: "用途",
     aiResult: "结果",
     aiAdopted: "采纳",

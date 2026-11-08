@@ -215,4 +215,10 @@ MIGRATIONS: tuple[str, ...] = (
       fingerprint TEXT NOT NULL
     );
     """,
+    # What each AI call cost: the tokens the provider counted (none for calls made before, or when it did not say).
+    """
+    ALTER TABLE ai_calls ADD COLUMN prompt_tokens INTEGER;
+    ALTER TABLE ai_calls ADD COLUMN completion_tokens INTEGER;
+    ALTER TABLE ai_calls ADD COLUMN cached_tokens INTEGER;
+    """,
 )

@@ -1,5 +1,7 @@
 from typing import List, Optional
 
+from pydantic import BaseModel
+
 from fastapi import APIRouter, Depends, Request
 
 from shutong.api.auth import require_login
@@ -15,3 +17,17 @@ def list_calls(request: Request, item_id: Optional[int] = None, limit: int = 50)
     if item_id is not None:
         return [ai_call_out(call) for call in store.for_item(item_id)]
     return [ai_call_out(call) for call in store.recent(min(max(limit, 1), 500))]
+
+
+class AiUsageOut(BaseModel):
+    calls: int
+    measured: int
+    prompt_tokens: int
+    completion_tokens: int
+    cached_tokens: int
+
+
+@router.get("/usage", response_model=AiUsageOut)
+def usage(request: Request) -> dict:
+    """Every call so far and the tokens they took."""
+    return AiCallStore(request.app.state.db).usage()

@@ -21,6 +21,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ai/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Usage
+         * @description Every call so far and the tokens they took.
+         */
+        get: operations["usage_api_ai_usage_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/login": {
         parameters: {
             query?: never;
@@ -976,6 +996,19 @@ export interface components {
             /** Ok */
             ok: boolean;
         };
+        /** AiUsageOut */
+        AiUsageOut: {
+            /** Cached Tokens */
+            cached_tokens: number;
+            /** Calls */
+            calls: number;
+            /** Completion Tokens */
+            completion_tokens: number;
+            /** Measured */
+            measured: number;
+            /** Prompt Tokens */
+            prompt_tokens: number;
+        };
         /** AuthStatus */
         AuthStatus: {
             /** Configured */
@@ -989,7 +1022,7 @@ export interface components {
             logged_in: boolean;
             /**
              * Version
-             * @default 0.2.1
+             * @default 0.3.0
              */
             version: string;
         };
@@ -1834,6 +1867,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    usage_api_ai_usage_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiUsageOut"];
                 };
             };
         };

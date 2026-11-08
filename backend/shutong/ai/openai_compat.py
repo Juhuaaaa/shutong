@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 import http.client
 import json
+import threading
 from typing import Any, Callable, Dict, Optional, Tuple
 from urllib.request import Request, urlopen
 from shutong.net import USER_AGENT  # noqa: F401  (also imported from here by other modules)
@@ -14,6 +15,31 @@ class AiError(Exception):
     def __init__(self, message: str, raw: Optional[str] = None) -> None:
         super().__init__(message)
         self.raw = raw  # the model's content when it was received, for the audit log
+
+
+@dataclass(frozen=True)
+class Usage:
+    """Tokens one call took, as the provider counted them; ``cached`` is the part of ``prompt`` it had cached."""
+
+    prompt: int
+    completion: int
+    cached: int = 0
+
+
+def _usage(envelope: Any) -> Optional[Usage]:
+    usage = envelope.get("usage") if isinstance(envelope, dict) else None
+    if not isinstance(usage, dict):
+        return None
+
+    def count(value: Any) -> int:
+        return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else 0
+
+    details = usage.get("prompt_tokens_details")
+    cached = usage.get("prompt_cache_hit_tokens")  # DeepSeek
+    if cached is None and isinstance(details, dict):
+        cached = details.get("cached_tokens")  # OpenAI
+    return Usage(prompt=count(usage.get("prompt_tokens")), completion=count(usage.get("completion_tokens")),
+                 cached=count(cached))
 
 
 @dataclass(frozen=True)
@@ -43,12 +69,18 @@ class OpenAICompatProvider:
     def __init__(self, settings: AiSettings, opener: Callable[..., Any] = urlopen) -> None:
         self.settings = settings
         self._opener = opener
+        self._local = threading.local()  # jobs may call from several threads
+
+    def last_usage(self) -> Optional[Usage]:
+        """The tokens of this thread's last successful call, when the provider said."""
+        return getattr(self._local, "usage", None)
 
     @property
     def model(self) -> str:
         return self.settings.model
 
     def complete_json(self, system: str, payload: Dict[str, Any]) -> Tuple[Dict[str, Any], str]:
+        self._local.usage = None
         body = {
             "model": self.settings.model,
             "temperature": 0,
@@ -96,4 +128,5 @@ class OpenAICompatProvider:
             raise AiError(str(error), raw=content) from error
         if not isinstance(parsed, dict):
             raise AiError("AI message content must be a JSON object", raw=content)
+        self._local.usage = _usage(envelope)
         return parsed, content
