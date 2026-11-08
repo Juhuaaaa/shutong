@@ -1,6 +1,6 @@
 [project]
 name = "shutong"
-version = "0.1.0"
+version = "0.2.0"
 description = "漫画与轻小说自动整理：识别、Bangumi 元数据写入、Kavita 联动"
 requires-python = ">=3.12"
 dependencies = [
