@@ -2,8 +2,8 @@
 import { mdiCheck, mdiFastForward, mdiRefresh, mdiRobotOutline, mdiSkipNext } from "@mdi/js";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { history, metadata, type Choices, type ReviewGroup, type Subject } from "@/api";
-import { isVolumeText, subjectIdOf } from "@/composables/volume";
+import { history, metadata, type Choices, type ReviewGroup, type Subject, type SubjectRef } from "@/api";
+import { isVolumeText, sameSubject, sourceLabel, subjectRefOf } from "@/composables/volume";
 import SubjectCandidate from "./SubjectCandidate.vue";
 import SubjectSearch from "./SubjectSearch.vue";
 
@@ -12,11 +12,11 @@ const LISTED_ITEMS = 200;
 
 interface FileRow { id: number; name: string; work: string; guess: string }
 
-/** What the AI last said about the group: its reading of the name, or its pick among Bangumi candidates. */
+/** What the AI last said about the group: its reading of the name, or its pick among a source's candidates. */
 interface AiSuggestion {
   title: string | null;
   edition: string | null;
-  subject_id: number | null;
+  subject_id: string | number | null;
   confidence: number;
   reason: string;
   problem: string | null;
@@ -26,7 +26,10 @@ const props = defineProps<{ group: ReviewGroup; kind: "manga" | "novel"; edition
 const emit = defineEmits<{ confirm: [choices: Choices, ids: number[]]; skip: []; reidentify: [] }>();
 const { t } = useI18n();
 
-const form = reactive({ title: "", edition: "", bgm: null as number | null });
+const form = reactive({ title: "", edition: "", subject: null as SubjectRef | null });
+/** What is in the subject box: a number (in the source picked above the candidates) or a pasted link. */
+const subjectText = ref("");
+const source = ref("bangumi");
 const volumes = ref<Record<string, string>>({});
 const files = ref<FileRow[]>([]);
 const ticked = ref(new Set<number>());
@@ -37,7 +40,7 @@ let titleTyped = false;
 const candidates = ref<Subject[]>([]);
 const suggestion = ref<AiSuggestion | null>(null);
 const error = ref("");
-const cache = new Map<number, Subject>();
+const cache = new Map<string, Subject>();
 
 const isNovel = computed(() => props.kind === "novel");
 const shown = computed(() => {
@@ -50,15 +53,24 @@ const noneTicked = computed(() => files.value.length > 0 && ticked.value.size ==
 const typedVolumes = computed(() => Object.fromEntries(Object.entries(volumes.value)
   .filter(([id, value]) => value.trim() && (allTicked.value || ticked.value.has(Number(id))))));
 const badVolume = computed(() => Object.values(typedVolumes.value).some((value) => !isVolumeText(value, props.kind)));
-const hasChoice = computed(() => !noneTicked.value && Boolean(form.title.trim() || form.bgm || Object.keys(typedVolumes.value).length));
+const hasChoice = computed(() => !noneTicked.value && Boolean(form.title.trim() || form.subject || Object.keys(typedVolumes.value).length));
+const badSubject = computed(() => Boolean(subjectText.value.trim()) && !form.subject);
 /** The works the AI read in this folder, when it read more than one. */
 const works = computed(() => {
   const counts = new Map<string, number>();
   for (const file of files.value) if (file.work) counts.set(file.work, (counts.get(file.work) ?? 0) + 1);
   return counts.size > 1 ? [...counts].map(([title, count]) => ({ title, count })) : [];
 });
-function setBgm(value: string | number | null) {
-  form.bgm = value === null || value === "" ? null : subjectIdOf(String(value));
+function setSubjectText(value: string | null) {
+  const ref = (value ?? "").trim() ? subjectRefOf(value ?? "", source.value) : null;
+  form.subject = ref;
+  // A pasted link becomes its id; the box's prefix names the source it belongs to.
+  subjectText.value = ref ? ref.id : (value ?? "");
+}
+
+function choose(ref: SubjectRef | null) {
+  form.subject = ref;
+  subjectText.value = ref ? ref.id : "";
 }
 
 function toggle(id: number, on: boolean | null) {
@@ -79,7 +91,7 @@ function tickShown() {
 async function pickWork(title: string) {
   ticked.value = new Set(files.value.filter((file) => file.work === title).map((file) => file.id));
   form.title = title;
-  form.bgm = null;
+  choose(null);
   titleTyped = false;
   searchFor.value = title;
   await nextTick();
@@ -94,11 +106,12 @@ function guessOf(volume: unknown): string {
   return "";
 }
 
-async function subject(id: number): Promise<Subject | null> {
-  if (cache.has(id)) return cache.get(id)!;
+async function subject(ref: SubjectRef): Promise<Subject | null> {
+  const key = `${ref.source}:${ref.id}`;
+  if (cache.has(key)) return cache.get(key)!;
   try {
-    const found = await metadata.subject(id);
-    cache.set(id, found);
+    const found = await metadata.subject(ref);
+    cache.set(key, found);
     return found;
   } catch {
     return null;
@@ -108,7 +121,7 @@ async function subject(id: number): Promise<Subject | null> {
 async function reset(group: ReviewGroup) {
   form.title = group.title_hint;
   form.edition = group.edition ?? "";
-  form.bgm = null;
+  choose(null);
   volumes.value = {};
   error.value = "";
   suggestion.value = (group.ai_suggestion as AiSuggestion | null) ?? null;
@@ -135,15 +148,20 @@ async function reset(group: ReviewGroup) {
 watch(() => `${props.group.key}|${props.group.count}`, () => reset(props.group), { immediate: true });
 
 function pick(entry: Subject) {
-  form.bgm = entry.subject_id;
-  if (!titleTyped) form.title = entry.name_cn || entry.name;
+  choose({ source: entry.source, id: entry.subject_id });
+  if (!titleTyped) form.title = entry.name_cn || entry.aliases[0] || entry.name;
 }
 
 function adopt() {
   if (!suggestion.value) return;
   if (suggestion.value.title) form.title = suggestion.value.title;
   if (suggestion.value.edition && !isNovel.value) form.edition = suggestion.value.edition;
-  if (suggestion.value.subject_id) form.bgm = suggestion.value.subject_id;
+  const id = suggestion.value.subject_id;
+  if (id) {
+    // The AI picks among the candidates it was shown: the review lists them, its pick first.
+    const ref = props.group.candidates.find((entry) => entry.id === String(id)) ?? { source: source.value, id: String(id) };
+    choose(ref);
+  }
 }
 
 function chosenIds(): number[] {
@@ -156,9 +174,9 @@ function submit() {
   const typed = typedVolumes.value;
   // Part of a folder, or a folder of several works: the group's title says nothing about these files.
   const mustName = !allTicked.value || works.value.length > 0;
-  if (title && (title !== props.group.title_hint || mustName || (!form.bgm && !Object.keys(typed).length))) choices.title = title;
+  if (title && (title !== props.group.title_hint || mustName || (!form.subject && !Object.keys(typed).length))) choices.title = title;
   if (!isNovel.value && form.edition.trim() && form.edition.trim() !== (props.group.edition ?? "")) choices.edition = form.edition.trim();
-  if (form.bgm) choices.bgm = form.bgm;
+  if (form.subject) choices.subject = form.subject;
   if (Object.keys(typed).length) choices.volumes = typed;
   emit("confirm", choices, chosenIds());
 }
@@ -183,9 +201,11 @@ function skipMetadata() {
       <VChip size="small" variant="tonal">{{ t("review.count", { count: group.count }) }}</VChip>
     </div>
     <div class="section-title">{{ t("review.candidates") }}</div>
-    <SubjectSearch ref="search" :key="group.key" :kind="kind" :initial="searchFor" @results="candidates = $event" @error="error = $event" />
+    <SubjectSearch ref="search" :key="group.key" v-model:source="source" :kind="kind" :initial="searchFor"
+      @results="candidates = $event" @error="error = $event" />
     <div class="candidates" role="radiogroup" :aria-label="t('review.candidates')">
-      <SubjectCandidate v-for="entry in candidates" :key="entry.subject_id" :subject="entry" :selected="form.bgm === entry.subject_id"
+      <SubjectCandidate v-for="entry in candidates" :key="`${entry.source}:${entry.subject_id}`" :subject="entry"
+        :selected="sameSubject(form.subject, { source: entry.source, id: entry.subject_id })"
         @pick="pick(entry)" />
       <div v-if="!candidates.length" class="st-muted text-body-2">{{ t("review.noCandidates") }}</div>
     </div>
@@ -196,7 +216,9 @@ function skipMetadata() {
       <VCombobox v-if="!isNovel" v-model="form.edition" :items="editions" :label="t('review.edition')" :placeholder="t('review.noEdition')"
         clearable hide-details="auto" :hint="t('review.customEdition')" data-test="edition"
         @update:model-value="(value: string | null) => (form.edition = value ?? '')" />
-      <VTextField :model-value="form.bgm ?? ''" label="Bangumi" hide-details data-test="bgm" @update:model-value="setBgm" />
+      <VTextField :model-value="subjectText" :label="t('review.subject')" hide-details="auto" data-test="subject"
+        :prefix="form.subject ? sourceLabel(form.subject.source) : undefined"
+        :error-messages="badSubject ? t('review.badSubject') : undefined" @update:model-value="setSubjectText" />
     </div>
 
     <div class="section-title">{{ t("review.files") }}</div>
@@ -232,9 +254,9 @@ function skipMetadata() {
       <template v-if="suggestion.problem">{{ t("review.aiProblem", { problem: suggestion.problem }) }}</template>
       <template v-else>
         {{ isNovel
-          ? t("review.aiSuggestsNovel", { title: suggestion.title ?? "—", bgm: suggestion.subject_id ?? "—", confidence: suggestion.confidence.toFixed(2) })
+          ? t("review.aiSuggestsNovel", { title: suggestion.title ?? "—", subject: suggestion.subject_id ?? "—", confidence: suggestion.confidence.toFixed(2) })
           : t("review.aiSuggests", { title: suggestion.title ?? "—", edition: suggestion.edition ?? t("review.noEdition"),
-              bgm: suggestion.subject_id ?? "—", confidence: suggestion.confidence.toFixed(2) }) }}
+              subject: suggestion.subject_id ?? "—", confidence: suggestion.confidence.toFixed(2) }) }}
         <div class="reason">{{ suggestion.reason }}</div>
         <VBtn size="small" variant="tonal" class="mt-2" @click="adopt">{{ t("review.adopt") }}</VBtn>
       </template>
@@ -256,7 +278,7 @@ function skipMetadata() {
           :disabled="busy || !form.title.trim() || badVolume || noneTicked" @click="skipMetadata">
           {{ t("review.skipMetadata") }}
         </VBtn>
-        <VBtn color="primary" :prepend-icon="mdiCheck" data-test="confirm" :loading="busy" :disabled="busy || !hasChoice || badVolume"
+        <VBtn color="primary" :prepend-icon="mdiCheck" data-test="confirm" :loading="busy" :disabled="busy || !hasChoice || badVolume || badSubject"
           @click="submit">
           {{ allTicked ? t("review.confirm") : t("review.confirmSelected", { count: ticked.size }) }}
         </VBtn>

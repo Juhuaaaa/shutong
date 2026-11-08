@@ -3,8 +3,11 @@ import unittest
 
 from shutong.engine.kinds.manga.volume import VolumeRef
 from shutong.engine.kinds.novel.naming import NovelVolume
+from dataclasses import replace
+
+from shutong.engine.kinds.manga.comicinfo import build_comic_info
 from shutong.engine.metadata_build import (
-    manga_metadata, metadata_from_json, metadata_to_json, novel_metadata, volume_from_key,
+    bangumi_id, manga_metadata, metadata_from_json, metadata_to_json, novel_metadata, volume_from_key,
 )
 from shutong.engine.recognition import Directives
 from shutong.metadata.base import Subject
@@ -15,7 +18,33 @@ SUBJECT = Subject(subject_id=279379, name="SPY×FAMILY", name_cn="间谍过家�
                   completed=True, total_volumes=12, platform="漫画")
 
 
+ANILIST = replace(SUBJECT, subject_id="30002", source="anilist", name_cn="", aliases=("Spy x Family",))
+
+
 class MetadataBuildTests(unittest.TestCase):
+
+    def test_anilist_web_link_in_comicinfo(self):
+        meta = manga_metadata("x", VolumeRef.volume(Decimal(1)), ANILIST, Directives(), 2)
+        self.assertEqual((meta.subject_id, meta.web_url), (None, "https://anilist.co/manga/30002"))
+        self.assertIn(b"<Web>https://anilist.co/manga/30002</Web>", build_comic_info(meta, 3))
+        self.assertEqual(metadata_from_json("manga", metadata_to_json(meta)), meta)
+
+    def test_bangumi_comicinfo_metadata_is_as_before(self):
+        meta = manga_metadata("x", VolumeRef.volume(Decimal(1)), SUBJECT, Directives(), 2)
+        data = metadata_to_json(meta)
+        self.assertEqual(data["subject_id"], 279379)
+        self.assertNotIn("web_url", data)
+        self.assertIn(b"<Web>https://bgm.tv/subject/279379</Web>", build_comic_info(meta, 3))
+
+    def test_anilist_web_link_in_epub(self):
+        meta = novel_metadata("x", NovelVolume.volume(Decimal(1)), ANILIST, {}, Directives(),
+                              first_volume=True, fallback_title="stem")
+        self.assertEqual(meta.web_url, "https://anilist.co/manga/30002")
+
+    def test_bgm_template_var_empty_for_anilist(self):
+        self.assertEqual(bangumi_id(SUBJECT), "279379")
+        self.assertIsNone(bangumi_id(ANILIST))
+        self.assertIsNone(bangumi_id(Subject.unlisted("书")))
 
     def test_manga_directives_override_language_and_direction(self):
         meta = manga_metadata("x", VolumeRef.volume(Decimal(1)), SUBJECT, Directives(lang="ja", direction="No"), 3)

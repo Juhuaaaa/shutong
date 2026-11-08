@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from shutong.api.auth import require_login
 from shutong.api.routes.items import auto_execute, check_choices, planned_ids, require_ai, submit
-from shutong.api.schemas import JobRef, ReviewGroup
+from shutong.api.schemas import JobRef, ReviewGroup, SubjectRefIn, ref_out
 from shutong.engine.organizer import Organizer, review_group
 from shutong.engine.states import ItemStatus, ReviewReason
 from shutong.store.records import ItemStore, LibraryStore
@@ -19,9 +19,9 @@ class Confirm(BaseModel):
     item_ids: List[int]
     title: Optional[str] = None
     edition: Optional[str] = None
-    bgm: Optional[int] = None
+    subject: Optional[SubjectRefIn] = None
     volumes: Dict[int, str] = {}
-    skip_metadata: bool = False  # organize under the title without a Bangumi subject
+    skip_metadata: bool = False  # organize under the title without a metadata subject
 
 
 class Reidentify(BaseModel):
@@ -63,7 +63,8 @@ def groups(request: Request, library_id: Optional[int] = None, reason: Optional[
                      candidates=[], ai_suggestion=None)
         for kind, detail in events.get(first, []):  # newest first
             if kind == "review" and not group["candidates"]:
-                group["candidates"] = list(detail.get("candidates") or [])
+                refs = [ref_out(value) for value in detail.get("candidates") or []]
+                group["candidates"] = [ref for ref in refs if ref is not None]
             if kind == "ai_suggestion" and group["ai_suggestion"] is None:
                 group["ai_suggestion"] = detail
     return sorted(found.values(), key=lambda group: (-group["count"], group["folder"]))
@@ -98,14 +99,14 @@ def confirm(body: Confirm, request: Request) -> JobRef:
     ids = list(dict.fromkeys(body.item_ids))
     if not ids:
         raise HTTPException(422, "没有选择条目")
-    if not (body.title or body.bgm or body.volumes):
-        raise HTTPException(422, "至少要指定系列名、Bangumi 条目或卷号")
+    if not (body.title or body.subject or body.volumes):
+        raise HTTPException(422, "至少要指定系列名、条目或卷号")
     if body.skip_metadata and not (body.title or "").strip():
         raise HTTPException(422, "直接整理要先填书名")
-    check_choices(body)
+    subject = check_choices(body, request)
 
     def work(organizer: Organizer) -> dict:
-        counts = organizer.confirm(ids, title=body.title or None, edition=body.edition or None, bgm=body.bgm,
+        counts = organizer.confirm(ids, title=body.title or None, edition=body.edition or None, subject=subject,
                                    volumes=body.volumes, skip_metadata=body.skip_metadata)
         return auto_execute(request.app, organizer, counts, planned_ids(request.app, ids))
 
@@ -130,3 +131,4 @@ def reidentify(body: Reidentify, request: Request) -> JobRef:
         return auto_execute(request.app, organizer, organizer.reidentify(ids), planned_ids(request.app, ids))
 
     return submit(request, "reidentify", work, library_id=library_id)
+

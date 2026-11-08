@@ -16,7 +16,7 @@ from shutong.engine.kinds.novel.epub import read_metadata
 from shutong.engine.kinds.novel.naming import (
     DEFAULT_VOLUME_PATTERN, NovelVolume, is_special_filename, natural_key, target_filename, volume_from_name,
 )
-from shutong.engine.metadata_build import manga_metadata, metadata_to_json, novel_metadata
+from shutong.engine.metadata_build import bangumi_id, manga_metadata, metadata_to_json, novel_metadata
 from shutong.engine.recognition import Directives, Recognition
 from shutong.engine.states import ReviewReason
 from shutong.engine.template import render
@@ -250,7 +250,7 @@ def _fields(kind: str, draft: _Draft, volume, item: PlanInput) -> Dict[str, Opti
         "edition": item.recognition.parse.edition,
         "volume": volume_text,
         "year": release[:4] if release[:4].isdigit() else None,
-        "bgm": str(item.subject.subject_id) if item.subject.subject_id > 0 else None,
+        "bgm": bangumi_id(item.subject),
         "ext": item.output_suffix,
     }
 
@@ -258,7 +258,7 @@ def _fields(kind: str, draft: _Draft, volume, item: PlanInput) -> Dict[str, Opti
 def _series_dir(library_dir: Path, template: str, draft: _Draft) -> Path:
     fields = {"series": draft.series, "title": draft.title, "edition": draft.source.recognition.parse.edition,
               "volume": "SP00", "ext": draft.source.output_suffix,
-              "bgm": str(draft.source.subject.subject_id) if draft.source.subject.subject_id > 0 else None,
+              "bgm": bangumi_id(draft.source.subject),
               "year": None}
     return (library_dir / render(template, fields)).parent
 

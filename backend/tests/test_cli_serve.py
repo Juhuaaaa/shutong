@@ -51,7 +51,7 @@ class ServeTests(unittest.TestCase):
         path.write_text(json.dumps([{"subject_id": 133315, "name": "ダンジョン飯", "name_cn": "迷宫饭", "total_volumes": 14}],
                                    ensure_ascii=False), encoding="utf-8")
         source = OfflineSource(path)
-        self.assertEqual([subject.subject_id for subject in source.search("迷宫饭", "manga")], [133315])
+        self.assertEqual([subject.subject_id for subject in source.search("迷宫饭", "manga")], ["133315"])
         self.assertEqual(source.search("别的", "manga"), ())
         self.assertEqual(source.get(133315).name_cn, "迷宫饭")
 

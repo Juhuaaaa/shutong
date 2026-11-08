@@ -16,7 +16,7 @@ function group(index: number, extra: object = {}) {
 }
 
 const subject = {
-  subject_id: 27684, name: "ドラえもん", name_cn: "哆啦A梦", summary: "", writers: ["藤子·F·不二雄"], publisher: "小学馆",
+  subject_id: "27684", source: "bangumi", web_url: "https://bgm.tv/subject/27684", aliases: [], name: "ドラえもん", name_cn: "哆啦A梦", summary: "", writers: ["藤子·F·不二雄"], publisher: "小学馆",
   platform: "漫画", release_date: "1974-07-31", total_volumes: 45, image: "https://example/cover.jpg",
 };
 
@@ -28,7 +28,7 @@ function api(groups: unknown[], extra: Record<string, unknown> = {}) {
     "GET /api/libraries/1/summary": { counts: {} },
     "GET /api/review/groups": groups,
     "GET /api/settings": AI,
-    "GET /api/metadata/subjects/27684": subject,
+    "GET /api/metadata/subjects/bangumi/27684": subject,
     ...extra,
   });
 }
@@ -44,27 +44,52 @@ describe("ReviewView", () => {
     expect(wrapper.text()).toContain("3000");
   });
 
-  it("fills the Bangumi id from a candidate", async () => {
-    api([group(1, { candidates: [27684] })]);
+  it("chooses the source to search, and confirms with that source's entry", async () => {
+    const berserk = { ...subject, subject_id: "30002", source: "anilist", web_url: "https://anilist.co/manga/30002",
+      name: "ベルセルク", name_cn: "", aliases: ["Berserk"] };
+    const { calls } = api([group(1)], {
+      "GET /api/metadata/sources": [{ name: "anilist", label: "AniList", enabled: true },
+        { name: "bangumi", label: "Bangumi", enabled: true }],
+      "GET /api/metadata/search": [berserk],
+      "POST /api/review/confirm": { job_id: 9 },
+      "GET /api/jobs/9": { id: 9, kind: "confirm", state: "done", result: { replanned: 2 } },
+    });
+    const { wrapper } = await mountView(ReviewView, "/review");
+    await vi.waitFor(() => expect(wrapper.find("[data-test=source-select]").exists()).toBe(true));
+    await wrapper.find("[data-test=subject-search] input").setValue("Berserk");
+    await wrapper.find("[data-test=subject-search] input").trigger("keyup.enter");
+    await vi.waitFor(() => expect(wrapper.find("[data-test=candidate]").exists()).toBe(true));
+    expect(calls.find((call) => call.path === "/api/metadata/search")?.url.searchParams.get("source")).toBe("anilist");
+    await wrapper.find("[data-test=candidate]").trigger("click");
+    expect((wrapper.find("[data-test=title] input").element as HTMLInputElement).value).toBe("Berserk");
+    expect(wrapper.find("[data-test=subject]").text()).toContain("AniList");
+    await wrapper.find("[data-test=confirm]").trigger("click");
+    await vi.waitFor(() => expect(calls.some((call) => call.path === "/api/review/confirm")).toBe(true));
+    expect(calls.find((call) => call.path === "/api/review/confirm")?.body)
+      .toMatchObject({ subject: { source: "anilist", id: "30002" } });
+  });
+
+  it("fills the entry id from a candidate", async () => {
+    api([group(1, { candidates: [{ source: "bangumi", id: "27684" }] })]);
     const { wrapper } = await mountView(ReviewView, "/review");
     await vi.waitFor(() => expect(wrapper.find("[data-test=candidate]").exists()).toBe(true));
     expect(wrapper.find("[data-test=candidate]").text()).toContain("藤子·F·不二雄");
     await wrapper.find("[data-test=candidate]").trigger("click");
-    expect((wrapper.find("[data-test=bgm] input").element as HTMLInputElement).value).toBe("27684");
+    expect((wrapper.find("[data-test=subject] input").element as HTMLInputElement).value).toBe("27684");
     expect((wrapper.find("[data-test=title] input").element as HTMLInputElement).value).toBe("哆啦A梦");
     // The label must float above a value set from a candidate, not sit on top of it.
-    expect(wrapper.find("[data-test=bgm] .v-field").classes()).toContain("v-field--dirty");
+    expect(wrapper.find("[data-test=subject] .v-field").classes()).toContain("v-field--dirty");
   });
 
   it("picks a candidate with the keyboard", async () => {
-    api([group(1, { candidates: [27684] })]);
+    api([group(1, { candidates: [{ source: "bangumi", id: "27684" }] })]);
     const { wrapper } = await mountView(ReviewView, "/review");
     await vi.waitFor(() => expect(wrapper.find("[data-test=candidate]").exists()).toBe(true));
     const candidate = wrapper.find("[data-test=candidate]");
     expect(candidate.attributes("role")).toBe("radio");
     expect(candidate.attributes("tabindex")).toBe("0");
     await candidate.trigger("keydown", { key: "Enter" });
-    expect((wrapper.find("[data-test=bgm] input").element as HTMLInputElement).value).toBe("27684");
+    expect((wrapper.find("[data-test=subject] input").element as HTMLInputElement).value).toBe("27684");
     expect(wrapper.find("[data-test=candidate]").attributes("aria-checked")).toBe("true");
   });
 
@@ -91,13 +116,13 @@ describe("ReviewView", () => {
       { id: 12, source_name: "某暗部的少女共栖 3X.epub", status: "needs_review", parsed: { title_hint: "某暗部的少女共栖", volume: "volume:3" } },
       { id: 13, source_name: "某科学的超电磁炮SS.epub", status: "needs_review", parsed: { title_hint: "魔法禁书目录", volume: "special" } },
     ];
-    const anbu = { ...subject, subject_id: 439286, name_cn: "某暗部的少女共栖", name: "とある暗部の少女共棲", platform: "小说" };
+    const anbu = { ...subject, subject_id: "439286", web_url: "https://bgm.tv/subject/439286", name_cn: "某暗部的少女共栖", name: "とある暗部の少女共棲", platform: "小说" };
 
     function several(extra: Record<string, unknown> = {}) {
       return api([group(1, { key: "1:魔法禁书目录", folder: "魔法禁书目录", item_ids: [11, 12, 13], count: 3, reasons: ["volume"], title_hint: "魔法禁书目录" })], {
         "GET /api/libraries": [{ id: 1, name: "轻小说", kind: "novel" }],
         "GET /api/history/groups/1/魔法禁书目录": ITEMS,
-        "GET /api/metadata/subjects/439286": anbu,
+        "GET /api/metadata/subjects/bangumi/439286": anbu,
         "POST /api/review/confirm": { job_id: 9 },
         "GET /api/jobs/9": { id: 9, kind: "confirm", state: "done", result: { replanned: 2 } },
         ...extra,
@@ -153,19 +178,19 @@ describe("ReviewView", () => {
     it("finds a subject from a pasted Bangumi link", async () => {
       several();
       const wrapper = await mounted();
-      await wrapper.find("[data-test=bangumi-search] input").setValue("https://bgm.tv/subject/439286");
-      await wrapper.find("[data-test=bangumi-search] input").trigger("keyup.enter");
+      await wrapper.find("[data-test=subject-search] input").setValue("https://bgm.tv/subject/439286");
+      await wrapper.find("[data-test=subject-search] input").trigger("keyup.enter");
       await vi.waitFor(() => expect(wrapper.find("[data-test=candidate]").exists()).toBe(true));
       await wrapper.find("[data-test=candidate]").trigger("click");
-      expect((wrapper.find("[data-test=bgm] input").element as HTMLInputElement).value).toBe("439286");
+      expect((wrapper.find("[data-test=subject] input").element as HTMLInputElement).value).toBe("439286");
       expect((wrapper.find("[data-test=title] input").element as HTMLInputElement).value).toBe("某暗部的少女共栖");
     });
 
     it("takes a link in the Bangumi field too", async () => {
       several();
       const wrapper = await mounted();
-      await wrapper.find("[data-test=bgm] input").setValue("https://bgm.tv/subject/439286");
-      expect((wrapper.find("[data-test=bgm] input").element as HTMLInputElement).value).toBe("439286");
+      await wrapper.find("[data-test=subject] input").setValue("https://bgm.tv/subject/439286");
+      expect((wrapper.find("[data-test=subject] input").element as HTMLInputElement).value).toBe("439286");
     });
 
     it("has no edition for a novel and no ranges in its volumes", async () => {

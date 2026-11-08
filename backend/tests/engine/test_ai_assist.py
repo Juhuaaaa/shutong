@@ -38,6 +38,25 @@ def context(**overrides):
     return SourceContext(**values)
 
 
+class SubjectIdTextTests(unittest.TestCase):
+    def test_ai_answer_accepts_string_or_int_id(self):
+        for answer in (30002, "30002", " 30002 "):
+            with self.subTest(answer=answer):
+                ai = FakeAi({"subject_id": answer, "confidence": 0.98, "reason": "就是它"})
+                result = choose_subject(ai, context(), [candidate("30002", source="anilist")], 0.85, kind="manga",
+                                        source_label="AniList")
+                self.assertEqual((result.subject_id, result.meets_threshold), ("30002", True))
+                self.assertIn("AniList candidate", ai.requests[0]["system"])
+                self.assertEqual(ai.requests[0]["payload"]["candidates"][0]["subject_id"], "30002")
+
+    def test_other_names_are_offered_when_there_are_some(self):
+        ai = FakeAi({"subject_id": None, "confidence": 0.9, "reason": "无"})
+        choose_subject(ai, context(), [candidate("1", aliases=("Berserk",)), candidate("2")], 0.85, kind="manga")
+        offered = ai.requests[0]["payload"]["candidates"]
+        self.assertEqual(offered[0]["other_names"], ["Berserk"])
+        self.assertNotIn("other_names", offered[1])
+
+
 class ChooseOwnEntryTests(unittest.TestCase):
     def ask(self, answer, threshold=0.85):
         ai = FakeAi(answer)
@@ -47,7 +66,7 @@ class ChooseOwnEntryTests(unittest.TestCase):
 
     def test_tells_the_ai_what_counts_as_the_entry(self):
         ai, result = self.ask({"subject_id": 279379, "confidence": 0.98, "reason": "就是它"})
-        self.assertEqual((result.subject_id, result.meets_threshold, result.none_found), (279379, True, False))
+        self.assertEqual((result.subject_id, result.meets_threshold, result.none_found), ("279379", True, False))
         self.assertEqual(ai.requests[0]["payload"]["base_title"], "间谍过家家")
         self.assertIn("original work", ai.requests[0]["system"])
 
@@ -70,7 +89,7 @@ class ChooseSubjectTests(unittest.TestCase):
         ai = FakeAi({"subject_id": 279379, "confidence": 0.98, "reason": "title and author"})
         result = choose_subject(ai, context(), [candidate()], 0.95, kind="manga", item_id=7)
         self.assertEqual((result.subject_id, result.meets_threshold, result.call_id, result.problem),
-                         (279379, True, 41, None))
+                         ("279379", True, 41, None))
         self.assertEqual(ai.requests[0]["item_id"], 7)
 
     def test_payload_contains_only_basenames_and_compact_candidates(self):

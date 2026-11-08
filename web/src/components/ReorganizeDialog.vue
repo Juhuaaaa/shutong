@@ -3,7 +3,7 @@ import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { items as itemApi, type Choices, type Item } from "@/api";
 import type { ApiError } from "@/api/client";
-import { isVolumeText } from "@/composables/volume";
+import { isVolumeText, subjectRefOf } from "@/composables/volume";
 import { useJobs } from "@/stores/jobs";
 import { useLibraries } from "@/stores/libraries";
 
@@ -12,20 +12,22 @@ const emit = defineEmits<{ close: []; done: [result: Record<string, number>] }>(
 const { t } = useI18n();
 const jobs = useJobs();
 const libraries = useLibraries();
-const form = reactive({ title: "", edition: "", bgm: "", volume: "" });
+const form = reactive({ title: "", edition: "", subject: "", volume: "" });
 const busy = ref(false);
 const error = ref("");
 const single = computed(() => props.items.length === 1);
 const first = computed(() => props.items[0]);
 const kind = computed(() => libraries.kindOf(first.value.library_id));
 const badVolume = computed(() => Boolean(form.volume.trim()) && !isVolumeText(form.volume, kind.value));
-const badBgm = computed(() => Boolean(form.bgm.trim()) && !/^[1-9]\d*$/.test(form.bgm.trim()));
+// A typed number is an id in the source the item already comes from; a pasted link names its own source.
+const subject = computed(() => subjectRefOf(form.subject, first.value.subject_source ?? "bangumi"));
+const badSubject = computed(() => Boolean(form.subject.trim()) && !subject.value);
 
 async function submit() {
   const choices: Choices = {};
   if (form.title.trim()) choices.title = form.title.trim();
   if (form.edition.trim()) choices.edition = form.edition.trim();
-  if (form.bgm.trim()) choices.bgm = Number(form.bgm.trim());
+  if (subject.value) choices.subject = subject.value;
   if (single.value && form.volume.trim()) choices.volumes = { [String(first.value.id)]: form.volume.trim() };
   busy.value = true;
   error.value = "";
@@ -50,8 +52,9 @@ async function submit() {
           hide-details />
         <VTextField v-if="kind === 'manga'" v-model="form.edition" :label="t('review.edition')" :placeholder="t('history.keep')" persistent-placeholder
           hide-details />
-        <VTextField v-model="form.bgm" label="Bangumi" inputmode="numeric" :placeholder="String(first.subject_id ?? '')"
-          persistent-placeholder :error-messages="badBgm ? t('history.badBgm') : undefined" hide-details="auto" />
+        <VTextField v-model="form.subject" :label="t('review.subject')" :placeholder="String(first.subject_id ?? '')"
+          persistent-placeholder :error-messages="badSubject ? t('review.badSubject') : undefined" hide-details="auto"
+          data-test="reorganize-subject" />
         <VTextField v-if="single" v-model="form.volume" :label="t('history.volume')" :placeholder="t('history.keep')"
           persistent-placeholder :error-messages="badVolume ? t(kind === 'novel' ? 'review.badVolumeNovel' : 'review.badVolume') : undefined" hide-details="auto" />
         <VAlert v-if="error" type="error" variant="tonal" density="compact" rounded="lg">{{ error }}</VAlert>
@@ -59,7 +62,7 @@ async function submit() {
       <VCardActions>
         <VSpacer />
         <VBtn variant="text" @click="emit('close')">{{ t("common.cancel") }}</VBtn>
-        <VBtn color="primary" variant="flat" data-test="reorganize-submit" :loading="busy" :disabled="busy || badVolume || badBgm"
+        <VBtn color="primary" variant="flat" data-test="reorganize-submit" :loading="busy" :disabled="busy || badVolume || badSubject"
           @click="submit">
 {{ t("history.reorganize") }}
 </VBtn>

@@ -4,16 +4,18 @@ import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import AccountSettings from "@/components/settings/AccountSettings.vue";
 import AiSettings from "@/components/settings/AiSettings.vue";
-import BangumiSettings from "@/components/settings/BangumiSettings.vue";
+import MetadataSettings from "@/components/settings/MetadataSettings.vue";
 import NetworkSettings from "@/components/settings/NetworkSettings.vue";
 import ServerSettings from "@/components/settings/ServerSettings.vue";
 
-const TABS = ["ai", "bangumi", "network", "servers", "account"] as const;
+const TABS = ["ai", "metadata", "network", "servers", "account"] as const;
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
-const tab = computed(() => (TABS.includes(String(route.params.tab) as (typeof TABS)[number]) ? String(route.params.tab) : "ai"));
-const panes = { ai: AiSettings, bangumi: BangumiSettings, network: NetworkSettings, servers: ServerSettings,
+// "bangumi" is what the metadata tab was called before there were other sources: old links still land there.
+const asked = computed(() => (String(route.params.tab) === "bangumi" ? "metadata" : String(route.params.tab)));
+const tab = computed(() => (TABS.includes(asked.value as (typeof TABS)[number]) ? asked.value : "ai"));
+const panes = { ai: AiSettings, metadata: MetadataSettings, network: NetworkSettings, servers: ServerSettings,
   account: AccountSettings };
 </script>
 

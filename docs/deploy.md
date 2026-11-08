@@ -34,9 +34,9 @@ services:
 - 默认以 root 运行：很多 NAS 上的媒体文件属于 root，这样读写最省事
 - 设置 `PUID` / `PGID` 后以该用户运行，`/config` 会自动改成这个用户所有；媒体目录需要你自己保证该用户可读写
 
-## 访问 Bangumi 需要代理时
+## 访问元数据源需要代理时
 
-书童用 Python 标准库请求 Bangumi 和 AI 接口，认标准的代理环境变量：
+书童用 Python 标准库请求 Bangumi、AniList 和 AI 接口，认标准的代理环境变量：
 
 ```yaml
     environment:
@@ -44,7 +44,7 @@ services:
       - NO_PROXY=<NAS 地址>,localhost,127.0.0.1    # 连 Kavita、Komga 等局域网服务不走代理
 ```
 
-连不上 Bangumi 时，新来源会停在「元数据待重试」，不会被误判成「没有匹配」；代理配好后在历史里对这些条目「重试」即可。
+连不上元数据源时，新来源会停在「元数据待重试」，不会被误判成「没有匹配」；代理配好后在历史里对这些条目「重试」即可。
 
 ## 联动 Kavita 或 Komga
 

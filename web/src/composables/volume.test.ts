@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { editionOf, isVolumeText, subjectIdOf } from "./volume";
+import { editionOf, isVolumeText, subjectRefOf } from "./volume";
 
 describe("isVolumeText", () => {
   it("accepts the forms the backend reads", () => {
@@ -13,11 +13,14 @@ describe("isVolumeText", () => {
   });
 
   it("reads a subject id from a number or a link", () => {
-    expect(subjectIdOf("439286")).toBe(439286);
-    expect(subjectIdOf("https://bgm.tv/subject/439286")).toBe(439286);
-    expect(subjectIdOf(" https://bangumi.tv/subject/12?x=1 ")).toBe(12);
-    expect(subjectIdOf("魔法禁书目录")).toBeNull();
-    expect(subjectIdOf("0")).toBeNull();
+    expect(subjectRefOf("439286", "bangumi")).toEqual({ source: "bangumi", id: "439286" });
+    expect(subjectRefOf("30002", "anilist")).toEqual({ source: "anilist", id: "30002" });
+    expect(subjectRefOf("https://bgm.tv/subject/439286", "anilist")).toEqual({ source: "bangumi", id: "439286" });
+    expect(subjectRefOf(" https://bangumi.tv/subject/12?x=1 ", "bangumi")).toEqual({ source: "bangumi", id: "12" });
+    expect(subjectRefOf("https://anilist.co/manga/30002/Berserk/", "bangumi")).toEqual({ source: "anilist", id: "30002" });
+    expect(subjectRefOf("魔法禁书目录", "bangumi")).toBeNull();
+    expect(subjectRefOf("0", "bangumi")).toBeNull();
+    expect(subjectRefOf("https://example.com/subject/3", "bangumi")).toBeNull();
   });
 
   it("reads the edition from a folder name", () => {

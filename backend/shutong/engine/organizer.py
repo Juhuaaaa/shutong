@@ -21,7 +21,7 @@ from shutong.engine.fingerprint import fingerprint
 from shutong.engine.kinds.base import KindAdapter, ParseResult, SourceEntry
 from shutong.engine.kinds.manga.adapter import MangaAdapter
 from shutong.engine.kinds.novel.adapter import NovelAdapter, NovelPlan
-from shutong.engine.match import find_own_entry, match_subject
+from shutong.engine.match import find_own_entry, label_of, match_across, match_subject
 from shutong.engine import covers
 from shutong.engine.metadata_build import metadata_from_json, metadata_to_json
 from shutong.engine.metadata_edit import ManualMetadata, apply_manual, apply_subject, rewrite_cbz, rewrite_epub
@@ -31,7 +31,7 @@ from shutong.engine.publish import STATE_DIR, Publisher, TargetExists
 from shutong.engine.recognition import Recognition
 from shutong.engine.states import TRANSITIONS, ItemStatus, ReviewReason
 from shutong.engine.template import DEFAULT_TEMPLATE
-from shutong.metadata.base import Subject
+from shutong.metadata.base import Subject, SubjectRef
 from shutong.services import Services
 from shutong.store.ai_calls import AiCallStore
 from shutong.store.journal import JournalStore
@@ -84,6 +84,9 @@ class Organizer:
         # The series each folder's first confident answer named, kept for its later batches and retries.
         self._settled: Dict[Optional[str], List[SeriesReading]] = {}
         self._ai_failures = 0  # calls in a row that could not reach the AI
+        # The metadata source each series folder was organized from: its later files stay with that source.
+        self._folder_sources: Dict[Tuple[int, Optional[Path], str], str] = {}
+        self._folder_sources_loaded: set = set()
         # Asked between folders and files: a job being cancelled stops at the next one.
         self.should_stop: Callable[[], bool] = lambda: False
         # Told how far a scan is: {"done": files settled, "total": files found, "current": folder}.
@@ -287,13 +290,16 @@ class Organizer:
 
     # ---- review, reorganize, cancel -----------------------------------------------------------
 
+    def _validate(self, **choices) -> None:
+        validate_choices(sources=self.services.sources.names, **choices)
+
     def confirm(self, item_ids: Sequence[int], *, title: Optional[str] = None, edition: Optional[str] = None,
-                bgm: Optional[int] = None, volumes: Mapping[int, str] = {},
+                subject: Optional[SubjectRef] = None, volumes: Mapping[int, str] = {},
                 skip_metadata: bool = False) -> Dict[str, int]:
         """Settle reviewed items: the choices are kept on each item (so it is not asked again), then planned.
 
-        ``skip_metadata`` organizes them under the title without looking for a Bangumi subject."""
-        validate_choices(title=title, edition=edition, bgm=bgm, volumes=volumes)
+        ``skip_metadata`` organizes them under the title without looking for a metadata subject."""
+        self._validate(title=title, edition=edition, subject=subject, volumes=volumes)
         counts = {"replanned": 0, "skipped": 0}
         items = []
         for item_id in item_ids:
@@ -304,21 +310,23 @@ class Organizer:
             if item.id in volumes:  # before anything changes: a novel takes fewer forms than a manga
                 parse_volume_for(self.libraries.get(item.library_id).kind, volumes[item.id])
             items.append(item)
-        if title is None and bgm is not None and any(item.review_reason is ReviewReason.NAMING for item in items):
+        if title is None and subject is not None and any(item.review_reason is ReviewReason.NAMING for item in items):
             # Picking a subject for a folder whose name could not be read: the subject names the series.
-            title = self.services.source.get(bgm).display_title
-            validate_choices(title=title, edition=edition, bgm=bgm, volumes={})
-        chosen = {key: value for key, value in (("title", title), ("edition", edition), ("bgm", bgm))
-                  if value not in (None, "")}
+            title = self.services.sources.get(subject.source).get(subject.id).display_title
+            self._validate(title=title, edition=edition, subject=subject, volumes={})
+        chosen = {key: value for key, value in (("title", title), ("edition", edition)) if value not in (None, "")}
+        if subject is not None and not skip_metadata:
+            chosen["subject"] = subject.to_json()
         redo = []
         if skip_metadata:
-            chosen.pop("bgm", None)
             chosen["no_metadata"] = True
         for item in items:
             overrides = dict(item.overrides or {}, **chosen)
             if skip_metadata:
+                overrides.pop("subject", None)
                 overrides.pop("bgm", None)
-            elif "bgm" in chosen:
+            elif "subject" in chosen:
+                overrides.pop("bgm", None)  # how a choice was kept before there were other sources
                 overrides.pop("no_metadata", None)  # a subject picked now replaces an earlier skip
                 overrides.pop("metadata", None)  # and what was filled in by hand
             if item.id in volumes:
@@ -327,7 +335,7 @@ class Organizer:
                 self.items.set_overrides(item.id, overrides)
             if item.status is not ItemStatus.PARSED:
                 self.items.transition(item.id, ItemStatus.PARSED, event="confirmed_in_review",
-                                      detail={"title": title, "edition": edition, "bgm": bgm,
+                                      detail={"title": title, "edition": edition, "subject": _ref_json(subject),
                                               "volume": volumes.get(item.id)})
             redo.append(item.id)
         self.replan(redo)
@@ -335,9 +343,9 @@ class Organizer:
         return counts
 
     def reorganize(self, item_ids: Sequence[int], *, title: Optional[str] = None, edition: Optional[str] = None,
-                   bgm: Optional[int] = None, volumes: Mapping[int, str] = {}) -> Dict[str, int]:
+                   subject: Optional[SubjectRef] = None, volumes: Mapping[int, str] = {}) -> Dict[str, int]:
         """Redo published items: the old output is deleted first, then the item is recognized and planned again."""
-        validate_choices(title=title, edition=edition, bgm=bgm, volumes=volumes)
+        self._validate(title=title, edition=edition, subject=subject, volumes=volumes)
         counts = {"deleted": 0, "replanned": 0, "skipped": 0}
         items = [self.items.get(item_id) for item_id in item_ids]
         for library_id in {item.library_id for item in items}:
@@ -365,22 +373,24 @@ class Organizer:
             self.items.add_event(item.id, "target_deleted",
                                  {"target": item.target_path.as_posix() if item.target_path else None})
             self.items.transition(item.id, ItemStatus.PARSED, event="reorganize",
-                                  detail={"title": title, "edition": edition, "bgm": bgm})
+                                  detail={"title": title, "edition": edition, "subject": _ref_json(subject)})
             published.append(item.id)
-        result = self.confirm(published, title=title, edition=edition, bgm=bgm, volumes=volumes)
+        result = self.confirm(published, title=title, edition=edition, subject=subject, volumes=volumes)
         counts["replanned"] = result["replanned"]
         return counts
 
-    def edit_metadata(self, item_ids: Sequence[int], *, bgm: Optional[int] = None,
+    def edit_metadata(self, item_ids: Sequence[int], *, subject: Optional[SubjectRef] = None,
                       manual: Optional[ManualMetadata] = None) -> Dict[str, object]:
-        """Rewrite the metadata inside organized files, from a Bangumi subject or from what a person typed.
+        """Rewrite the metadata inside organized files, from a source's subject or from what a person typed.
 
         Only the metadata changes: pages are copied as they are, so no source file is needed.
         ``ids`` and ``series`` in the result name what changed, for telling the media servers.
         """
-        if (bgm is None) == (manual is None):
-            raise ValueError("要选一个 Bangumi 条目或手填元数据")
-        subject = self.services.source.get(bgm) if bgm is not None else None
+        if (subject is None) == (manual is None):
+            raise ValueError("要选一个条目或手填元数据")
+        if subject is not None:
+            self._validate(subject=subject)
+            subject = self.services.sources.get(subject.source).get(subject.id)
         counts: Dict[str, object] = {"edited": 0, "skipped": 0, "failed": 0, "ids": [], "series": []}
         for item_id in item_ids:
             item = self.items.get(item_id)
@@ -404,7 +414,8 @@ class Organizer:
             if subject is not None:
                 overrides.pop("metadata", None)
                 overrides.pop("no_metadata", None)
-                overrides["bgm"] = subject.subject_id
+                overrides.pop("bgm", None)
+                overrides["subject"] = subject.ref.to_json()
             else:
                 overrides["metadata"] = manual.to_json()
             self.items.set_overrides(item.id, overrides)
@@ -412,7 +423,8 @@ class Organizer:
             fields = {"plan": plan}
             if subject is not None:
                 fields["subject_id"] = subject.subject_id
-            detail = {"bgm": subject.subject_id} if subject is not None else {"fields": manual.to_json()}
+                fields["subject_source"] = subject.source
+            detail = {"subject": subject.ref.to_json()} if subject is not None else {"fields": manual.to_json()}
             self.items.update(item.id, event="metadata_edited", detail=detail, **fields)
             counts["edited"] += 1
             counts["ids"].append(item.id)
@@ -428,23 +440,25 @@ class Organizer:
         result name what changed, for telling the media servers.
         """
         counts: Dict[str, object] = {"refreshed": 0, "unchanged": 0, "skipped": 0, "failed": 0, "ids": [], "series": []}
-        subjects: Dict[int, object] = {}
+        subjects: Dict[SubjectRef, object] = {}
         for item_id in item_ids:
             if self.should_stop():
                 break
             self._advance()
             item = self.items.get(item_id)
             overrides = item.overrides or {}
-            if (item.status is not ItemStatus.PUBLISHED or not item.target_path or not item.subject_id
+            ref = item.subject_ref
+            if (item.status is not ItemStatus.PUBLISHED or not item.target_path or ref is None
                     or "metadata" not in (item.plan or {}) or overrides.get("metadata")):
                 counts["skipped"] += 1
                 continue
             try:
-                if item.subject_id not in subjects:
-                    subjects[item.subject_id] = self.services.source.get(item.subject_id, fresh=True)
+                if ref not in subjects:
+                    # Its own source, switched on or not: what was organized from it stays refreshable.
+                    subjects[ref] = self.services.sources.get(ref.source).get(ref.id, fresh=True)
                 library = self.libraries.get(item.library_id)
                 before = metadata_from_json(library.kind, item.plan["metadata"])
-                after = apply_subject(before, subjects[item.subject_id])
+                after = apply_subject(before, subjects[ref])
                 if library.kind == "novel" and not before.description:
                     after = replace(after, description="")  # only a series' first volume carries the summary
                 new = metadata_to_json(after)
@@ -460,7 +474,7 @@ class Organizer:
                                      {"error": failure.describe(error), "raw": failure.raw(error)})
                 counts["failed"] += 1
                 continue
-            self.items.update(item.id, event="metadata_refreshed", detail={"bgm": item.subject_id},
+            self.items.update(item.id, event="metadata_refreshed", detail={"subject": ref.to_json()},
                               plan=dict(item.plan, metadata=new))
             counts["refreshed"] += 1
             counts["ids"].append(item.id)
@@ -562,6 +576,8 @@ class Organizer:
         self._ai_memo = {}
         self._settled = {}
         self._ai_failures = 0
+        self._folder_sources = {}
+        self._folder_sources_loaded = set()
 
     def _prepare(self, library: Library, adapter: KindAdapter, todo: Sequence[Tuple[int, SourceEntry]]) -> None:
         """Ask the AI about every source that needs it, a batch of one folder's names per call."""
@@ -620,7 +636,7 @@ class Organizer:
         series = reading.series if reading is not None else None
         file = reading.file if reading is not None else None
         threshold = _effective_threshold(self.services.config.ai_threshold)
-        bgm = overrides.get("bgm")
+        chosen = SubjectRef.from_overrides(overrides)
         title = overrides.get("title") or (series.title if series is not None else "")
         edition = overrides["edition"] if "edition" in overrides else (series.edition if series else None)
         if library.kind == "novel":
@@ -639,7 +655,7 @@ class Organizer:
         if reading is not None and reading.retry:
             self.items.add_event(item_id, "ai_retry", {"error": reading.problem})
             return None
-        if not (overrides.get("title") or bgm):
+        if not (overrides.get("title") or chosen):
             if series is None:
                 self._review(item_id, ReviewReason.NAMING, "review",
                              {"note": reading.problem if reading is not None else "AI 没有识别这个文件"})
@@ -658,15 +674,16 @@ class Organizer:
         if overrides.get("no_metadata"):
             # Chosen in review: organize under the title, no Bangumi lookup.
             self.items.transition(item_id, ItemStatus.MATCHED, event="no_metadata",
-                                  detail={"title": parse.title_hint, "chosen": True}, subject_id=None)
+                                  detail={"title": parse.title_hint, "chosen": True}, subject_id=None,
+                                  subject_source=None)
             subject = Subject.unlisted(parse.title_hint)
-        elif series is not None and series.base_title and not overrides.get("title") and not bgm:
+        elif series is not None and series.base_title and not overrides.get("title") and not chosen:
             organized = self._match_sub_series(item_id, library, adapter, parse, reading, entry, "volume" in overrides)
             if organized is None:
                 return None
             recognition, subject = organized
         else:
-            subject = self._match(item_id, library, recognition, entry, bgm)
+            subject = self._match(item_id, library, recognition, entry, chosen)
         if subject is None:
             return None
         suffix = adapter.output_suffix(entry) if hasattr(adapter, "output_suffix") else ".epub"
@@ -678,13 +695,17 @@ class Organizer:
         """With an entry of its own a sub-series is a series; without one its files join the original."""
         config = self.services.config
         base_title = reading.series.base_title
-        own = find_own_entry(
-            self.services.source, kind=library.kind, title=parse.title_hint, base_title=base_title,
-            search_titles=parse.search_titles,
-            context=SourceContext(source_folder=entry.series_folder, names=(entry.path.name,),
-                                  title_hint=parse.title_hint),
-            ai=self.services.ai, threshold=config.ai_threshold, item_id=item_id, memo=self._ai_memo,
-        )
+        own = None
+        for source in self._sources_for(library, entry):  # the next source only when this one surely has none
+            own = find_own_entry(
+                source, kind=library.kind, title=parse.title_hint, base_title=base_title,
+                search_titles=parse.search_titles,
+                context=SourceContext(source_folder=entry.series_folder, names=(entry.path.name,),
+                                      title_hint=parse.title_hint),
+                ai=self.services.ai, threshold=config.ai_threshold, item_id=item_id, memo=self._ai_memo,
+            )
+            if not own.none_found:
+                break
         if own.retry:
             self.items.add_event(item_id, "metadata_retry", {"error": own.error})
             return None
@@ -693,7 +714,7 @@ class Organizer:
             return None
         if own.subject is not None:
             recognition = Recognition(parse)
-            subject = self._match(item_id, library, recognition, entry, own.subject.subject_id)
+            subject = self._match(item_id, library, recognition, entry, own.subject.ref, sub_series=True)
             return (recognition, subject) if subject is not None else None
         if not own.none_found:
             self._review(item_id, ReviewReason.METADATA, "review", {"note": own.error or own.note})
@@ -718,53 +739,87 @@ class Organizer:
         event = "parsed" if status is ItemStatus.DISCOVERED else "reparsed"
         self.items.transition(item_id, ItemStatus.PARSED, event=event, parsed=parsed)
 
+    def _sources_for(self, library: Library, entry: SourceEntry) -> Sequence:
+        """The enabled sources in order; a folder already organized from one source stays with it."""
+        sources = self.services.sources
+        if not _lockable(entry):
+            return sources.enabled
+        if (library.id, entry.root) not in self._folder_sources_loaded:
+            self._folder_sources_loaded.add((library.id, entry.root))
+            root = entry.root if entry.root is not None else library.source_dir
+            for folder, name in self.items.subject_sources_by_folder(library.id, root).items():
+                self._folder_sources.setdefault((library.id, entry.root, folder), name)
+        name = self._folder_sources.get((library.id, entry.root, entry.series_folder))
+        locked = [source for source in sources.enabled if source.name == name]
+        # A source switched off since is not asked again: matching goes on as if it had never been used.
+        return tuple(locked) or sources.enabled
+
+    def _remember_source(self, library: Library, entry: SourceEntry, subject: Subject, *,
+                         sub_series: bool = False) -> None:
+        """A sub-series is a work of its own: where it was found says nothing about the rest of its folder."""
+        if not sub_series and _lockable(entry) and subject.source in self.services.sources.names:
+            self._folder_sources.setdefault((library.id, entry.root, entry.series_folder), subject.source)
+
     def _match(self, item_id: int, library: Library, recognition: Recognition, entry: SourceEntry,
-               bgm: Optional[int]) -> Optional[Subject]:
+               chosen: Optional[SubjectRef], *, sub_series: bool = False) -> Optional[Subject]:
         config = self.services.config
         parse = recognition.parse
-        result = match_subject(
-            self.services.source, kind=library.kind, title_hint=parse.title_hint, forced_bgm=bgm,
-            search_titles=parse.search_titles,
+        options = dict(
+            kind=library.kind, title_hint=parse.title_hint, search_titles=parse.search_titles,
             context=SourceContext(source_folder=entry.series_folder, names=(entry.path.name,),
                                   title_hint=parse.title_hint),
             ai=self.services.ai, threshold=config.ai_threshold, item_id=item_id, memo=self._ai_memo,
         )
+        if chosen is not None:
+            try:
+                source = self.services.sources.get(chosen.source)
+            except KeyError:
+                self._review(item_id, ReviewReason.METADATA, "review",
+                             {"note": "数据源 {0} 已不可用".format(chosen.source)})
+                return None
+            result = match_subject(source, forced_id=chosen.id, **options)
+        else:
+            result = match_across(self._sources_for(library, entry), forced_id=None, **options)
         if result.retry:
             self.items.add_event(item_id, "metadata_retry", {"error": result.error})
             return None
         if result.config_error:
             self.items.add_event(item_id, "metadata_config_error", {"error": result.error})
             return None
-        candidates = [scored.subject.subject_id for scored in result.candidates]
+        candidates = [scored.subject.ref.to_json() for scored in result.candidates]
         if result.method in ("rule", "auto", "ai"):
+            self._remember_source(library, entry, result.subject, sub_series=sub_series)
             if result.method == "ai":
                 self.items.add_event(item_id, "ai_adopted", _suggestion_json(result.suggestion))
                 if result.suggestion.call_id is not None:
                     self.ai_calls.mark_adopted(result.suggestion.call_id)
             self.items.transition(item_id, ItemStatus.MATCHED, event="matched",
                                   detail={"method": result.method, "subject_id": result.subject.subject_id,
-                                          "title": result.subject.display_title},
-                                  subject_id=result.subject.subject_id)
+                                          "source": result.subject.source, "title": result.subject.display_title},
+                                  subject_id=result.subject.subject_id, subject_source=result.subject.source)
             return result.subject
         if result.suggestion is not None:
             self.items.add_event(item_id, "ai_suggestion", _suggestion_json(result.suggestion))
         # No subject settled: the user decides in review (pick one, or organize without metadata). Offer what
         # the AI looked at, its own guess first.
         suggestion = result.suggestion
-        offered = [subject.subject_id for subject in result.offered]
-        if suggestion is not None and suggestion.subject_id in offered:
-            offered.remove(suggestion.subject_id)
-            offered.insert(0, suggestion.subject_id)
-        candidates = list(dict.fromkeys(offered + candidates))
+        offered = [subject.ref.to_json() for subject in result.offered]
+        picked = [entry for entry in offered if suggestion is not None and entry["id"] == suggestion.subject_id]
+        offered = picked + [entry for entry in offered if entry not in picked]
+        merged: List[dict] = []
+        for entry in offered + candidates:
+            if entry not in merged:
+                merged.append(entry)
+        candidates = merged
+        label = result.label or "数据源"
         if result.error:
             note = result.error
         elif not candidates:
-            note = "Bangumi 上没有搜到"
-        elif suggestion is not None and suggestion.subject_id is None and \
-                suggestion.confidence >= _effective_threshold(config.ai_threshold):
-            note = "Bangumi 候选里没有这部作品"
+            note = "{0} 上没有搜到".format(label)
+        elif result.ai_says_none:
+            note = "{0} 候选里没有这部作品".format(label)
         else:
-            note = "AI 对 Bangumi 条目没有把握"
+            note = "AI 对 {0} 条目没有把握".format(label)
         self._review(item_id, ReviewReason.METADATA, "review", {"note": note, "candidates": candidates})
         return None
 
@@ -1095,23 +1150,37 @@ def review_group(library: Library, path: Path, root: Optional[Path] = None) -> s
     return folder if folder is not None else unicodedata.normalize("NFC", path.name)
 
 
-def validate_choices(*, title=None, edition=None, bgm=None, volumes: Mapping[int, str] = {}) -> None:
+def validate_choices(*, title=None, edition=None, subject: Optional[SubjectRef] = None,
+                     volumes: Mapping[int, str] = {}, sources: Optional[Sequence[str]] = None) -> None:
     """Reject a review choice before anything changes; messages are for the user."""
     for label, value in (("系列名", title), ("版本", edition)):
         if value in (None, ""):
             continue
         if not isinstance(value, str) or not _safe_name(value):
             raise ValueError("{0}不能为空，也不能含有 / 或首尾空格：{1}".format(label, value))
-    if bgm is not None and (isinstance(bgm, bool) or int(bgm) <= 0):
-        raise ValueError("Bangumi 条目 ID 必须是正整数：{0}".format(bgm))
+    if subject is not None:
+        if not isinstance(subject, SubjectRef) or not subject.source or not str(subject.id).strip():
+            raise ValueError("条目的来源和编号都不能为空")
+        if sources is not None and subject.source not in sources:
+            raise ValueError("没有这个数据源：{0}".format(subject.source))
     for volume in volumes.values():
         parse_volume_text(volume)
+
+
+def _lockable(entry: SourceEntry) -> bool:
+    """Files in a series folder share a source; loose files (dropped ones too) are each on their own."""
+    return entry.series_folder is not None and (entry.root is None or entry.path.parent != entry.root)
+
+
+def _ref_json(subject: Optional[SubjectRef]) -> Optional[dict]:
+    return subject.to_json() if subject is not None else None
 
 
 def _needs_ai(item: Item) -> bool:
     """Review choices that name both the series and the volume leave nothing for the AI to read."""
     overrides = item.overrides or {}
-    return not ((overrides.get("title") or overrides.get("bgm")) and overrides.get("volume"))
+    return not ((overrides.get("title") or overrides.get("subject") or overrides.get("bgm"))
+                and overrides.get("volume"))
 
 
 def _name_in_folder(library: Library, entry: SourceEntry) -> str:

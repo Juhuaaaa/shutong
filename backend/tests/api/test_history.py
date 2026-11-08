@@ -28,7 +28,7 @@ class HistoryRoutesTests(ApiCase):
         by_folder = {group["folder"]: group for group in page["groups"]}
         dungeon = by_folder["迷宫饭"]
         self.assertEqual((dungeon["total"], dungeon["counts"], dungeon["series"], dungeon["subject_id"]),
-                         (3, {"published": 3}, "迷宫饭", 133315))
+                         (3, {"published": 3}, "迷宫饭", "133315"))
         self.assertEqual(len(dungeon["item_ids"]), 3)
         self.assertEqual(by_folder["[]x"]["counts"], {"needs_review": 1})
 

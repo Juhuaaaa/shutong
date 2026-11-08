@@ -27,7 +27,8 @@ def subject(subject_id, name_cn, platform, total):
 
 
 class FakeSource:
-    name = "fake"
+    name = "bangumi"
+    label = "Bangumi"
 
     def __init__(self):
         self.subjects = [subject(279379, "间谍过家家", "漫画", 12), subject(219247, "86", "小说", 13)]
@@ -35,8 +36,8 @@ class FakeSource:
     def search(self, query, kind):
         return tuple(self.subjects)
 
-    def get(self, subject_id):
-        return next(s for s in self.subjects if s.subject_id == subject_id)
+    def get(self, subject_id, *, fresh=False):
+        return next(s for s in self.subjects if s.subject_id == str(subject_id))
 
 
 class CliEndToEndTests(unittest.TestCase):

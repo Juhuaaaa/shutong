@@ -13,9 +13,45 @@ export function editionOf(folder: string): string | null {
   return folder.match(/\[([^[\]]+)\]\s*$/)?.[1] ?? null;
 }
 
-/** A Bangumi subject id from a typed number or a pasted link: 439286, https://bgm.tv/subject/439286 */
-export function subjectIdOf(text: string): number | null {
-  const match = text.trim().match(/^(\d+)$|(?:bgm\.tv|bangumi\.tv|chii\.in)\/subject\/(\d+)/i);
-  const id = match ? Number(match[1] ?? match[2]) : 0;
-  return Number.isSafeInteger(id) && id > 0 ? id : null;
+export interface SubjectRef {
+  source: string;
+  id: string;
+}
+
+const LINKS: [RegExp, string][] = [
+  [/(?:bgm\.tv|bangumi\.tv|chii\.in)\/subject\/(\d+)/i, "bangumi"],
+  [/anilist\.co\/manga\/(\d+)/i, "anilist"],
+];
+
+/** A subject from a pasted link (its site names the source) or a typed number (in ``fallbackSource``). */
+export function subjectRefOf(text: string, fallbackSource: string): SubjectRef | null {
+  const value = text.trim();
+  for (const [pattern, source] of LINKS) {
+    const match = value.match(pattern);
+    if (match) return positive(match[1]) ? { source, id: String(Number(match[1])) } : null;
+  }
+  return /^\d+$/.test(value) && positive(value) ? { source: fallbackSource, id: String(Number(value)) } : null;
+}
+
+function positive(digits: string): boolean {
+  const id = Number(digits);
+  return Number.isSafeInteger(id) && id > 0;
+}
+
+export function sameSubject(a: SubjectRef | null | undefined, b: SubjectRef | null | undefined): boolean {
+  return Boolean(a && b && a.source === b.source && a.id === b.id);
+}
+
+const SOURCE_LABELS: Record<string, string> = { bangumi: "Bangumi", anilist: "AniList" };
+
+export function sourceLabel(name: string | null | undefined): string {
+  return name ? (SOURCE_LABELS[name] ?? name) : "";
+}
+
+/** A subject's public page, made from its source and id. */
+export function subjectUrl(source: string | null | undefined, id: string | null | undefined): string {
+  if (!id) return "";
+  if (source === "anilist") return `https://anilist.co/manga/${id}`;
+  if (!source || source === "bangumi") return `https://bgm.tv/subject/${id}`;
+  return "";
 }

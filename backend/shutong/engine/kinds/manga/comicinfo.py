@@ -10,6 +10,8 @@ from typing import Dict, Optional, Sequence
 from xml.etree import ElementTree
 import zipfile
 
+from shutong.metadata.base import subject_web_url
+
 from .volume import VolumeRef
 
 _DATE_PATTERN = re.compile(r"^\d{4}(?:-\d{2}(?:-\d{2})?)?$")
@@ -31,6 +33,7 @@ class ComicMetadata:
     manga_direction: str = "YesAndRightToLeft"
     completed: bool = False
     total_volumes: Optional[int] = None
+    web_url: str = ""  # sources other than Bangumi; a Bangumi link is made from subject_id
 
 
 def build_comic_info(metadata: ComicMetadata, page_count: object) -> bytes:
@@ -56,7 +59,9 @@ def build_comic_info(metadata: ComicMetadata, page_count: object) -> bytes:
     _add_text(root, "LanguageISO", metadata.language)
     _add_text(root, "Manga", metadata.manga_direction)
 
-    if _is_positive_integer(metadata.subject_id):
+    if metadata.web_url:
+        _add_text(root, "Web", metadata.web_url)
+    elif _is_positive_integer(metadata.subject_id):
         _add_text(root, "Web", subject_web_url(metadata.subject_id))
     if _is_nonnegative_integer(page_count):
         _add_text(root, "PageCount", page_count)
@@ -69,11 +74,6 @@ def read_comic_info(cbz: Path) -> Dict[str, str]:
     with zipfile.ZipFile(cbz) as archive:
         root = ElementTree.fromstring(archive.read("ComicInfo.xml"))
     return {child.tag: (child.text or "") for child in root}
-
-
-def subject_web_url(subject_id: int) -> str:
-    """The public bgm.tv page Kavita links to from a series."""
-    return "https://bgm.tv/subject/{0}".format(subject_id)
 
 
 def _add_volume(root: ElementTree.Element, volume: VolumeRef) -> None:

@@ -6,8 +6,9 @@ from urllib.request import urlopen
 
 from shutong.ai.audit import AuditedAi
 from shutong.ai.openai_compat import AiSettings, OpenAICompatProvider
+from shutong.metadata.anilist import AniListSource
 from shutong.metadata.bangumi import BangumiSettings, BangumiSource
-from shutong.metadata.base import MetadataSource
+from shutong.metadata.registry import SourceRegistry
 from shutong.net import make_opener, parse_proxy
 from shutong.store.ai_calls import AiCallStore
 from shutong.store.cache import CacheStore
@@ -23,9 +24,13 @@ class EngineConfig:
 @dataclass
 class Services:
     db: Database
-    source: MetadataSource
+    sources: SourceRegistry
     ai: Optional[AuditedAi]
     config: EngineConfig
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.sources, SourceRegistry):  # one source given directly (tests, offline demos)
+            self.sources = SourceRegistry.single(self.sources)
 
 
 def _proxy_opener(settings: SettingsStore):
@@ -36,14 +41,16 @@ def _proxy_opener(settings: SettingsStore):
 
 
 def build_services(db: Database, *, opener=None, sleep=time.sleep) -> Services:
-    """Bangumi goes through ``network.proxy``; AI only when ``ai.use_proxy`` is on. ``opener`` overrides both."""
+    """Metadata sources go through ``network.proxy``; AI only when ``ai.use_proxy`` is on. ``opener`` overrides both."""
     settings = SettingsStore(db)
     proxied = opener or _proxy_opener(settings)
     ai_opener = opener or (proxied if settings.get("ai.use_proxy") else urlopen)
-    source = BangumiSource(
+    bangumi = BangumiSource(
         BangumiSettings(base_url=settings.get("bangumi.base_url"), token=settings.get("bangumi.token") or None),
         CacheStore(db), opener=proxied, sleep=sleep,
     )
+    anilist = AniListSource(CacheStore(db), opener=proxied, sleep=sleep)
+    sources = SourceRegistry({"bangumi": bangumi, "anilist": anilist}, settings.get("metadata.sources"))
     ai = None
     base_url, api_key, model = (settings.get("ai.base_url"), settings.get("ai.api_key"), settings.get("ai.model"))
     if base_url and api_key and model:
@@ -55,4 +62,4 @@ def build_services(db: Database, *, opener=None, sleep=time.sleep) -> Services:
         )
         ai = AuditedAi(provider, AiCallStore(db))
     config = EngineConfig(ai_threshold=settings.get("ai.threshold"))
-    return Services(db, source, ai, config)
+    return Services(db, sources, ai, config)

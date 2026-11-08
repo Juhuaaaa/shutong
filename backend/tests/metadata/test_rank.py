@@ -16,6 +16,12 @@ class RankTests(unittest.TestCase):
         self.assertEqual(similarity("间谍过家家", "间谍过家家短篇"), 0.9)
         self.assertEqual(similarity("间", "间谍过家家"), 0.0)
 
+    def test_aliases_are_compared(self):
+        candidate = Subject(subject_id="1", name="ベルセルク", name_cn="", summary="", release_date=None,
+                            writers=(), publisher="", genres=(), completed=False, total_volumes=None,
+                            platform="漫画", aliases=("Berserk",), source="anilist")
+        self.assertEqual(rank("Berserk", [candidate], "manga")[0].score, 1.0)
+
     def test_novel_filter_uses_platform_first(self):
         self.assertTrue(fits_kind(subject(1, "x", platform="小说", genres=("漫画",)), "novel"))
         self.assertFalse(fits_kind(subject(1, "x", platform="漫画", genres=("轻小说",)), "novel"))
@@ -35,8 +41,8 @@ class RankTests(unittest.TestCase):
                                 subject(2, "迷宫饭", platform="漫画", total=14),
                                 subject(3, "无关", platform="漫画"),
                                 subject(4, "迷宫饭", platform="小说")], "manga")
-        self.assertEqual([(s.subject.subject_id, s.score) for s in ranked], [(2, 1.0), (1, 0.9)])
-        self.assertEqual(pick(ranked).subject_id, 2)
+        self.assertEqual([(s.subject.subject_id, s.score) for s in ranked], [("2", 1.0), ("1", 0.9)])
+        self.assertEqual(pick(ranked).subject_id, "2")
 
     def test_name_or_name_cn(self):
         ranked = rank("ダンジョン飯", [subject(5, "迷宫饭", name="ダンジョン飯", platform="漫画")], "manga")

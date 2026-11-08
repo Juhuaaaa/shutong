@@ -49,12 +49,29 @@ def normalize_release_date(value: Optional[str]) -> str:
     return year
 
 
+def bangumi_id(subject: Subject) -> Optional[str]:
+    """The ``{bgm}`` naming variable: only a Bangumi subject has one."""
+    return subject.subject_id if subject.source == "bangumi" and subject.subject_id.isdigit() else None
+
+
+def comic_subject_id(subject: Subject) -> Optional[int]:
+    """Bangumi subjects keep their number in ComicInfo metadata as before, so plans stay byte-for-byte equal."""
+    found = bangumi_id(subject)
+    return int(found) if found else None
+
+
+def comic_web_url(subject: Subject) -> str:
+    """Other sources' pages are written out in full; a Bangumi link is made from ``subject_id``."""
+    return "" if comic_subject_id(subject) else subject.web_url
+
+
 def manga_metadata(series_name: str, volume: VolumeRef, subject: Subject, directives: Directives,
                    width: int) -> ComicMetadata:
     return ComicMetadata(
         series_name=series_name,
         volume=volume,
-        subject_id=subject.subject_id,
+        subject_id=comic_subject_id(subject),
+        web_url=comic_web_url(subject),
         localized_series=subject.display_title,
         title=volume.token(width),
         summary=subject.summary,
@@ -106,6 +123,8 @@ def volume_from_key(kind: str, key: str):
 
 def metadata_to_json(metadata) -> Dict[str, Any]:
     data = asdict(metadata)
+    if isinstance(metadata, ComicMetadata) and not data.get("web_url"):
+        data.pop("web_url", None)  # plans written before other sources existed have no such key
     if isinstance(metadata, ComicMetadata):
         data["volume"] = metadata.volume.key()
     else:

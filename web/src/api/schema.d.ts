@@ -693,7 +693,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/metadata/subjects/{subject_id}": {
+    "/api/metadata/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sources
+         * @description Switched-on sources in the order they are asked, then the others.
+         */
+        get: operations["sources_api_metadata_sources_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/metadata/subjects/{source}/{subject_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -701,7 +721,7 @@ export interface paths {
             cookie?: never;
         };
         /** Subject */
-        get: operations["subject_api_metadata_subjects__subject_id__get"];
+        get: operations["subject_api_metadata_subjects__source___subject_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -942,8 +962,6 @@ export interface components {
         };
         /** Confirm */
         Confirm: {
-            /** Bgm */
-            bgm?: number | null;
             /** Edition */
             edition?: string | null;
             /** Item Ids */
@@ -953,6 +971,7 @@ export interface components {
              * @default false
              */
             skip_metadata: boolean;
+            subject?: components["schemas"]["SubjectRefIn"] | null;
             /** Title */
             title?: string | null;
             /**
@@ -986,14 +1005,13 @@ export interface components {
         };
         /** EditMetadata */
         EditMetadata: {
-            /** Bgm */
-            bgm?: number | null;
             /** Fields */
             fields?: {
                 [key: string]: unknown;
             } | null;
             /** Item Ids */
             item_ids: number[];
+            subject?: components["schemas"]["SubjectRefIn"] | null;
         };
         /** EventOut */
         EventOut: {
@@ -1033,7 +1051,9 @@ export interface components {
             /** Series */
             series: string | null;
             /** Subject Id */
-            subject_id: number | null;
+            subject_id: string | null;
+            /** Subject Source */
+            subject_source: string | null;
             /** Total */
             total: number;
             /** Updated At */
@@ -1079,7 +1099,9 @@ export interface components {
             /** Status */
             status: string;
             /** Subject Id */
-            subject_id: number | null;
+            subject_id: string | null;
+            /** Subject Source */
+            subject_source: string | null;
             /** Target Path */
             target_path: string | null;
             /** Updated At */
@@ -1119,7 +1141,9 @@ export interface components {
             /** Status */
             status: string;
             /** Subject Id */
-            subject_id: number | null;
+            subject_id: string | null;
+            /** Subject Source */
+            subject_source: string | null;
             /** Target Path */
             target_path: string | null;
             /** Updated At */
@@ -1413,7 +1437,9 @@ export interface components {
             /** Series */
             series: string | null;
             /** Subject Id */
-            subject_id: number | null;
+            subject_id: string | null;
+            /** Subject Source */
+            subject_source: string | null;
         };
         /** RefreshMetadata */
         RefreshMetadata: {
@@ -1431,12 +1457,11 @@ export interface components {
         };
         /** Reorganize */
         Reorganize: {
-            /** Bgm */
-            bgm?: number | null;
             /** Edition */
             edition?: string | null;
             /** Item Ids */
             item_ids: number[];
+            subject?: components["schemas"]["SubjectRefIn"] | null;
             /** Title */
             title?: string | null;
             /**
@@ -1454,7 +1479,7 @@ export interface components {
                 [key: string]: unknown;
             } | null;
             /** Candidates */
-            candidates: number[];
+            candidates: components["schemas"]["SubjectRefOut"][];
             /** Count */
             count: number;
             /** Edition */
@@ -1596,6 +1621,15 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** SourceOut */
+        SourceOut: {
+            /** Enabled */
+            enabled: boolean;
+            /** Label */
+            label: string;
+            /** Name */
+            name: string;
+        };
         /** Storage */
         Storage: {
             /** Free */
@@ -1609,6 +1643,8 @@ export interface components {
         };
         /** SubjectOut */
         SubjectOut: {
+            /** Aliases */
+            aliases: string[];
             /** Image */
             image: string | null;
             /** Name */
@@ -1621,14 +1657,35 @@ export interface components {
             publisher: string;
             /** Release Date */
             release_date: string | null;
+            /** Source */
+            source: string;
             /** Subject Id */
-            subject_id: number;
+            subject_id: string;
             /** Summary */
             summary: string;
             /** Total Volumes */
             total_volumes: number | null;
+            /** Web Url */
+            web_url: string;
             /** Writers */
             writers: string[];
+        };
+        /**
+         * SubjectRefIn
+         * @description A subject chosen by hand: which source, and its id there (numbers are accepted and kept as text).
+         */
+        SubjectRefIn: {
+            /** Id */
+            id: string;
+            /** Source */
+            source: string;
+        };
+        /** SubjectRefOut */
+        SubjectRefOut: {
+            /** Id */
+            id: string;
+            /** Source */
+            source: string;
         };
         /** Summary */
         Summary: {
@@ -2935,6 +2992,7 @@ export interface operations {
             query: {
                 q: string;
                 kind?: "manga" | "novel";
+                source?: string | null;
             };
             header?: never;
             path?: never;
@@ -2962,12 +3020,33 @@ export interface operations {
             };
         };
     };
-    subject_api_metadata_subjects__subject_id__get: {
+    sources_api_metadata_sources_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceOut"][];
+                };
+            };
+        };
+    };
+    subject_api_metadata_subjects__source___subject_id__get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                subject_id: number;
+                source: string;
+                subject_id: string;
             };
             cookie?: never;
         };

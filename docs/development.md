@@ -7,7 +7,7 @@
 | `backend/shutong/engine` | 统一整理引擎：AI 识别（`ai_recognize.py`，内置提示词）、适配器（漫画 / 轻小说）、规划、发布、复核与重新整理 |
 | `backend/shutong/api` | Web API（FastAPI）：登录、后台任务、各资源接口，说明见 [api.md](api.md) |
 | `backend/shutong/store` | SQLite 存储与迁移 |
-| `backend/shutong/metadata` | Bangumi 元数据（带缓存） |
+| `backend/shutong/metadata` | 元数据源：Bangumi、AniList（都带缓存），`registry.py` 按设置 `metadata.sources` 决定开哪些、按什么顺序查 |
 | `backend/shutong/servers` | 媒体服务器（Kavita、Komga）：连接、发布后扫描、封面刷新 |
 | `web/` | Web 界面：Vue 3 + TypeScript + Naive UI，接口类型由后端 OpenAPI 生成 |
 

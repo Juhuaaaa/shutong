@@ -6,13 +6,15 @@ import logging
 from pathlib import Path
 import sqlite3
 from typing import Any, Callable, Dict, List, Optional, Tuple
+import unicodedata
 
 from shutong.labels import note
+from shutong.metadata.base import SubjectRef
 from shutong.engine.states import ItemStatus, ReviewReason, check_transition
 
 from .db import Database
 
-_TRANSITION_FIELDS = frozenset({"parsed", "subject_id", "plan", "target_path", "error", "source_path", "group_key",
+_TRANSITION_FIELDS = frozenset({"parsed", "subject_id", "subject_source", "plan", "target_path", "error", "source_path", "group_key",
                                 "source_root", "originals_kept"})
 _JSON_FIELDS = frozenset({"parsed", "plan"})
 
@@ -60,7 +62,8 @@ class Item:
     status: ItemStatus
     review_reason: Optional[ReviewReason]
     parsed: dict
-    subject_id: Optional[int]
+    subject_id: Optional[str]
+    subject_source: Optional[str]
     plan: dict
     target_path: Optional[Path]
     error: Optional[str]
@@ -70,6 +73,12 @@ class Item:
     group_key: Optional[str] = None  # the source folder a review or history record covers
     source_root: Optional[Path] = None  # set for files dropped in from elsewhere: relative paths start here
     originals_kept: bool = False  # the user chose to leave this dropped file's original alone
+
+    @property
+    def subject_ref(self) -> Optional[SubjectRef]:
+        if not self.subject_id:
+            return None
+        return SubjectRef(self.subject_source or "bangumi", self.subject_id)
 
 
 @dataclass(frozen=True)
@@ -253,6 +262,22 @@ class ItemStore:
             _insert_event(connection, item_id, "discovered", None)
         return self.get(item_id)
 
+    def subject_sources_by_folder(self, library_id: int, root: Path) -> Dict[str, str]:
+        """The metadata source each first-level folder under ``root`` was matched from, earliest item first."""
+        with self.db.connect() as connection:
+            rows = connection.execute(
+                "SELECT source_path, subject_source FROM items WHERE library_id = ? AND subject_source IS NOT NULL"
+                " ORDER BY id", (library_id,)).fetchall()
+        found: Dict[str, str] = {}
+        for row in rows:
+            try:
+                parts = Path(row["source_path"]).relative_to(root).parts
+            except ValueError:
+                continue
+            if len(parts) > 1:
+                found.setdefault(unicodedata.normalize("NFC", parts[0]), row["subject_source"])
+        return found
+
     def import_published(self, library_id: int, source_path: Path, fingerprint: str, target_path: Path, *,
                          parsed: dict, detail: dict) -> Item:
         """Record something organized before Shutong existed: straight to PUBLISHED, outside the state machine."""
@@ -371,7 +396,7 @@ class ItemStore:
                 # Records imported from the old tool have no plan: the folder in the library names the series.
                 named = connection.execute(
                     "SELECT coalesce(json_extract(plan, '$.series'), CASE WHEN instr(target_path, '/') > 1"
-                    " THEN substr(target_path, 1, instr(target_path, '/') - 1) END) AS series, subject_id"
+                    " THEN substr(target_path, 1, instr(target_path, '/') - 1) END) AS series, subject_id, subject_source"
                     " FROM items WHERE library_id = ? AND group_key IS ?"
                     " AND (json_extract(plan, '$.series') IS NOT NULL OR subject_id IS NOT NULL"
                     " OR instr(target_path, '/') > 1)"
@@ -379,7 +404,9 @@ class ItemStore:
                     (row["library_id"], row["group_key"])).fetchone()
                 groups.append({"library_id": row["library_id"], "group_key": row["group_key"],
                                "folder": row["group_key"], "series": named[0] if named else None,
-                               "subject_id": named[1] if named else None, "counts": counts,
+                               "subject_id": named[1] if named else None,
+                               "subject_source": (named[2] or "bangumi") if named and named[1] else None,
+                               "counts": counts,
                                "total": row["total"], "updated_at": row["updated_at"], "item_ids": ids,
                                "missing_metadata": row["missing"]})
         return groups, total
@@ -553,7 +580,8 @@ def _item(row: sqlite3.Row) -> Item:
         status=ItemStatus(row["status"]),
         review_reason=ReviewReason(row["review_reason"]) if row["review_reason"] else None,
         parsed=json.loads(row["parsed"]),
-        subject_id=row["subject_id"],
+        subject_id=None if row["subject_id"] is None else str(row["subject_id"]),
+        subject_source=row["subject_source"],
         plan=json.loads(row["plan"]),
         target_path=Path(row["target_path"]) if row["target_path"] is not None else None,
         error=row["error"],

@@ -123,7 +123,7 @@ class RefreshMetadataTests(OrganizerFixture):
         self.source.subjects[133315] = self.changed_subject()
         result = organizer.refresh_metadata([item.id])
         self.assertEqual((result["refreshed"], result["unchanged"], result["skipped"], result["failed"]), (1, 0, 0, 0))
-        self.assertEqual(self.source.gets[-1], (133315, True))
+        self.assertEqual(self.source.gets[-1], ("133315", True))
         fields = read_comic_info(self.library_dir / item.target_path)
         self.assertEqual((fields["Summary"], fields["Publisher"]), ("新的简介", "新出版社"))
         self.assertEqual(self.items.get(item.id).plan["metadata"]["publisher"], "新出版社")
@@ -138,11 +138,22 @@ class RefreshMetadataTests(OrganizerFixture):
         self.assertEqual((result["refreshed"], result["unchanged"]), (0, 1))
         self.assertEqual(final.stat().st_mtime, 1000)
 
+    def test_refresh_old_bangumi_plan_is_unchanged(self):
+        organizer, [item] = self.published("迷宫饭/迷宫饭 Vol.01.zip")
+        # What plans looked like before other sources: the number in subject_id, no web_url key.
+        self.assertEqual(item.plan["metadata"]["subject_id"], 133315)
+        self.assertNotIn("web_url", item.plan["metadata"])
+        final = self.library_dir / item.target_path
+        os.utime(final, (1000, 1000))
+        result = organizer.refresh_metadata([item.id])
+        self.assertEqual((result["refreshed"], result["unchanged"], result["failed"]), (0, 1, 0))
+        self.assertEqual(final.stat().st_mtime, 1000)
+
     def test_asks_bangumi_once_per_subject(self):
         organizer, items = self.published("迷宫饭/迷宫饭 Vol.01.zip", "迷宫饭/迷宫饭 Vol.02.zip")
         self.source.gets.clear()
         organizer.refresh_metadata([item.id for item in items])
-        self.assertEqual(self.source.gets, [(133315, True)])
+        self.assertEqual(self.source.gets, [("133315", True)])
 
     def test_what_a_person_filled_in_stays(self):
         organizer, [item] = self.published("迷宫饭/迷宫饭 Vol.01.zip")

@@ -7,14 +7,16 @@ import SettingsView from "./SettingsView.vue";
 vi.mock("@/composables/confirm", () => ({ ask: vi.fn().mockResolvedValue(true) }));
 
 const settings = {
-  "bangumi.base_url": "https://api.bgm.tv", "bangumi.token": "", "ai.base_url": "https://api.deepseek.com/v1",
+  "bangumi.base_url": "https://api.bgm.tv", "bangumi.token": "", "metadata.sources": ["bangumi"], "ai.base_url": "https://api.deepseek.com/v1",
   "ai.api_key": "已设置", "ai.model": "deepseek-chat", "ai.threshold": 0.95, "network.proxy": "", "ai.use_proxy": false,
 };
 
 function api(extra: Record<string, unknown> = {}) {
   return fakeApi({
     "GET /api/libraries": [], "GET /api/settings": settings, "PATCH /api/settings": (body: object) => ({ ...settings, ...body }),
-    "GET /api/ai/calls": [], "GET /api/servers": [], ...extra,
+    "GET /api/ai/calls": [], "GET /api/servers": [],
+    "GET /api/metadata/sources": [{ name: "bangumi", label: "Bangumi", enabled: true }, { name: "anilist", label: "AniList", enabled: false }],
+    ...extra,
   });
 }
 
@@ -44,6 +46,27 @@ describe("SettingsView", () => {
     (document.querySelector("[data-test=save-ai]") as HTMLElement).click();
     await vi.waitFor(() => expect(calls.some((call) => call.method === "PATCH")).toBe(true));
     expect(calls.find((call) => call.method === "PATCH")?.body).toEqual({ "ai.threshold": 0.9 });
+  });
+
+  it("switches on a second metadata source, moves it first and saves the order", async () => {
+    const { calls } = api();
+    await mountView(SettingsView, "/settings/metadata");
+    await vi.waitFor(() => expect(document.querySelector("[data-test=source-anilist]")).not.toBeNull());
+    const only = document.querySelector("[data-test=source-switch-bangumi] input") as HTMLInputElement;
+    expect(only.disabled).toBe(true); // the last one switched on cannot be switched off
+    (document.querySelector("[data-test=source-switch-anilist] input") as HTMLInputElement).click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    (document.querySelector("[data-test=source-up-anilist]") as HTMLElement).click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    (document.querySelector("[data-test=save-metadata]") as HTMLElement).click();
+    await vi.waitFor(() => expect(calls.some((call) => call.method === "PATCH")).toBe(true));
+    expect(calls.find((call) => call.method === "PATCH")?.body).toEqual({ "metadata.sources": ["anilist", "bangumi"] });
+  });
+
+  it("still opens the metadata tab from an old Bangumi link", async () => {
+    api();
+    await mountView(SettingsView, "/settings/bangumi");
+    await vi.waitFor(() => expect(document.querySelector("[data-test=sources]")).not.toBeNull());
   });
 
   it("opens on the AI tab, which says scanning needs it", async () => {
