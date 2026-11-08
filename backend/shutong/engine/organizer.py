@@ -714,7 +714,7 @@ class Organizer:
             return None
         if own.subject is not None:
             recognition = Recognition(parse)
-            subject = self._match(item_id, library, recognition, entry, own.subject.ref)
+            subject = self._match(item_id, library, recognition, entry, own.subject.ref, sub_series=True)
             return (recognition, subject) if subject is not None else None
         if not own.none_found:
             self._review(item_id, ReviewReason.METADATA, "review", {"note": own.error or own.note})
@@ -742,7 +742,7 @@ class Organizer:
     def _sources_for(self, library: Library, entry: SourceEntry) -> Sequence:
         """The enabled sources in order; a folder already organized from one source stays with it."""
         sources = self.services.sources
-        if entry.series_folder is None:
+        if not _lockable(entry):
             return sources.enabled
         if (library.id, entry.root) not in self._folder_sources_loaded:
             self._folder_sources_loaded.add((library.id, entry.root))
@@ -750,16 +750,18 @@ class Organizer:
             for folder, name in self.items.subject_sources_by_folder(library.id, root).items():
                 self._folder_sources.setdefault((library.id, entry.root, folder), name)
         name = self._folder_sources.get((library.id, entry.root, entry.series_folder))
-        if name is not None and name in sources.names:
-            return (sources.get(name),)
-        return sources.enabled
+        locked = [source for source in sources.enabled if source.name == name]
+        # A source switched off since is not asked again: matching goes on as if it had never been used.
+        return tuple(locked) or sources.enabled
 
-    def _remember_source(self, library: Library, entry: SourceEntry, subject: Subject) -> None:
-        if entry.series_folder is not None and subject.source in self.services.sources.names:
+    def _remember_source(self, library: Library, entry: SourceEntry, subject: Subject, *,
+                         sub_series: bool = False) -> None:
+        """A sub-series is a work of its own: where it was found says nothing about the rest of its folder."""
+        if not sub_series and _lockable(entry) and subject.source in self.services.sources.names:
             self._folder_sources.setdefault((library.id, entry.root, entry.series_folder), subject.source)
 
     def _match(self, item_id: int, library: Library, recognition: Recognition, entry: SourceEntry,
-               chosen: Optional[SubjectRef]) -> Optional[Subject]:
+               chosen: Optional[SubjectRef], *, sub_series: bool = False) -> Optional[Subject]:
         config = self.services.config
         parse = recognition.parse
         options = dict(
@@ -786,7 +788,7 @@ class Organizer:
             return None
         candidates = [scored.subject.ref.to_json() for scored in result.candidates]
         if result.method in ("rule", "auto", "ai"):
-            self._remember_source(library, entry, result.subject)
+            self._remember_source(library, entry, result.subject, sub_series=sub_series)
             if result.method == "ai":
                 self.items.add_event(item_id, "ai_adopted", _suggestion_json(result.suggestion))
                 if result.suggestion.call_id is not None:
@@ -1163,6 +1165,11 @@ def validate_choices(*, title=None, edition=None, subject: Optional[SubjectRef] 
             raise ValueError("没有这个数据源：{0}".format(subject.source))
     for volume in volumes.values():
         parse_volume_text(volume)
+
+
+def _lockable(entry: SourceEntry) -> bool:
+    """Files in a series folder share a source; loose files (dropped ones too) are each on their own."""
+    return entry.series_folder is not None and (entry.root is None or entry.path.parent != entry.root)
 
 
 def _ref_json(subject: Optional[SubjectRef]) -> Optional[dict]:
