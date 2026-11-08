@@ -33,9 +33,8 @@ const editing = ref<Item[] | null>(null);
 const coverWall = ref<Item[] | null>(null);
 const broken = ref(false);
 
-// Only a Bangumi cover can be found from the id alone; other sources show the placeholder.
-const cover = computed(() => (props.group.subject_id && (props.group.subject_source ?? "bangumi") === "bangumi"
-  ? `https://api.bgm.tv/v0/subjects/${props.group.subject_id}/image?type=small` : null));
+// The server builds the cover address: from the id alone (only Bangumi has one), at its site or a mirror.
+const cover = computed(() => props.group.image ?? null);
 // Where the first organized file of this group went.
 const outputFolder = computed(() => {
   const target = items.value.find((item) => item.target_path)?.target_path;

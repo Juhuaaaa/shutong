@@ -27,15 +27,22 @@ _RETRYABLE_HTTP_CODES = {429, 500, 502, 503, 504}
 _RETRY_DELAYS = (1, 2, 4)
 _MAX_ATTEMPTS = 3
 _DOWN_SECONDS = 300  # after giving up, later requests fail at once for this long (the cache still answers)
-_IMAGE_URL = "https://api.bgm.tv/v0/subjects/{0}/image?type=common"
+DEFAULT_BASE_URL = "https://api.bgm.tv"
+_IMAGE_PATH = "/v0/subjects/{0}/image?type={1}"
+
+
+def image_url(base: str, subject_id, size: str = "common") -> str:
+    """A subject's cover through the API's image endpoint, at ``base`` (the official site or a mirror)."""
+    return (base or DEFAULT_BASE_URL).rstrip("/") + _IMAGE_PATH.format(subject_id, size)
 _SEARCH_CACHE_TTL_SECONDS = 24 * 60 * 60
 _SUBJECT_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60
 
 
 @dataclass(frozen=True)
 class BangumiSettings:
-    base_url: str = "https://api.bgm.tv"
+    base_url: str = DEFAULT_BASE_URL
     token: Optional[str] = None
+    image_base_url: str = DEFAULT_BASE_URL  # covers: the official site or a mirror
 
 
 class BangumiSource:
@@ -72,12 +79,12 @@ class BangumiSource:
                 "/v0/search/subjects?limit=8",
                 payload={"keyword": normalized_title, "filter": {"type": [1]}},
             )
-            subjects = _normalize_search_response(response)
+            subjects = _normalize_search_response(response, self.settings.image_base_url)
             self.cache.put(
                 cache_key, response, ttl_seconds=_SEARCH_CACHE_TTL_SECONDS
             )
             return subjects
-        return _normalize_search_response(response)
+        return _normalize_search_response(response, self.settings.image_base_url)
 
     def get(self, subject_id, *, fresh: bool = False) -> Subject:
         """``fresh`` asks Bangumi again instead of answering from the cache (and updates the cache)."""
@@ -89,14 +96,14 @@ class BangumiSource:
         response = None if fresh else self.cache.get(cache_key)
         if response is None:
             response = self._request_json("/v0/subjects/{0}".format(subject_id))
-            subject = normalize_subject(response)
+            subject = normalize_subject(response, self.settings.image_base_url)
             if subject.subject_id != str(subject_id):
                 raise ValueError("Bangumi subject id does not match request")
             self.cache.put(
                 cache_key, response, ttl_seconds=_SUBJECT_CACHE_TTL_SECONDS
             )
             return subject
-        subject = normalize_subject(response)
+        subject = normalize_subject(response, self.settings.image_base_url)
         if subject.subject_id != str(subject_id):
             raise ValueError("Bangumi subject id does not match request")
         return subject
@@ -157,7 +164,7 @@ class BangumiSource:
         raise RuntimeError("unreachable Bangumi retry state")
 
 
-def normalize_subject(value: Any) -> Subject:
+def normalize_subject(value: Any, image_base: str = DEFAULT_BASE_URL) -> Subject:
     if not isinstance(value, dict):
         raise ValueError("Bangumi subject must be an object")
     subject_id = value.get("id")
@@ -192,14 +199,14 @@ def normalize_subject(value: Any) -> Subject:
         total_volumes=total_volumes,
         platform=_text(value.get("platform")),
         series=value.get("series") if isinstance(value.get("series"), bool) else None,
-        image=_IMAGE_URL.format(subject_id),
+        image=image_url(image_base, subject_id),
     )
 
 
-def _normalize_search_response(value: Any) -> Tuple[Subject, ...]:
+def _normalize_search_response(value: Any, image_base: str = DEFAULT_BASE_URL) -> Tuple[Subject, ...]:
     if not isinstance(value, dict) or not isinstance(value.get("data"), list):
         raise ValueError("Bangumi search response must contain a data list")
-    return tuple(normalize_subject(item) for item in value["data"])
+    return tuple(normalize_subject(item, image_base) for item in value["data"])
 
 
 def _load_json(body: Any, service: str) -> Any:

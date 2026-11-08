@@ -1,4 +1,5 @@
 import time
+from urllib.parse import urlparse
 from typing import Any, Dict
 from urllib.request import Request as HttpRequest
 
@@ -54,6 +55,10 @@ def _check(key: str, value: Any) -> None:
         if not value or len(set(map(repr, value))) != len(value) \
                 or not all(isinstance(name, str) and name in KNOWN_SOURCES for name in value):
             raise HTTPException(422, "数据源至少开一个，不能重复，只能是：{0}".format("、".join(KNOWN_SOURCES)))
+    if key in ("bangumi.base_url", "bangumi.image_base_url") and value:
+        parsed = urlparse(value.strip())
+        if parsed.scheme not in ("http", "https") or not parsed.netloc:
+            raise HTTPException(422, "地址要以 http:// 或 https:// 开头，例如 https://api.bgm.tv")
     if key == "network.proxy":
         try:
             parse_proxy(value or "")

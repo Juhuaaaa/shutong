@@ -3,9 +3,9 @@ from typing import Annotated, Dict, List, Optional
 
 from pydantic import BaseModel, BeforeValidator
 
+from shutong.metadata.bangumi import DEFAULT_BASE_URL, image_url
 from shutong.metadata.base import SubjectRef
 
-_BANGUMI_IMAGE = "https://api.bgm.tv/v0/subjects/{0}/image?type=common"
 
 
 def _as_text(value):
@@ -38,9 +38,10 @@ def ref_out(value) -> Optional[dict]:
     return None
 
 
-def cover_url(source: Optional[str], subject_id: Optional[str]) -> Optional[str]:
-    """A cover found from the id alone: only Bangumi has one."""
-    return _BANGUMI_IMAGE.format(subject_id) if source == "bangumi" and subject_id else None
+def cover_url(source: Optional[str], subject_id: Optional[str], base: str = DEFAULT_BASE_URL,
+              size: str = "common") -> Optional[str]:
+    """A cover found from the id alone: only Bangumi has one, at ``base`` (its site or a mirror)."""
+    return image_url(base, subject_id, size) if source == "bangumi" and subject_id else None
 
 
 class JobRef(BaseModel):
@@ -115,6 +116,7 @@ class HistoryGroup(BaseModel):
     series: Optional[str]
     subject_id: Optional[str]
     subject_source: Optional[str]
+    image: Optional[str] = None  # a small cover, when the id alone finds one
     counts: Dict[str, int]
     total: int
     updated_at: str

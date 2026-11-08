@@ -39,6 +39,14 @@ def make_cache(root):
     return CacheStore(database)
 
 
+class BangumiImageTests(unittest.TestCase):
+    def test_images_come_from_the_configured_address(self):
+        value = {"id": 279379, "name": "SPY×FAMILY", "name_cn": "间谍过家家"}
+        self.assertEqual(normalize_subject(value).image, "https://api.bgm.tv/v0/subjects/279379/image?type=common")
+        self.assertEqual(normalize_subject(value, image_base="https://img.mirror.example").image,
+                         "https://img.mirror.example/v0/subjects/279379/image?type=common")
+
+
 class BangumiTests(unittest.TestCase):
     def test_normalize_subject_handles_null_and_mixed_infobox_values(self):
         subject = normalize_subject({

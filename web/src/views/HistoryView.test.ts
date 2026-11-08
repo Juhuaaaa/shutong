@@ -110,6 +110,16 @@ describe("HistoryView", () => {
     await vi.waitFor(() => expect(document.body.textContent).toContain("更新 1 个，没变化 1 个"));
   });
 
+  it("shows the cover from the address the server gives, a mirror included", async () => {
+    api({ "GET /api/history/groups": { groups: [
+      group(1, { image: "https://img.mirror.example/v0/subjects/9/image?type=small" }), group(2, { image: null })], total: 2 } });
+    const { wrapper } = await mountView(HistoryView, "/history");
+    await vi.waitFor(() => expect(wrapper.findAll("[data-test=history-group]").length).toBe(2));
+    const rows = wrapper.findAll("[data-test=history-group]");
+    expect(rows[0].find(".cover img").attributes("src")).toBe("https://img.mirror.example/v0/subjects/9/image?type=small");
+    expect(rows[1].find(".cover img").exists()).toBe(false);
+  });
+
   it("offers covers for manga only", async () => {
     api({
       "GET /api/libraries": [{ id: 1, name: "轻小说", kind: "novel" }],

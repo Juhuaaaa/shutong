@@ -86,6 +86,18 @@ describe("SettingsView", () => {
     expect(calls.find((call) => call.method === "PATCH")?.body).toEqual({ "metadata.translate_summaries": false });
   });
 
+  it("saves a mirror for Bangumi images", async () => {
+    const { calls } = api({ "GET /api/settings": { ...settings, "bangumi.image_base_url": "" } });
+    await mountView(SettingsView, "/settings/metadata");
+    await vi.waitFor(() => expect(input("bangumi-image-url")).not.toBeNull());
+    await vi.waitFor(() => expect(input("translate-summaries") ?? true).toBeTruthy());
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    await type("bangumi-image-url", "https://img.mirror.example");
+    (document.querySelector("[data-test=save-metadata]") as HTMLElement).click();
+    await vi.waitFor(() => expect(calls.some((call) => call.method === "PATCH")).toBe(true));
+    expect(calls.find((call) => call.method === "PATCH")?.body).toEqual({ "bangumi.image_base_url": "https://img.mirror.example" });
+  });
+
   it("still opens the metadata tab from an old Bangumi link", async () => {
     api();
     await mountView(SettingsView, "/settings/bangumi");

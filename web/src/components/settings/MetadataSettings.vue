@@ -10,7 +10,9 @@ import { useSettingsForm } from "@/composables/useSettingsForm";
 import SecretField from "./SecretField.vue";
 
 const { t, te } = useI18n();
-const form = useSettingsForm(["metadata.sources", "metadata.translate_summaries", "bangumi.base_url", "bangumi.token"]);
+const form = useSettingsForm(["metadata.sources", "metadata.translate_summaries", "bangumi.base_url",
+  "bangumi.image_base_url", "bangumi.token"]);
+const imageUrl = form.field<string>("bangumi.image_base_url");
 const translate = form.field<boolean>("metadata.translate_summaries");
 const baseUrl = form.field<string>("bangumi.base_url");
 const token = form.field<string>("bangumi.token");
@@ -107,7 +109,10 @@ async function clear(key: string) {
     <VSwitch v-model="translate" :label="t('settings.translateSummaries')" :hint="t('settings.translateSummariesHint')"
       persistent-hint class="mt-2" data-test="translate-summaries" />
     <div class="text-subtitle-2 mt-4">Bangumi</div>
-    <VTextField v-model="baseUrl" :label="t('settings.bangumiUrl')" />
+    <VTextField v-model="baseUrl" :label="t('settings.bangumiUrl')" :hint="t('settings.bangumiUrlHint')" persistent-hint
+      data-test="bangumi-url" />
+    <VTextField v-model="imageUrl" :label="t('settings.bangumiImageUrl')" :hint="t('settings.bangumiImageUrlHint')"
+      persistent-hint :placeholder="baseUrl || 'https://api.bgm.tv'" persistent-placeholder data-test="bangumi-image-url" />
     <SecretField v-model="token" :label="t('settings.bangumiToken')"
       :hint="t('settings.bangumiTokenHint')" :is-set="!!form.secretSet['bangumi.token']" clear-test="clear-bangumi-token"
       @clear="clear('bangumi.token')" />
