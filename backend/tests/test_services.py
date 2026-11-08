@@ -73,12 +73,12 @@ class ServicesTests(unittest.TestCase):
 
     def test_bangumi_mirror_for_api_and_images(self):
         source = build_services(self.db).sources.primary
-        self.assertEqual(source.settings.image_base_url, "https://api.bgm.tv")
-        # A mirror of the API usually serves its image endpoint too: images follow it unless set apart.
+        self.assertEqual((source.settings.base_url, source.settings.image_base_url), ("https://api.bgm.tv", ""))
         self.settings.set("bangumi.base_url", "https://bgm.mirror.example/")
-        self.assertEqual(build_services(self.db).sources.primary.settings.image_base_url, "https://bgm.mirror.example")
-        self.settings.set("bangumi.image_base_url", "https://img.mirror.example")
-        self.assertEqual(build_services(self.db).sources.primary.settings.image_base_url, "https://img.mirror.example")
+        self.settings.set("bangumi.image_base_url", "https://img.mirror.example/")
+        source = build_services(self.db).sources.primary
+        self.assertEqual((source.settings.base_url, source.settings.image_base_url),
+                         ("https://bgm.mirror.example", "https://img.mirror.example"))
 
 
 if __name__ == "__main__":

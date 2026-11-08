@@ -285,7 +285,7 @@ export default {
     bangumiUrl: "API 地址",
     bangumiUrlHint: "默认 https://api.bgm.tv；连不上官方时可以填镜像站的地址",
     bangumiImageUrl: "图片地址（可选）",
-    bangumiImageUrlHint: "封面从这里取，留空就和 API 地址一样。镜像站只代理图片时填在这里",
+    bangumiImageUrlHint: "代替官方图片服务器 lain.bgm.tv 的镜像地址；留空就用 API 返回的图片地址",
     bangumiToken: "Access Token（可选）",
     bangumiTokenHint: "填了可以看到需要登录才能看的条目；留空不影响一般使用",
     aiRequired: "书童靠 AI 读懂文件名：书名、版本和第几卷都由它判断。填好接口地址、API Key 和模型后才能扫描。",

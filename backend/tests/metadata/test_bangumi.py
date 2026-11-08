@@ -40,11 +40,19 @@ def make_cache(root):
 
 
 class BangumiImageTests(unittest.TestCase):
-    def test_images_come_from_the_configured_address(self):
-        value = {"id": 279379, "name": "SPY×FAMILY", "name_cn": "间谍过家家"}
-        self.assertEqual(normalize_subject(value).image, "https://api.bgm.tv/v0/subjects/279379/image?type=common")
-        self.assertEqual(normalize_subject(value, image_base="https://img.mirror.example").image,
-                         "https://img.mirror.example/v0/subjects/279379/image?type=common")
+    def test_covers_are_the_files_bangumi_names_on_its_image_host_or_a_mirror(self):
+        value = {"id": 279379, "name": "SPY×FAMILY", "name_cn": "间谍过家家",
+                 "images": {"common": "https://lain.bgm.tv/r/400/pic/cover/l/c6/ab/279379_Bjc7O.jpg"}}
+        self.assertEqual(normalize_subject(value).image, "https://lain.bgm.tv/r/400/pic/cover/l/c6/ab/279379_Bjc7O.jpg")
+        mirrored = normalize_subject(value, image_base="https://bgmimg.mirror.example/")
+        self.assertEqual(mirrored.image, "https://bgmimg.mirror.example/r/400/pic/cover/l/c6/ab/279379_Bjc7O.jpg")
+        # A mirror of the API that already names its own image host is left alone.
+        own = dict(value, images={"common": "https://bgmimg.mirror.example/r/400/pic/x.jpg"})
+        self.assertEqual(normalize_subject(own, image_base="https://other.example").image,
+                         "https://bgmimg.mirror.example/r/400/pic/x.jpg")
+        # No image named: the API's image endpoint, at the API's address.
+        self.assertEqual(normalize_subject({"id": 7, "name": "x"}, api_base="https://bgmapi.mirror.example").image,
+                         "https://bgmapi.mirror.example/v0/subjects/7/image?type=common")
 
 
 class BangumiTests(unittest.TestCase):

@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from shutong.api.auth import require_login
 from shutong.api.routes.jobs import JobOut
 from shutong.api.schemas import cover_url
-from shutong.services import bangumi_image_base
+from shutong.services import bangumi_cover_base
 from shutong.store.settings import SettingsStore
 from shutong.store.records import LibraryStore
 
@@ -64,7 +64,7 @@ def dashboard(request: Request) -> dict:
     month = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat()
     libraries, storage, devices = [], [], set()
     stored = LibraryStore(db).all()
-    image_base = bangumi_image_base(SettingsStore(db))
+    image_base = bangumi_cover_base(SettingsStore(db))
     # File system first: a stale network mount can stall a stat, and a connection holds the write lock.
     disk = {}
     for library in stored:

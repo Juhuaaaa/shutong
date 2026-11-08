@@ -42,7 +42,7 @@ _SUBJECT_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60
 class BangumiSettings:
     base_url: str = DEFAULT_BASE_URL
     token: Optional[str] = None
-    image_base_url: str = DEFAULT_BASE_URL  # covers: the official site or a mirror
+    image_base_url: str = ""  # a mirror of Bangumi's image host (lain.bgm.tv); empty: as the API names them
 
 
 class BangumiSource:
@@ -79,12 +79,12 @@ class BangumiSource:
                 "/v0/search/subjects?limit=8",
                 payload={"keyword": normalized_title, "filter": {"type": [1]}},
             )
-            subjects = _normalize_search_response(response, self.settings.image_base_url)
+            subjects = _normalize_search_response(response, self.settings.image_base_url, self.settings.base_url)
             self.cache.put(
                 cache_key, response, ttl_seconds=_SEARCH_CACHE_TTL_SECONDS
             )
             return subjects
-        return _normalize_search_response(response, self.settings.image_base_url)
+        return _normalize_search_response(response, self.settings.image_base_url, self.settings.base_url)
 
     def get(self, subject_id, *, fresh: bool = False) -> Subject:
         """``fresh`` asks Bangumi again instead of answering from the cache (and updates the cache)."""
@@ -96,14 +96,14 @@ class BangumiSource:
         response = None if fresh else self.cache.get(cache_key)
         if response is None:
             response = self._request_json("/v0/subjects/{0}".format(subject_id))
-            subject = normalize_subject(response, self.settings.image_base_url)
+            subject = normalize_subject(response, self.settings.image_base_url, self.settings.base_url)
             if subject.subject_id != str(subject_id):
                 raise ValueError("Bangumi subject id does not match request")
             self.cache.put(
                 cache_key, response, ttl_seconds=_SUBJECT_CACHE_TTL_SECONDS
             )
             return subject
-        subject = normalize_subject(response, self.settings.image_base_url)
+        subject = normalize_subject(response, self.settings.image_base_url, self.settings.base_url)
         if subject.subject_id != str(subject_id):
             raise ValueError("Bangumi subject id does not match request")
         return subject
@@ -164,7 +164,23 @@ class BangumiSource:
         raise RuntimeError("unreachable Bangumi retry state")
 
 
-def normalize_subject(value: Any, image_base: str = DEFAULT_BASE_URL) -> Subject:
+IMAGE_HOSTS = ("https://lain.bgm.tv", "http://lain.bgm.tv")
+
+
+def _cover(value: dict, subject_id: int, image_base: str, api_base: str) -> str:
+    """The cover file Bangumi names, on a mirror of its image host when one is set; else the API's image endpoint."""
+    images = value.get("images") if isinstance(value.get("images"), dict) else {}
+    named = _text(images.get("common")) or _text(images.get("large"))
+    if not named:
+        return image_url(api_base, subject_id)
+    if image_base:
+        for host in IMAGE_HOSTS:
+            if named.startswith(host + "/"):
+                return image_base.rstrip("/") + named[len(host):]
+    return named
+
+
+def normalize_subject(value: Any, image_base: str = "", api_base: str = DEFAULT_BASE_URL) -> Subject:
     if not isinstance(value, dict):
         raise ValueError("Bangumi subject must be an object")
     subject_id = value.get("id")
@@ -199,14 +215,14 @@ def normalize_subject(value: Any, image_base: str = DEFAULT_BASE_URL) -> Subject
         total_volumes=total_volumes,
         platform=_text(value.get("platform")),
         series=value.get("series") if isinstance(value.get("series"), bool) else None,
-        image=image_url(image_base, subject_id),
+        image=_cover(value, subject_id, image_base, api_base),
     )
 
 
-def _normalize_search_response(value: Any, image_base: str = DEFAULT_BASE_URL) -> Tuple[Subject, ...]:
+def _normalize_search_response(value: Any, image_base: str = "", api_base: str = DEFAULT_BASE_URL) -> Tuple[Subject, ...]:
     if not isinstance(value, dict) or not isinstance(value.get("data"), list):
         raise ValueError("Bangumi search response must contain a data list")
-    return tuple(normalize_subject(item, image_base) for item in value["data"])
+    return tuple(normalize_subject(item, image_base, api_base) for item in value["data"])
 
 
 def _load_json(body: Any, service: str) -> Any:

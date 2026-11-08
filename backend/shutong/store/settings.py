@@ -9,7 +9,7 @@ SECRET_KEYS = frozenset({"bangumi.token", "ai.api_key", "auth.password_hash", "a
 DEFAULTS: Dict[str, Any] = {
     "bangumi.base_url": "https://api.bgm.tv",
     "bangumi.token": None,
-    "bangumi.image_base_url": "",  # empty: the same address as the API
+    "bangumi.image_base_url": "",  # a mirror of lain.bgm.tv; empty: covers as the API names them
     "metadata.sources": ["bangumi"],
     "metadata.translate_summaries": True,
     "network.proxy": "",
