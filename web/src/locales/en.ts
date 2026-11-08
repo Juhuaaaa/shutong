@@ -238,6 +238,8 @@ const en: typeof zhCN = {
     metadataTitle: "Edit the metadata of {count} volumes",
     metadataSource: "Change entry",
     metadataManual: "Fill in by hand",
+    aiPicked: "Entries the AI chose",
+    fromSource: "From {source}",
     subject: "Entry",
     metadataNote: "Only changes the metadata inside the files, without repacking, even if the source is gone. The media server is told to refresh afterwards.",
     metadataSave: "Save",

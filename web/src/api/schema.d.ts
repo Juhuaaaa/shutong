@@ -187,7 +187,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Groups */
+        /**
+         * Groups
+         * @description ``ai_picked`` and ``source`` find organized files worth a second look: the AI chose their entry among
+         *     several, or it came from a given metadata source.
+         */
         get: operations["groups_api_history_groups_get"];
         put?: never;
         post?: never;
@@ -2020,6 +2024,8 @@ export interface operations {
                 status?: components["schemas"]["ItemStatus"] | null;
                 q?: string | null;
                 missing_metadata?: boolean;
+                ai_picked?: boolean;
+                source?: string | null;
                 limit?: number;
                 offset?: number;
             };

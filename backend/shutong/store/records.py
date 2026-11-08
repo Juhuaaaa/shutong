@@ -353,8 +353,8 @@ class ItemStore:
         return [_item(row) for row in rows]
 
     def group_page(self, library_id: Optional[int], *, status: Optional[ItemStatus] = None,
-                   query: Optional[str] = None, missing_metadata: bool = False,
-                   limit: int = 30, offset: int = 0) -> Tuple[List[dict], int]:
+                   query: Optional[str] = None, missing_metadata: bool = False, ai_picked: bool = False,
+                   source: Optional[str] = None, limit: int = 30, offset: int = 0) -> Tuple[List[dict], int]:
         """Items summed up per source folder, most recently updated first, and how many folders match.
 
         Missing metadata means organized without a Bangumi subject; review items have none yet and do not count.
@@ -372,6 +372,13 @@ class ItemStore:
             having_values += [query.lower(), query.lower()]
         if missing_metadata:
             having.append("missing > 0")
+        if ai_picked:
+            having.append("sum(status = 'published' AND id IN"
+                          " (SELECT item_id FROM item_events WHERE kind = 'ai_adopted')) > 0")
+        if source:
+            having.append("sum(status = 'published' AND coalesce(subject_source,"
+                          " CASE WHEN subject_id IS NOT NULL THEN 'bangumi' END) = ?) > 0")
+            having_values.append(source)
         grouped = ("SELECT library_id, group_key, count(*) AS total, max(updated_at) AS updated_at,"
                    " sum(status = 'published' AND subject_id IS NULL"
                    " AND json_extract(overrides, '$.metadata') IS NULL) AS missing,"

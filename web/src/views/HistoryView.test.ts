@@ -222,6 +222,21 @@ describe("HistoryView", () => {
     expect(params.has("status")).toBe(false);
   });
 
+  it("filters what deserves a second look: the AI's picks, or one source's entries", async () => {
+    const { calls } = api();
+    const { wrapper, router } = await mountView(HistoryView, "/history");
+    await vi.waitFor(() => expect(calls.some((call) => call.path === "/api/history/groups")).toBe(true));
+    expect(wrapper.text()).not.toContain("undefined");
+    await router.replace({ query: { status: "ai_picked" } });
+    await vi.waitFor(() => expect(calls.filter((call) => call.path === "/api/history/groups").length).toBe(2));
+    let params = calls.filter((call) => call.path === "/api/history/groups")[1].url.searchParams;
+    expect([params.get("ai_picked"), params.has("status")]).toEqual(["true", false]);
+    await router.replace({ query: { status: "source:anilist" } });
+    await vi.waitFor(() => expect(calls.filter((call) => call.path === "/api/history/groups").length).toBe(3));
+    params = calls.filter((call) => call.path === "/api/history/groups")[2].url.searchParams;
+    expect([params.get("source"), params.has("status")]).toEqual(["anilist", false]);
+  });
+
   it("fills in metadata by hand for the organized volumes of a folder", async () => {
     const { calls } = api({
       "POST /api/items/metadata": { job_id: 6 },

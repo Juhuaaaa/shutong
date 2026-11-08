@@ -61,6 +61,19 @@ class HistoryRoutesTests(ApiCase):
         review = [group for group in self.history()["groups"] if group["folder"] == "[]x"][0]
         self.assertEqual(review["missing_metadata"], 0)
 
+    def test_filters_for_spot_checks(self):
+        dungeon = [group for group in self.history()["groups"] if group["folder"] == "迷宫饭"][0]
+        self.assertEqual(self.history(ai_picked="true")["total"], 0)
+        self.assertEqual(self.history(source="anilist")["total"], 0)
+        self.assertEqual([group["folder"] for group in self.history(source="bangumi")["groups"]], ["迷宫饭"])
+        with self.app.state.db.connect() as connection:
+            connection.execute("INSERT INTO item_events(item_id, at, kind, detail) VALUES (?, 't', 'ai_adopted', '{}')",
+                               (dungeon["item_ids"][0],))
+            connection.execute("UPDATE items SET subject_source = 'anilist' WHERE id = ?", (dungeon["item_ids"][1],))
+        self.assertEqual([group["folder"] for group in self.history(ai_picked="true")["groups"]], ["迷宫饭"])
+        self.assertEqual([group["folder"] for group in self.history(source="anilist")["groups"]], ["迷宫饭"])
+        self.assertEqual(self.history(source="anilist", status="needs_review")["total"], 0)
+
     def test_series_falls_back_to_the_library_folder(self):
         dungeon = [group for group in self.history()["groups"] if group["folder"] == "迷宫饭"][0]
         with self.app.state.db.connect() as connection:  # records imported from the old tool carry no plan

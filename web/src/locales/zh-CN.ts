@@ -236,6 +236,8 @@ export default {
     metadataTitle: "编辑 {count} 卷的元数据",
     metadataSource: "换条目",
     metadataManual: "手动填写",
+    aiPicked: "AI 选的条目",
+    fromSource: "来自 {source}",
     subject: "条目",
     metadataNote: "只改文件里的元数据，不重新打包，原档不在也能改。改完会通知媒体服务器刷新。",
     metadataSave: "保存",

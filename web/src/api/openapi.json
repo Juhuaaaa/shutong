@@ -2881,6 +2881,7 @@
     },
     "/api/history/groups": {
       "get": {
+        "description": "``ai_picked`` and ``source`` find organized files worth a second look: the AI chose their entry among\nseveral, or it came from a given metadata source.",
         "operationId": "groups_api_history_groups_get",
         "parameters": [
           {
@@ -2939,6 +2940,32 @@
               "default": false,
               "title": "Missing Metadata",
               "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "ai_picked",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Ai Picked",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "source",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source"
             }
           },
           {
