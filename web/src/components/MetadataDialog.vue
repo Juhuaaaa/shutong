@@ -36,6 +36,7 @@ const novel = props.kind === "novel";
 const form = reactive({
   localized_series: text("localized_series"),
   writers: list(novel ? "authors" : "writers"),
+  illustrators: list("illustrators"),
   publisher: text("publisher"),
   release_date: text(novel ? "date" : "release_date"),
   genres: list("genres"),
@@ -55,7 +56,7 @@ async function submit() {
     ? { subject: picked.value as SubjectRef }
     : { fields: { localized_series: novel ? "" : form.localized_series.trim(), writers: names(form.writers),
       publisher: form.publisher.trim(), release_date: form.release_date.trim(), genres: names(form.genres),
-      summary: form.summary.trim() } };
+      summary: form.summary.trim(), ...(novel ? { illustrators: names(form.illustrators) } : {}) } };
   busy.value = true;
   error.value = "";
   try {
@@ -92,6 +93,8 @@ async function submit() {
             data-test="field-localized" />
           <VTextField v-model="form.writers" :label="t('history.fields.writers')" :hint="t('history.fields.listHint')"
             persistent-hint data-test="field-writers" />
+          <VTextField v-if="novel" v-model="form.illustrators" :label="t('history.fields.illustrators')"
+            :hint="t('history.fields.listHint')" persistent-hint data-test="field-illustrators" />
           <div class="pair">
             <VTextField v-model="form.publisher" :label="t('history.fields.publisher')" hide-details data-test="field-publisher" />
             <VTextField v-model="form.release_date" :label="t('history.fields.date')" placeholder="2016-08"

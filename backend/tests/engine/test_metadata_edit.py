@@ -1,3 +1,4 @@
+from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
 import tempfile
@@ -59,6 +60,17 @@ class ApplyTests(unittest.TestCase):
         self.assertEqual((edited.writers, edited.summary, edited.genres, edited.release_date),
                          (("雾月凌",), "王令的日常", ("修仙",), "2016-08"))
         self.assertIsNone(edited.subject_id)
+
+    def test_illustrators_typed_for_a_novel_are_written(self):
+        manual = ManualMetadata.from_json({"illustrators": [" ももこ ", "ももこ"]})
+        self.assertEqual(manual.illustrators, ("ももこ",))
+        self.assertEqual(ManualMetadata.from_json(manual.to_json()), manual)
+        self.assertEqual(apply_manual(novel(illustrators=("旧",)), manual).illustrators, ("ももこ",))
+        self.assertEqual(apply_manual(manga(), manual).writers, ())  # comics have no such field
+
+    def test_a_subject_brings_the_illustrators_to_a_novel(self):
+        book = apply_subject(novel(), replace(SUBJECT, illustrators=("ももこ",)))
+        self.assertEqual(book.illustrators, ("ももこ",))
 
     def test_manual_fields_on_a_novel(self):
         manual = ManualMetadata.from_json({"writers": ["雨森たきび"], "summary": "败犬的故事", "release_date": "2021"})

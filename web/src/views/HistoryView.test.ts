@@ -273,6 +273,29 @@ describe("HistoryView", () => {
     expect(body.item_ids).toEqual([1, 2]);  // the failed one is not organized
     expect(body.fields).toMatchObject({ writers: ["九井谅子", "某人"], summary: "迷宫里做饭", release_date: "2014-02" });
     expect(body).not.toHaveProperty("bgm");
+    expect(document.querySelector("[data-test=field-illustrators]")).toBeNull();  // comics name no illustrator
+  });
+
+  it("fills in the illustrators of a light novel by hand", async () => {
+    const { calls } = api({
+      "GET /api/libraries": [{ id: 1, name: "轻小说", kind: "novel" }],
+      "POST /api/items/metadata": { job_id: 6 },
+      "GET /api/jobs/6": { id: 6, kind: "metadata", state: "done", result: { edited: 2, skipped: 0, failed: 0 } },
+    });
+    const { wrapper } = await mountView(HistoryView, "/history?group=1:目录1");
+    await vi.waitFor(() => expect(wrapper.findAll("[data-test=group-item]").length).toBe(3));
+    await wrapper.find("[data-test=group-metadata]").trigger("click");
+    await vi.waitFor(() => expect(document.querySelector("[data-test=metadata-dialog]")).not.toBeNull());
+    (document.querySelector("[data-test=tab-manual]") as HTMLElement).click();
+    await vi.waitFor(() => expect(document.querySelector("[data-test=field-illustrators] input")).not.toBeNull());
+    const input = document.querySelector("[data-test=field-illustrators] input") as HTMLInputElement;
+    input.value = "ももこ";
+    input.dispatchEvent(new Event("input"));
+    await wrapper.vm.$nextTick();
+    (document.querySelector("[data-test=metadata-submit]") as HTMLElement).click();
+    await vi.waitFor(() => expect(calls.some((call) => call.path === "/api/items/metadata")).toBe(true));
+    const body = calls.find((call) => call.path === "/api/items/metadata")!.body as Record<string, unknown>;
+    expect(body.fields).toMatchObject({ illustrators: ["ももこ"] });
   });
 
   it("picks another Bangumi subject for a folder", async () => {
