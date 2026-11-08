@@ -287,7 +287,7 @@ const en: typeof zhCN = {
     bangumiUrl: "API address",
     bangumiUrlHint: "https://api.bgm.tv by default; a mirror's address when the official site cannot be reached",
     bangumiImageUrl: "Image address (optional)",
-    bangumiImageUrlHint: "Covers come from here; empty means the API address. For a mirror that serves images only",
+    bangumiImageUrlHint: "A mirror standing in for Bangumi's image host lain.bgm.tv; empty uses the image addresses the API gives",
     bangumiToken: "Access token (optional)",
     bangumiTokenHint: "Lets you see entries that require login; everything else works without it",
     aiRequired: "Shutong relies on AI to read file names: the title, the edition and the volume. Scanning needs the endpoint, API key and model below.",

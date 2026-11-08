@@ -112,7 +112,7 @@ async function clear(key: string) {
     <VTextField v-model="baseUrl" :label="t('settings.bangumiUrl')" :hint="t('settings.bangumiUrlHint')" persistent-hint
       data-test="bangumi-url" />
     <VTextField v-model="imageUrl" :label="t('settings.bangumiImageUrl')" :hint="t('settings.bangumiImageUrlHint')"
-      persistent-hint :placeholder="baseUrl || 'https://api.bgm.tv'" persistent-placeholder data-test="bangumi-image-url" />
+      persistent-hint :placeholder="'https://lain.bgm.tv'" persistent-placeholder data-test="bangumi-image-url" />
     <SecretField v-model="token" :label="t('settings.bangumiToken')"
       :hint="t('settings.bangumiTokenHint')" :is-set="!!form.secretSet['bangumi.token']" clear-test="clear-bangumi-token"
       @clear="clear('bangumi.token')" />

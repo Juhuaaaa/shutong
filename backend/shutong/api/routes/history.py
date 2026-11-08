@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Request
 
 from shutong.api.auth import require_login
 from shutong.api.schemas import HistoryPage, ItemOut, cover_url, item_out
-from shutong.services import bangumi_image_base
+from shutong.services import bangumi_cover_base
 from shutong.store.settings import SettingsStore
 from shutong.engine.states import ItemStatus
 from shutong.store.records import ItemStore
@@ -25,7 +25,7 @@ def groups(request: Request, library_id: Optional[int] = None, status: Optional[
     found, total = ItemStore(request.app.state.db).group_page(
         library_id, status=status, query=q, missing_metadata=missing_metadata, ai_picked=ai_picked,
         source=source or None, limit=min(max(limit, 1), 200), offset=max(offset, 0))
-    image_base = bangumi_image_base(SettingsStore(request.app.state.db))
+    image_base = bangumi_cover_base(SettingsStore(request.app.state.db))
     groups = [dict(group, image=cover_url(group.get("subject_source"), group.get("subject_id"), image_base, "small"))
               for group in found if group["group_key"] is not None]
     return {"groups": groups, "total": total}

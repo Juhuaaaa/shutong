@@ -45,10 +45,9 @@ def _address(value) -> str:
     return (value or "").strip().rstrip("/")
 
 
-def bangumi_image_base(settings: SettingsStore) -> str:
-    """Where Bangumi covers come from: their own setting, else the API's address (a mirror usually serves both)."""
-    return (_address(settings.get("bangumi.image_base_url")) or _address(settings.get("bangumi.base_url"))
-            or DEFAULT_BASE_URL)
+def bangumi_cover_base(settings: SettingsStore) -> str:
+    """Covers known by id alone go through the API's image endpoint: a mirror of the API points it at its images."""
+    return _address(settings.get("bangumi.base_url")) or DEFAULT_BASE_URL
 
 
 def build_services(db: Database, *, opener=None, sleep=time.sleep) -> Services:
@@ -59,7 +58,7 @@ def build_services(db: Database, *, opener=None, sleep=time.sleep) -> Services:
     base_url = _address(settings.get("bangumi.base_url")) or DEFAULT_BASE_URL
     bangumi = BangumiSource(
         BangumiSettings(base_url=base_url, token=settings.get("bangumi.token") or None,
-                        image_base_url=bangumi_image_base(settings)),
+                        image_base_url=_address(settings.get("bangumi.image_base_url"))),
         CacheStore(db), opener=proxied, sleep=sleep,
     )
     anilist = AniListSource(CacheStore(db), opener=proxied, sleep=sleep)
