@@ -32,10 +32,12 @@ from shutong.engine.publish import STATE_DIR, Publisher, TargetExists
 from shutong.engine.recognition import Recognition
 from shutong.engine.states import TRANSITIONS, ItemStatus, ReviewReason
 from shutong.engine.template import DEFAULT_TEMPLATE
+from shutong.engine.translate import localize
 from shutong.metadata.base import Subject, SubjectRef
 from shutong.metadata.registry import LABELS, NUMERIC_IDS
 from shutong.services import Services
 from shutong.store.ai_calls import AiCallStore
+from shutong.store.cache import CacheStore
 from shutong.store.journal import JournalStore
 from shutong.store.records import Item, ItemStore, Library, LibraryStore, RunStore
 
@@ -292,6 +294,11 @@ class Organizer:
 
     # ---- review, reorganize, cancel -----------------------------------------------------------
 
+    def _localized(self, subject: Subject) -> Subject:
+        """English summaries in Chinese when the setting is on; never holds organizing up."""
+        return localize(subject, ai=self.services.ai, cache=CacheStore(self.services.db),
+                        enabled=self.services.config.translate_summaries)
+
     def _validate(self, **choices) -> None:
         validate_choices(sources=self.services.sources.names, **choices)
 
@@ -392,7 +399,7 @@ class Organizer:
             raise ValueError("要选一个条目或手填元数据")
         if subject is not None:
             self._validate(subject=subject)
-            subject = self.services.sources.get(subject.source).get(subject.id)
+            subject = self._localized(self.services.sources.get(subject.source).get(subject.id))
         counts: Dict[str, object] = {"edited": 0, "skipped": 0, "failed": 0, "ids": [], "series": []}
         for item_id in item_ids:
             item = self.items.get(item_id)
@@ -457,7 +464,7 @@ class Organizer:
             try:
                 if ref not in subjects:
                     # Its own source, switched on or not: what was organized from it stays refreshable.
-                    subjects[ref] = self.services.sources.get(ref.source).get(ref.id, fresh=True)
+                    subjects[ref] = self._localized(self.services.sources.get(ref.source).get(ref.id, fresh=True))
                 library = self.libraries.get(item.library_id)
                 before = metadata_from_json(library.kind, item.plan["metadata"])
                 after = apply_subject(before, subjects[ref])
@@ -689,7 +696,7 @@ class Organizer:
         if subject is None:
             return None
         suffix = adapter.output_suffix(entry) if hasattr(adapter, "output_suffix") else ".epub"
-        return PlanInput(item_id, entry, recognition, subject, suffix)
+        return PlanInput(item_id, entry, recognition, self._localized(subject), suffix)
 
     def _match_sub_series(self, item_id: int, library: Library, adapter: KindAdapter, parse: ParseResult,
                           reading: Reading, entry: SourceEntry,

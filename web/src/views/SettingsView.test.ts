@@ -75,6 +75,17 @@ describe("SettingsView", () => {
     expect((document.querySelector("[data-test=source-switch-bangumi] input") as HTMLInputElement).checked).toBe(true);
   });
 
+  it("turns the summary translation off", async () => {
+    const { calls } = api({ "GET /api/settings": { ...settings, "metadata.translate_summaries": true } });
+    await mountView(SettingsView, "/settings/metadata");
+    await vi.waitFor(() => expect((document.querySelector("[data-test=translate-summaries] input") as HTMLInputElement)?.checked).toBe(true));
+    (document.querySelector("[data-test=translate-summaries] input") as HTMLInputElement).click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    (document.querySelector("[data-test=save-metadata]") as HTMLElement).click();
+    await vi.waitFor(() => expect(calls.some((call) => call.method === "PATCH")).toBe(true));
+    expect(calls.find((call) => call.method === "PATCH")?.body).toEqual({ "metadata.translate_summaries": false });
+  });
+
   it("still opens the metadata tab from an old Bangumi link", async () => {
     api();
     await mountView(SettingsView, "/settings/bangumi");

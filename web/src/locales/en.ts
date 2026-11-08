@@ -280,6 +280,8 @@ const en: typeof zhCN = {
       anilist: "Searches Japanese or English original titles, summaries in English; fills in what Bangumi lacks",
     },
     keepOneSource: "Keep at least one source on",
+    translateSummaries: "Translate foreign summaries into Chinese with the AI",
+    translateSummariesHint: "Summaries from sources like AniList are in English; your AI translates each once and the result is kept. A failed translation keeps the original. Bangumi summaries are left as they are.",
     moveUp: "Move up",
     moveDown: "Move down",
     bangumiUrl: "API address",

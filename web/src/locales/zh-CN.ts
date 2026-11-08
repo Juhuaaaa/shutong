@@ -278,6 +278,8 @@ export default {
       anilist: "按日文或英文原名搜索，简介是英文；适合补 Bangumi 上没有的作品",
     },
     keepOneSource: "至少要开一个数据源",
+    translateSummaries: "外文简介用 AI 翻译成中文",
+    translateSummariesHint: "AniList 等数据源的简介是英文，整理时用你配置的 AI 翻译一次，之后用缓存。翻译失败时保留原文。Bangumi 的简介不动。",
     moveUp: "上移",
     moveDown: "下移",
     bangumiUrl: "API 地址",
