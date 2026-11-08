@@ -268,6 +268,7 @@ const en: typeof zhCN = {
       bangumi: "Chinese titles and summaries; best first",
       anilist: "Searches Japanese or English original titles, summaries in English; fills in what Bangumi lacks",
     },
+    keepOneSource: "Keep at least one source on",
     moveUp: "Move up",
     moveDown: "Move down",
     bangumiUrl: "API address",

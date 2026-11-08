@@ -53,7 +53,12 @@ describe("SettingsView", () => {
     await mountView(SettingsView, "/settings/metadata");
     await vi.waitFor(() => expect(document.querySelector("[data-test=source-anilist]")).not.toBeNull());
     const only = document.querySelector("[data-test=source-switch-bangumi] input") as HTMLInputElement;
-    expect(only.disabled).toBe(true); // the last one switched on cannot be switched off
+    only.click(); // the last one switched on stays on, and still looks on
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const after = document.querySelector("[data-test=source-switch-bangumi] input") as HTMLInputElement;
+    expect(after.disabled).toBe(false);
+    expect(after.checked).toBe(true);
+    expect(document.body.textContent).toContain("至少要开一个数据源");
     (document.querySelector("[data-test=source-switch-anilist] input") as HTMLInputElement).click();
     await new Promise((resolve) => setTimeout(resolve, 0));
     (document.querySelector("[data-test=source-up-anilist]") as HTMLElement).click();
@@ -168,6 +173,18 @@ describe("SettingsView", () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain("Change password"));
     select.vm.$emit("update:modelValue", "zh-CN");
     await vi.waitFor(() => expect(wrapper.text()).toContain("修改密码"));
+  });
+
+  it("shows each server with its own app icon", async () => {
+    api({ "GET /api/servers": [
+      { id: 1, kind: "kavita", name: "家里", base_url: "http://k:5000", username: "u", enabled: true, password_set: true },
+      { id: 2, kind: "komga", name: "书库", base_url: "http://g:25600", username: "a@b.c", enabled: true, password_set: true }] });
+    await mountView(SettingsView, "/settings/servers");
+    await vi.waitFor(() => expect(document.querySelectorAll("[data-test=server-icon]").length).toBe(2));
+    const sources = [...document.querySelectorAll("[data-test=server-icon] img")].map((img) => img.getAttribute("src"));
+    expect(sources[0]).toContain("kavita");
+    expect(sources[1]).toContain("komga");
+    expect(document.body.textContent).toContain("Komga · http://g:25600");
   });
 
   it("adds a Komga server, which logs in with an email", async () => {

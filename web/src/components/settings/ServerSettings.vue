@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { mdiDeleteOutline, mdiLanConnect, mdiPencilOutline, mdiPlus, mdiServerNetwork } from "@mdi/js";
+import kavitaIcon from "@/assets/servers/kavita.png";
+import komgaIcon from "@/assets/servers/komga.png";
 import { onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { servers as api, type Server } from "@/api";
@@ -67,6 +69,10 @@ async function remove(server: Server) {
     failed(error);
   }
 }
+
+// Each server's own app icon, bundled so it shows even when the server is away.
+const ICONS: Record<string, string> = { kavita: kavitaIcon, komga: komgaIcon };
+const KINDS: Record<string, string> = { kavita: "Kavita", komga: "Komga" };
 </script>
 
 <template>
@@ -77,10 +83,13 @@ async function remove(server: Server) {
   <div class="servers">
     <VCard v-for="server in list" :key="server.id" class="pa-4 st-flat server" variant="outlined">
       <div class="d-flex align-center ga-3">
-        <VAvatar color="primary" variant="tonal" rounded="lg"><VIcon :icon="mdiServerNetwork" /></VAvatar>
+        <VAvatar v-if="ICONS[server.kind]" rounded="lg" data-test="server-icon">
+          <img :src="ICONS[server.kind]" :alt="KINDS[server.kind]" class="server-icon" />
+        </VAvatar>
+        <VAvatar v-else color="primary" variant="tonal" rounded="lg"><VIcon :icon="mdiServerNetwork" /></VAvatar>
         <div class="min-w-0">
           <div class="font-weight-bold">{{ server.name }}</div>
-          <div class="st-muted text-caption">{{ server.kind }} · {{ server.base_url }} · {{ server.username }}</div>
+          <div class="st-muted text-caption">{{ KINDS[server.kind] ?? server.kind }} · {{ server.base_url }} · {{ server.username }}</div>
         </div>
         <VSpacer />
         <VChip v-if="!server.enabled" size="small">{{ t("settings.disabled") }}</VChip>
@@ -120,6 +129,7 @@ async function remove(server: Server) {
 </template>
 
 <style scoped>
+.server-icon { width: 100%; height: 100%; object-fit: cover; }
 .servers { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
 .server { border-color: rgba(var(--v-border-color), var(--v-border-opacity)); }
 .min-w-0 { min-width: 0; word-break: break-all; }

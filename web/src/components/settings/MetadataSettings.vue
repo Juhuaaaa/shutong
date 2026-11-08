@@ -16,6 +16,7 @@ const token = form.field<string>("bangumi.token");
 const enabledNames = form.field<string[]>("metadata.sources");
 /** Every source, the switched-on ones first in the order they are asked. */
 const sources = ref<MetadataSource[]>([]);
+const refused = ref(0);
 const onCount = computed(() => sources.value.filter((source) => source.enabled).length);
 
 async function load() {
@@ -34,6 +35,13 @@ function sync() {
 }
 
 function toggle(index: number, on: boolean | null) {
+  if (!on && onCount.value === 1 && sources.value[index].enabled) {
+    // At least one source has to be asked: the switch springs back on (a new key redraws it) rather than being
+    // greyed out, which looked like off.
+    refused.value += 1;
+    notify.error(t("settings.keepOneSource"));
+    return;
+  }
   sources.value[index] = { ...sources.value[index], enabled: Boolean(on) };
   sync();
 }
@@ -85,10 +93,10 @@ async function clear(key: string) {
     <div class="text-subtitle-2">{{ t("settings.sourcesTitle") }}</div>
     <div class="st-muted text-body-2">{{ t("settings.sourcesHint") }}</div>
     <div class="sources" data-test="sources">
-      <div v-for="(source, index) in sources" :key="source.name" class="source" :data-test="`source-${source.name}`">
-        <VSwitch :model-value="source.enabled" color="primary" density="compact" hide-details inset
-          :disabled="source.enabled && onCount === 1" :aria-label="source.label" :data-test="`source-switch-${source.name}`"
-          @update:model-value="toggle(index, $event)" />
+      <div v-for="(source, index) in sources" :key="source.name" class="source" :class="{ off: !source.enabled }"
+        :data-test="`source-${source.name}`">
+        <VSwitch :key="`${source.name}-${refused}`" :model-value="source.enabled" color="primary" hide-details inset class="flex-grow-0"
+          :aria-label="source.label" :data-test="`source-switch-${source.name}`" @update:model-value="toggle(index, $event)" />
         <div class="source-text">
           <strong>{{ source.label }}</strong>
           <span v-if="note(source.name)" class="st-muted text-caption">{{ note(source.name) }}</span>
@@ -116,5 +124,6 @@ async function clear(key: string) {
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
 }
 .source-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.source.off .source-text { opacity: 0.55; }
 .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
 </style>
