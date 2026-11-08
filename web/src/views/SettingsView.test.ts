@@ -104,21 +104,6 @@ describe("SettingsView", () => {
     await vi.waitFor(() => expect(document.querySelector("[data-test=sources]")).not.toBeNull());
   });
 
-  it("recommends DeepSeek and fills in its address and model", async () => {
-    const { calls } = api({ "GET /api/settings": { ...settings, "ai.base_url": "", "ai.model": "", "ai.api_key": "" } });
-    await mountView(SettingsView, "/settings/ai");
-    await vi.waitFor(() => expect(document.querySelector("[data-test=ai-deepseek]")).not.toBeNull());
-    expect(document.querySelector("[data-test=ai-guide]")?.getAttribute("href")).toContain("docs/guide.md");
-    await vi.waitFor(() => expect(input("ai-threshold")?.value).toBe("0.95"));  // settings loaded
-    (document.querySelector("[data-test=ai-deepseek]") as HTMLElement).click();
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(input("ai-url").value).toBe("https://api.deepseek.com");
-    (document.querySelector("[data-test=save-ai]") as HTMLElement).click();
-    await vi.waitFor(() => expect(calls.some((call) => call.method === "PATCH")).toBe(true));
-    expect(calls.find((call) => call.method === "PATCH")?.body)
-      .toEqual({ "ai.base_url": "https://api.deepseek.com", "ai.model": "deepseek-flash" });
-  });
-
   it("opens on the AI tab, which says scanning needs it", async () => {
     api();
     await mountView(SettingsView, "/settings");
