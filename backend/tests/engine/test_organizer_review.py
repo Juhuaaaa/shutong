@@ -93,6 +93,19 @@ class OrganizerReviewTests(OrganizerFixture):
         self.assertEqual((result["deleted"], result["replanned"]), (1, 1))
         self.assertIn("target_deleted", [event.kind for event in self.items.events(item.id)])
 
+    def test_reorganize_removes_the_folder_it_emptied(self):
+        organizer, item, target = self.published()
+        organizer.reorganize([item.id], title="迷宫饭 新", subject=SubjectRef("bangumi", "133315"))
+        self.assertFalse(target.parent.exists())
+        self.assertTrue(self.library_dir.is_dir())
+
+    def test_reorganize_keeps_a_folder_with_other_files(self):
+        organizer, item, target = self.published()
+        (target.parent / "Vol.02.cbz").write_bytes(b"other")
+        organizer.reorganize([item.id], title="迷宫饭 新", subject=SubjectRef("bangumi", "133315"))
+        self.assertFalse(target.exists())
+        self.assertTrue((target.parent / "Vol.02.cbz").exists())
+
     def test_reorganize_to_same_target_succeeds(self):
         organizer, item, target = self.published()
         organizer.reorganize([item.id])

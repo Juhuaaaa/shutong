@@ -401,6 +401,7 @@ class Organizer:
             if target is not None and os.path.lexists(target):
                 discard(target)  # into the trash on the desktop
                 counts["deleted"] += 1
+                remove_empty_folders(target.parent, library.library_dir)
             self.items.add_event(item.id, "target_deleted",
                                  {"target": item.target_path.as_posix() if item.target_path else None})
             self.items.transition(item.id, ItemStatus.PARSED, event="reorganize",
@@ -1194,6 +1195,18 @@ def review_group(library: Library, path: Path, root: Optional[Path] = None) -> s
         return unicodedata.normalize("NFC", path.name)
     folder = _folder_of(library, path, root)
     return folder if folder is not None else unicodedata.normalize("NFC", path.name)
+
+
+def remove_empty_folders(folder: Path, root: Path) -> None:
+    """Remove ``folder`` and its parents up to (not including) ``root`` while they are empty."""
+    root = Path(root)
+    folder = Path(folder)
+    while folder != root and root in folder.parents:
+        try:
+            folder.rmdir()  # only an empty folder goes; anything left in it stops here
+        except OSError:
+            return
+        folder = folder.parent
 
 
 def _typed(name: Optional[str]) -> Optional[str]:
