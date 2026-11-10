@@ -38,7 +38,7 @@ class PdfPagesTests(unittest.TestCase):
 
     def test_extracts_one_page_per_pdf_page(self):
         source = self._image_pdf("a.pdf", [Image.new("RGB", (60, 90), "red"),
-                                           Image.new("L", (60, 90), 128)])
+                                           Image.new("1", (60, 90), 1)])
         pages = collect_pdf_pages(source, self.work)
         self.assertEqual([page.extension for page in pages], [".jpg", ".png"])
         for page in pages:
@@ -78,9 +78,9 @@ class PdfPagesTests(unittest.TestCase):
         real_encode = pdf_module._encode
         seen = []
 
-        def encode(image):
+        def encode(*args):
             seen.append(len(list(self.work.iterdir())))
-            return real_encode(image)
+            return real_encode(*args)
 
         with mock.patch.object(pdf_module, "_encode", side_effect=encode):
             collect_pdf_pages(source, self.work)
@@ -101,6 +101,22 @@ class PdfPagesTests(unittest.TestCase):
         with mock.patch.object(pdf_module, "_encode", side_effect=ValueError("mode I;16")):
             with self.assertRaises(BuildError):
                 collect_pdf_pages(source, self.work)
+
+    def test_jpeg_pages_are_copied_without_reencoding(self):
+        # Decoding a JPEG and saving it again costs time and quality; the PDF already holds the file.
+        source = self._image_pdf("j.pdf", [Image.new("RGB", (60, 90), "red"), Image.new("L", (60, 90), 128)])
+        embedded = [next(iter(page.images)).data for page in PdfReader(str(source)).pages]
+        self.assertTrue(all(data.startswith(b"\xff\xd8") for data in embedded))
+        pages = collect_pdf_pages(source, self.work)
+        self.assertEqual([page.extension for page in pages], [".jpg", ".jpg"])
+        self.assertEqual([page.path.read_bytes() for page in pages], embedded)
+
+    def test_png_pages_skip_the_slow_optimize_pass(self):
+        # optimize=True took ~6x as long on a 54-megapixel scan for a 3% smaller page.
+        image = Image.new("1", (60, 90), 1)
+        with mock.patch.object(Image.Image, "save", autospec=True) as save:
+            pdf_module._encode(image)
+        self.assertNotIn("optimize", save.call_args.kwargs)
 
     def test_owner_password_only_pdf_is_readable(self):
         base = self._image_pdf("plain.pdf", [Image.new("RGB", (60, 90), "red")])
