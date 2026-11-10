@@ -127,13 +127,13 @@ def _validate_volume(volume: object) -> None:
     if not isinstance(volume, VolumeRef):
         raise ValueError("invalid volume reference")
     if volume.kind in ("volume", "chapter"):
-        start = _require_positive_decimal(volume.start)
-        if volume.kind == "chapter" and volume.end is not None and _require_positive_decimal(volume.end) <= start:
+        start = _require_volume_number(volume.start)
+        if volume.kind == "chapter" and volume.end is not None and _require_volume_number(volume.end) <= start:
             raise ValueError("invalid chapter range")
         return
     if volume.kind == "range":
-        start = _require_positive_decimal(volume.start)
-        end = _require_positive_decimal(volume.end)
+        start = _require_volume_number(volume.start)
+        end = _require_volume_number(volume.end)
         if end < start:
             raise ValueError("invalid volume range")
         return
@@ -142,14 +142,14 @@ def _validate_volume(volume: object) -> None:
     raise ValueError("invalid volume reference")
 
 
-def _require_positive_decimal(value: object) -> Decimal:
-    if not isinstance(value, Decimal) or not value.is_finite() or value <= 0:
+def _require_volume_number(value: object) -> Decimal:
+    if not isinstance(value, Decimal) or not value.is_finite() or value < 0:
         raise ValueError("invalid volume bound")
     return value
 
 
 def _format_decimal(value: object) -> str:
-    value = _require_positive_decimal(value)
+    value = _require_volume_number(value)
     text = format(value, "f")
     # Only the fractional part may drop trailing zeros: "19.50" -> "19.5",
     # while the integer "10" must keep its significant trailing zero.

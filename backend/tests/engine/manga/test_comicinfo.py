@@ -164,15 +164,22 @@ class ComicInfoTests(unittest.TestCase):
         for code_point in (0xD800, 0xFDD0, 0xFFFE, 0xFFFF, 0x1FFFE, 0x1FFFF):
             self.assertNotIn(chr(code_point).encode("utf-8", "surrogatepass"), content)
 
+    def test_volume_zero_is_a_real_volume(self):
+        # Many series have a Vol.0 (旋风管家, 实力至上主义的教室); Kavita marks "no volume" with
+        # -100000, not 0, so writing 0 keeps it a volume of its own.
+        root = ElementTree.fromstring(render(make_metadata(volume=VolumeRef.volume(Decimal("0")))))
+        self.assertEqual(root.findtext("Volume"), "0")
+        root = ElementTree.fromstring(render(make_metadata(volume=VolumeRef.range(Decimal("0"), Decimal("1")))))
+        self.assertEqual(root.findtext("Volume"), "0-1")
+
     def test_invalid_volume_references_raise_value_error(self):
         cases = (
             ("ordinary NaN", VolumeRef.volume(Decimal("NaN"))),
             ("ordinary infinity", VolumeRef.volume(Decimal("Infinity"))),
-            ("ordinary zero", VolumeRef.volume(Decimal("0"))),
             ("ordinary negative", VolumeRef.volume(Decimal("-1"))),
             ("range NaN start", VolumeRef.range(Decimal("NaN"), Decimal("1"))),
             ("range infinity end", VolumeRef.range(Decimal("1"), Decimal("Infinity"))),
-            ("range zero end", VolumeRef.range(Decimal("1"), Decimal("0"))),
+            ("range negative start", VolumeRef.range(Decimal("-1"), Decimal("1"))),
             ("reversed range", VolumeRef.range(Decimal("2"), Decimal("1"))),
             ("missing ordinary bound", VolumeRef(kind="volume")),
             ("unknown kind", VolumeRef(kind="other", start=Decimal("1"))),
