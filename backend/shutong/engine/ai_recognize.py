@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from shutong.ai.openai_compat import AiError
 from shutong.engine.ai_assist import _bounded, _safe_name, _validate_confidence
-from shutong.engine.text import normalize_title
+from shutong.engine.text import normalize_title, without_separators
 
 BATCH_SIZE = 60
 _SEARCH_LIMIT = 4
@@ -158,11 +158,15 @@ def _readings(response: Any, names: Sequence[str], call_id: int, kind: str = "ma
     return {name: found.get(name, missing) for name in names}
 
 
+def _named(value: Any) -> Any:
+    return without_separators(value) if isinstance(value, str) else value
+
+
 def _series(entry: Any, kind: str = "manga") -> Tuple[Any, SeriesReading]:
     if not isinstance(entry, dict):
         raise ValueError("every series must be an object")
     _require_fields(entry, {"id", "title", "confidence"})
-    title, edition = entry["title"], None if kind == "novel" else entry.get("edition")
+    title, edition = _named(entry["title"]), None if kind == "novel" else _named(entry.get("edition"))
     if not isinstance(title, str) or not title.strip() or not _safe_name(title):
         raise ValueError("title must be a usable name")
     if edition is not None and (not isinstance(edition, str) or not edition.strip() or not _safe_name(edition)):
@@ -171,7 +175,7 @@ def _series(entry: Any, kind: str = "manga") -> Tuple[Any, SeriesReading]:
     if not isinstance(titles, list) or not all(isinstance(value, str) for value in titles):
         raise ValueError("search_titles must be an array of strings")
     search = tuple(dict.fromkeys(_bounded(value.strip()) for value in titles if value.strip()))[:_SEARCH_LIMIT]
-    base = entry.get("base_title") or None
+    base = _named(entry.get("base_title")) or None
     if base is not None and (not isinstance(base, str) or not base.strip() or not _safe_name(base)):
         raise ValueError("base_title must be a usable name or null")
     title = normalize_title(title)

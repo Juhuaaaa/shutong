@@ -125,7 +125,7 @@ class OrganizerReviewTests(OrganizerFixture):
 
     def test_reorganize_with_a_bad_choice_changes_nothing(self):
         organizer, item, target = self.published()
-        for choice in ({"title": "Fate/Zero"}, {"volumes": {item.id: "abc"}}, {"edition": " x"}):
+        for choice in ({"title": ".."}, {"volumes": {item.id: "abc"}}, {"edition": " x"}):
             with self.subTest(choice=choice):
                 with self.assertRaises(ValueError):
                     organizer.reorganize([item.id], **choice)
@@ -135,8 +135,17 @@ class OrganizerReviewTests(OrganizerFixture):
     def test_bad_title_message_is_chinese(self):
         organizer, item = self.reviewed("[]/Vol.01.zip")
         with self.assertRaisesRegex(ValueError, "系列名"):
-            organizer.confirm([item.id], title="Fate/Zero")
+            organizer.confirm([item.id], title=" Fate")
         self.assertEqual(self.items.get(item.id).overrides, {})
+
+    def test_a_slash_in_a_typed_name_becomes_full_width(self):
+        organizer, item = self.reviewed("[]/Vol.01.zip")
+        organizer.confirm([item.id], title="Fate/Grand Order -turas réalta-", edition="A\\B",
+                          subject=SubjectRef("bangumi", "133315"))
+        item = self.items.get(item.id)
+        self.assertEqual(item.overrides["title"], "Fate／Grand Order -turas réalta-")
+        self.assertEqual(item.overrides["edition"], "A＼B")
+        self.assertEqual(item.target_path.parts[0], "Fate／Grand Order -turas réalta-")
 
     def test_confirm_with_only_a_subject_names_the_series(self):
         organizer, item = self.reviewed("[]/Vol.01.zip")
@@ -144,6 +153,13 @@ class OrganizerReviewTests(OrganizerFixture):
         organizer.confirm([item.id], subject=SubjectRef("bangumi", "133315"))
         item = self.items.get(item.id)
         self.assertEqual((item.status, item.target_path.as_posix()), (ItemStatus.PLANNED, "迷宫饭/迷宫饭 Vol.01.cbz"))
+
+    def test_a_slash_in_the_subject_title_becomes_full_width(self):
+        fate = subject(31, "Fate/Zero")
+        self.source = FakeSource([fate], subjects={31: fate})
+        organizer, item = self.reviewed("[]/Vol.01.zip")
+        organizer.confirm([item.id], subject=SubjectRef("bangumi", "31"))
+        self.assertEqual(self.items.get(item.id).target_path.parts[0], "Fate／Zero")
 
 
 if __name__ == "__main__":

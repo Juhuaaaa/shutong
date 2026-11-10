@@ -18,6 +18,14 @@ TITLE_TRANSLATION = str.maketrans(
 PATH_SAFE = str.maketrans({":": "：", "?": "？", "*": "＊", '"': "＂", "<": "＜", ">": "＞", "|": "｜"})
 
 
+# Path separators in a series or edition name, as their full-width look-alikes: ``Fate/Zero`` is one folder.
+_SEPARATORS = str.maketrans({"/": "／", "\\": "＼"})
+
+
+def without_separators(name: str) -> str:
+    return name.translate(_SEPARATORS)
+
+
 _DEVICE_NAMES = frozenset({"CON", "PRN", "AUX", "NUL"} | {"{0}{1}".format(name, number)
                                                          for name in ("COM", "LPT") for number in range(1, 10)})
 
