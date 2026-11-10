@@ -70,7 +70,7 @@ class ItemRoutesTests(ApiCase):
 
     def test_reorganize_rejects_bad_choices_up_front(self):
         item = self.items()["items"][0]
-        for body in ({"title": "Fate/Zero"}, {"volumes": {str(item["id"]): "abc"}}):
+        for body in ({"title": ".."}, {"volumes": {str(item["id"]): "abc"}}):
             with self.subTest(body=body):
                 response = self.client.post("/api/items/reorganize", json=dict(body, item_ids=[item["id"]]))
                 self.assertEqual(response.status_code, 422)

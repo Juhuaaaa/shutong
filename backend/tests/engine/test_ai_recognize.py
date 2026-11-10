@@ -72,8 +72,15 @@ class ReadBatchTests(unittest.TestCase):
             ai = FakeAi({"series": [series(**extra)], "files": [file("a.zip")]})
             self.assertIsNone(read_batch(ai, kind="manga", folder="x", names=["a.zip"])["a.zip"].series.base_title, extra)
 
+    def test_slashes_in_names_become_full_width(self):
+        ai = FakeAi({"series": [series(title="Fate/Zero", edition="a/b", base_title="Fate/stay night")],
+                     "files": [file("a.zip")]})
+        reading = read_batch(ai, kind="manga", folder="x", names=["a.zip"])["a.zip"].series
+        self.assertEqual((reading.title, reading.edition, reading.base_title),
+                         ("Fate／Zero", "a／b", "Fate／stay night"))
+
     def test_an_unusable_base_title_is_rejected(self):
-        ai = FakeAi({"series": [series(base_title="a/b")], "files": [file("a.zip")]})
+        ai = FakeAi({"series": [series(base_title="..")], "files": [file("a.zip")]})
         self.assertIn("不符合要求", read_batch(ai, kind="manga", folder="x", names=["a.zip"])["a.zip"].problem)
 
     def test_missing_file_gets_a_problem(self):
@@ -84,7 +91,7 @@ class ReadBatchTests(unittest.TestCase):
         self.assertFalse(result["b.zip"].retry)
 
     def test_invalid_reply_marks_every_name(self):
-        for reply in ({"series": [series(title="a/b")], "files": [file("a.zip")]},
+        for reply in ({"series": [series(title="..")], "files": [file("a.zip")]},
                       {"series": [series()], "files": [file("a.zip", unit="book")]},
                       {"series": [series()], "files": [file("a.zip", number="-1")]},
                       {"series": [series(confidence=2)], "files": [file("a.zip")]},

@@ -33,6 +33,7 @@ from shutong.engine.recognition import Recognition
 from shutong.engine.states import TRANSITIONS, ItemStatus, ReviewReason
 from shutong.engine.template import DEFAULT_TEMPLATE
 from shutong.engine.translate import localize
+from shutong.engine.text import without_separators
 from shutong.metadata.base import Subject, SubjectRef
 from shutong.metadata.registry import LABELS, NUMERIC_IDS
 from shutong.services import Services
@@ -328,6 +329,7 @@ class Organizer:
 
         ``skip_metadata`` organizes them under the title without looking for a metadata subject."""
         self._validate(title=title, edition=edition, subject=subject, volumes=volumes)
+        title, edition = _typed(title), _typed(edition)
         counts = {"replanned": 0, "skipped": 0}
         items = []
         for item_id in item_ids:
@@ -340,7 +342,7 @@ class Organizer:
             items.append(item)
         if title is None and subject is not None and any(item.review_reason is ReviewReason.NAMING for item in items):
             # Picking a subject for a folder whose name could not be read: the subject names the series.
-            title = self.services.sources.get(subject.source).get(subject.id).display_title
+            title = without_separators(self.services.sources.get(subject.source).get(subject.id).display_title)
             self._validate(title=title, edition=edition, subject=subject, volumes={})
         chosen = {key: value for key, value in (("title", title), ("edition", edition)) if value not in (None, "")}
         if subject is not None and not skip_metadata:
@@ -374,6 +376,7 @@ class Organizer:
                    subject: Optional[SubjectRef] = None, volumes: Mapping[int, str] = {}) -> Dict[str, int]:
         """Redo published items: the old output is deleted first, then the item is recognized and planned again."""
         self._validate(title=title, edition=edition, subject=subject, volumes=volumes)
+        title, edition = _typed(title), _typed(edition)
         counts = {"deleted": 0, "replanned": 0, "skipped": 0}
         items = [self.items.get(item_id) for item_id in item_ids]
         for library_id in {item.library_id for item in items}:
@@ -1193,14 +1196,19 @@ def review_group(library: Library, path: Path, root: Optional[Path] = None) -> s
     return folder if folder is not None else unicodedata.normalize("NFC", path.name)
 
 
+def _typed(name: Optional[str]) -> Optional[str]:
+    """A typed series or edition name with its slashes made full-width, so it stays one folder."""
+    return without_separators(name) if isinstance(name, str) else name
+
+
 def validate_choices(*, title=None, edition=None, subject: Optional[SubjectRef] = None,
                      volumes: Mapping[int, str] = {}, sources: Optional[Sequence[str]] = None) -> None:
     """Reject a review choice before anything changes; messages are for the user."""
     for label, value in (("系列名", title), ("版本", edition)):
         if value in (None, ""):
             continue
-        if not isinstance(value, str) or not _safe_name(value):
-            raise ValueError("{0}不能为空，也不能含有 / 或首尾空格：{1}".format(label, value))
+        if not isinstance(value, str) or not _safe_name(without_separators(value)):
+            raise ValueError("{0}不能为空，也不能有首尾空格：{1}".format(label, value))
     if subject is not None:
         if not isinstance(subject, SubjectRef) or not subject.source or not str(subject.id).strip():
             raise ValueError("条目的来源和编号都不能为空")

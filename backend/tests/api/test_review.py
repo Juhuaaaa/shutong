@@ -91,7 +91,7 @@ class ReviewRoutesTests(ApiCase):
 
     def test_bad_title_rejected_in_chinese(self):
         group = self.groups()[0]
-        response = self.client.post("/api/review/confirm", json={"item_ids": group["item_ids"], "title": "x/y"})
+        response = self.client.post("/api/review/confirm", json={"item_ids": group["item_ids"], "title": " x"})
         self.assertEqual(response.status_code, 422)
         self.assertIn("系列名", response.json()["detail"])
 
