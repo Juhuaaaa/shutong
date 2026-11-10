@@ -46,12 +46,13 @@ def collect_pdf_pages(source: Path, workdir: Path) -> List[Page]:
     sizes: Counter = Counter()
     try:
         for number, pdf_page in enumerate(pdf_pages, start=1):
-            image = _largest_image(pdf_page)
-            if image is None:
+            found = _largest_image(pdf_page)
+            if found is None:
                 pages.append(None)
                 continue
+            image, raw = found
             sizes[image.size] += 1
-            data, extension = _encode(image)
+            data, extension = _encode(image, raw)
             pages.append(_write_page(workdir, number, data, extension))
         if not sizes:
             raise BuildError("PDF has no embedded page images")
@@ -74,8 +75,9 @@ def _write_page(workdir: Path, number: int, data: bytes, extension: str) -> Page
     return Page(name, extension, path)
 
 
-def _largest_image(page) -> Optional[Image.Image]:
-    best = None
+def _largest_image(page) -> Optional[Tuple[Image.Image, Optional[bytes]]]:
+    """The page's biggest image, with its bytes when they are a JPEG a reader can show as is."""
+    best, raw = None, None
     try:
         images = list(page.images)
     except Exception:
@@ -88,14 +90,19 @@ def _largest_image(page) -> Optional[Image.Image]:
             continue
         if best is None or image.size[0] * image.size[1] > best.size[0] * best.size[1]:
             best = image
-    return best
+            # pypdf hands a DCTDecode stream over untouched; CMYK and the like still need converting.
+            raw = item.data if image.format == "JPEG" and image.mode in ("RGB", "L") else None
+    return None if best is None else (best, raw)
 
 
-def _encode(image: Image.Image) -> Tuple[bytes, str]:
+def _encode(image: Image.Image, raw: Optional[bytes] = None) -> Tuple[bytes, str]:
+    if raw is not None:
+        return raw, ".jpg"
     buffer = io.BytesIO()
     if image.mode in ("1", "L"):
-        # Bilevel and greyscale scans are both lossless and compact as PNG.
-        image.save(buffer, format="PNG", optimize=True)
+        # Bilevel and greyscale scans are both lossless and compact as PNG. optimize=True made a
+        # 54-megapixel page take ~6x as long for 3% less.
+        image.save(buffer, format="PNG")
         return buffer.getvalue(), ".png"
     if image.mode != "RGB":
         image = image.convert("RGB")

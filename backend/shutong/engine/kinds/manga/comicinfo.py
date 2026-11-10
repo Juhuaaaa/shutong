@@ -40,7 +40,7 @@ def build_comic_info(metadata: ComicMetadata, page_count: object) -> bytes:
     """Build a ComicInfo v2.1 XML document without external entities."""
     root = ElementTree.Element("ComicInfo")
     _add_text(root, "Series", metadata.series_name)
-    _add_text(root, "LocalizedSeries", metadata.localized_series)
+    _add_text(root, "LocalizedSeries", _localized_series(metadata))
     _add_text(root, "SeriesSort", metadata.series_name)
     _add_text(root, "Title", metadata.title)
     _add_volume(root, metadata.volume)
@@ -123,17 +123,30 @@ def _add_text(root: ElementTree.Element, tag: str, value: object) -> None:
         ElementTree.SubElement(root, tag).text = text
 
 
+_EDITION_SUFFIX = re.compile(r"(?:\[[^\[\]]*\]|【[^【】]*】)+$")
+
+
+def _localized_series(metadata: ComicMetadata) -> str:
+    """The localized name with the series' edition suffix: Kavita folds series whose localized names
+    match into one, so 碧蓝之海[Bilibili] and 碧蓝之海[东立电子版] must not share a bare one."""
+    localized = (metadata.localized_series or "").strip()
+    suffix = _EDITION_SUFFIX.search(metadata.series_name or "")
+    if not localized or not suffix or localized.endswith(suffix.group(0)):
+        return localized
+    return localized + suffix.group(0)
+
+
 def _validate_volume(volume: object) -> None:
     if not isinstance(volume, VolumeRef):
         raise ValueError("invalid volume reference")
     if volume.kind in ("volume", "chapter"):
-        start = _require_positive_decimal(volume.start)
-        if volume.kind == "chapter" and volume.end is not None and _require_positive_decimal(volume.end) <= start:
+        start = _require_volume_number(volume.start)
+        if volume.kind == "chapter" and volume.end is not None and _require_volume_number(volume.end) <= start:
             raise ValueError("invalid chapter range")
         return
     if volume.kind == "range":
-        start = _require_positive_decimal(volume.start)
-        end = _require_positive_decimal(volume.end)
+        start = _require_volume_number(volume.start)
+        end = _require_volume_number(volume.end)
         if end < start:
             raise ValueError("invalid volume range")
         return
@@ -142,14 +155,14 @@ def _validate_volume(volume: object) -> None:
     raise ValueError("invalid volume reference")
 
 
-def _require_positive_decimal(value: object) -> Decimal:
-    if not isinstance(value, Decimal) or not value.is_finite() or value <= 0:
+def _require_volume_number(value: object) -> Decimal:
+    if not isinstance(value, Decimal) or not value.is_finite() or value < 0:
         raise ValueError("invalid volume bound")
     return value
 
 
 def _format_decimal(value: object) -> str:
-    value = _require_positive_decimal(value)
+    value = _require_volume_number(value)
     text = format(value, "f")
     # Only the fractional part may drop trailing zeros: "19.50" -> "19.5",
     # while the integer "10" must keep its significant trailing zero.
