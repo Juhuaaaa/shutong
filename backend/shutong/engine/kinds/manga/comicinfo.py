@@ -40,7 +40,7 @@ def build_comic_info(metadata: ComicMetadata, page_count: object) -> bytes:
     """Build a ComicInfo v2.1 XML document without external entities."""
     root = ElementTree.Element("ComicInfo")
     _add_text(root, "Series", metadata.series_name)
-    _add_text(root, "LocalizedSeries", metadata.localized_series)
+    _add_text(root, "LocalizedSeries", _localized_series(metadata))
     _add_text(root, "SeriesSort", metadata.series_name)
     _add_text(root, "Title", metadata.title)
     _add_volume(root, metadata.volume)
@@ -121,6 +121,19 @@ def _add_text(root: ElementTree.Element, tag: str, value: object) -> None:
     text = text.strip()
     if text:
         ElementTree.SubElement(root, tag).text = text
+
+
+_EDITION_SUFFIX = re.compile(r"(?:\[[^\[\]]*\]|【[^【】]*】)+$")
+
+
+def _localized_series(metadata: ComicMetadata) -> str:
+    """The localized name with the series' edition suffix: Kavita folds series whose localized names
+    match into one, so 碧蓝之海[Bilibili] and 碧蓝之海[东立电子版] must not share a bare one."""
+    localized = (metadata.localized_series or "").strip()
+    suffix = _EDITION_SUFFIX.search(metadata.series_name or "")
+    if not localized or not suffix or localized.endswith(suffix.group(0)):
+        return localized
+    return localized + suffix.group(0)
 
 
 def _validate_volume(volume: object) -> None:

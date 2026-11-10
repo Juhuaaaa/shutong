@@ -39,7 +39,8 @@ class ComicInfoTests(unittest.TestCase):
         metadata = make_metadata()
         root = ElementTree.fromstring(render(metadata))
         self.assertEqual(root.findtext("Series"), "间谍过家家[bili电子版]")
-        self.assertEqual(root.findtext("LocalizedSeries"), "间谍过家家")
+        # Kavita merges series whose LocalizedSeries match, so it carries the edition too.
+        self.assertEqual(root.findtext("LocalizedSeries"), "间谍过家家[bili电子版]")
         self.assertEqual(root.findtext("SeriesSort"), "间谍过家家[bili电子版]")
         self.assertEqual(root.findtext("Volume"), "19")
         self.assertIsNone(root.find("Number"))
@@ -49,6 +50,20 @@ class ComicInfoTests(unittest.TestCase):
         self.assertEqual(root.findtext("Year"), "2019")
         self.assertEqual(root.findtext("Month"), "3")
         self.assertEqual(root.findtext("Day"), "25")
+
+    def test_localized_series_takes_the_series_edition_suffix(self):
+        # 碧蓝之海[Bilibili] and 碧蓝之海[东立电子版] both had LocalizedSeries GRANDBLUE碧蓝之海 and
+        # Kavita folded them into one series, the volumes of one hiding the other's.
+        root = ElementTree.fromstring(render(make_metadata(
+            series_name="碧蓝之海[东立电子版]", localized_series="GRANDBLUE 碧蓝之海")))
+        self.assertEqual(root.findtext("LocalizedSeries"), "GRANDBLUE 碧蓝之海[东立电子版]")
+
+    def test_localized_series_without_edition_is_left_alone(self):
+        for series, localized in (("一拳超人", "一拳超人"), ("间谍过家家", "SPY×FAMILY"),
+                                  ("间谍过家家[bili电子版]", "间谍过家家[bili电子版]")):
+            with self.subTest(series=series):
+                root = ElementTree.fromstring(render(make_metadata(series_name=series, localized_series=localized)))
+                self.assertEqual(root.findtext("LocalizedSeries"), localized)
 
     def test_completed_series_writes_reliable_count(self):
         complete = make_metadata(completed=True, total_volumes=12)
