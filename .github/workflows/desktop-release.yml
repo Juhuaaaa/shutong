@@ -77,3 +77,4 @@ jobs:
             desktop/release/Shutong-*.exe
           if-no-files-found: error
           compression-level: 0
+          retention-days: 1  # publish-draft.sh downloads them right after the run; the release keeps the files
