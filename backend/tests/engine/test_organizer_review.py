@@ -99,6 +99,12 @@ class OrganizerReviewTests(OrganizerFixture):
         self.assertFalse(target.parent.exists())
         self.assertTrue(self.library_dir.is_dir())
 
+    def test_reorganize_removes_a_folder_left_with_only_series_json(self):
+        organizer, item, target = self.published()
+        (target.parent / "series.json").write_text("{}", encoding="utf-8")
+        organizer.reorganize([item.id], title="迷宫饭 新", subject=SubjectRef("bangumi", "133315"))
+        self.assertFalse(target.parent.exists())
+
     def test_reorganize_keeps_a_folder_with_other_files(self):
         organizer, item, target = self.published()
         (target.parent / "Vol.02.cbz").write_bytes(b"other")

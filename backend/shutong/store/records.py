@@ -49,6 +49,7 @@ class Library:
     # When the volume is already in the library: never | always | larger (the bigger file stays) | newer.
     overwrite_policy: str = "never"
     rename_files: bool = True  # False: files keep their source name, only the folder comes from the template
+    series_json: bool = False  # manga: write series.json beside each series for Komga
 
 
 @dataclass(frozen=True)
@@ -147,6 +148,7 @@ class LibraryStore:
             server_library_id=row["server_library_id"],
             overwrite_policy=row["overwrite_policy"],
             rename_files=bool(row["rename_files"]),
+            series_json=bool(row["series_json"]),
         )
 
 
@@ -159,7 +161,8 @@ class LibraryStore:
                source_dir: Any = None, library_dir: Optional[Path] = None,
                server_id: Any = KEEP, server_library_id: Any = KEEP,
                watch: Optional[bool] = None,
-               overwrite_policy: Optional[str] = None, rename_files: Optional[bool] = None) -> Library:
+               overwrite_policy: Optional[str] = None, rename_files: Optional[bool] = None,
+               series_json: Optional[bool] = None) -> Library:
         """Change the given fields; ``archive_dir=None`` clears it, leaving it out keeps it.
 
         ``source_dir=""`` drops the library's own source dir (uploads only)."""
@@ -178,6 +181,8 @@ class LibraryStore:
             columns["overwrite_policy"] = overwrite_policy
         if rename_files is not None:
             columns["rename_files"] = int(rename_files)
+        if series_json is not None:
+            columns["series_json"] = int(series_json)
         if archive_dir is not KEEP:
             columns["archive_dir"] = str(archive_dir) if archive_dir is not None else None
         if server_id is not KEEP:

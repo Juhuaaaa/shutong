@@ -165,7 +165,7 @@
             "type": "boolean"
           },
           "version": {
-            "default": "0.3.0",
+            "default": "0.4.0",
             "title": "Version",
             "type": "string"
           }
@@ -1102,6 +1102,11 @@
             "title": "Rename Files",
             "type": "boolean"
           },
+          "series_json": {
+            "default": false,
+            "title": "Series Json",
+            "type": "boolean"
+          },
           "server_id": {
             "anyOf": [
               {
@@ -1202,6 +1207,10 @@
             "title": "Rename Files",
             "type": "boolean"
           },
+          "series_json": {
+            "title": "Series Json",
+            "type": "boolean"
+          },
           "server_id": {
             "anyOf": [
               {
@@ -1249,6 +1258,7 @@
           "pdf_to_cbz",
           "overwrite_policy",
           "rename_files",
+          "series_json",
           "available",
           "server_id",
           "server_library_id",
@@ -1341,6 +1351,17 @@
               }
             ],
             "title": "Rename Files"
+          },
+          "series_json": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Series Json"
           },
           "server_id": {
             "anyOf": [

@@ -10,9 +10,11 @@ from shutong.api.routes.items import Publishing, planned_ids, require_ai
 from shutong.api.schemas import JobRef, LibraryOut, RunOut, Summary, TemplateExample, TemplatePreview, UploadResult
 from shutong.api.upload import save_upload
 from shutong.engine.organizer import Organizer
+from shutong.engine.states import ItemStatus
 from shutong.engine.template import UNKNOWN_AUTHOR, TemplateError, render, validate_template
 from shutong.engine.text import path_safe
-from shutong.store.records import KEEP, Library, LibraryStore, RunStore
+from shutong.servers.notify import notify_published
+from shutong.store.records import KEEP, ItemStore, Library, LibraryStore, RunStore
 from shutong.store.servers import ServerStore
 
 router = APIRouter(prefix="/api/libraries", tags=["libraries"], dependencies=[Depends(require_login)])
@@ -41,6 +43,7 @@ class LibraryIn(BaseModel):
     pdf_to_cbz: bool = True
     overwrite_policy: Overwrite = "never"
     rename_files: bool = True
+    series_json: bool = False
     server_id: Optional[int] = None
     server_library_id: ServerLibraryRef = None
     watch: bool = False
@@ -56,6 +59,7 @@ class LibraryPatch(BaseModel):
     pdf_to_cbz: Optional[bool] = None
     overwrite_policy: Optional[Overwrite] = None
     rename_files: Optional[bool] = None
+    series_json: Optional[bool] = None
     server_id: Optional[int] = None
     server_library_id: ServerLibraryRef = None
     watch: Optional[bool] = None
@@ -73,7 +77,8 @@ def library_out(library: Library) -> LibraryOut:
         source_policy=library.source_policy,
         archive_dir=str(library.archive_dir) if library.archive_dir is not None else None,
         pdf_to_cbz=library.pdf_to_cbz,
-        overwrite_policy=library.overwrite_policy, rename_files=library.rename_files, server_id=library.server_id, server_library_id=library.server_library_id,
+        overwrite_policy=library.overwrite_policy, rename_files=library.rename_files,
+        series_json=library.series_json, server_id=library.server_id, server_library_id=library.server_library_id,
         available=(library.source_managed or Path(library.source_dir).is_dir()) and Path(library.library_dir).is_dir(),
     )
 
@@ -158,6 +163,8 @@ def create_library(body: LibraryIn, request: Request) -> LibraryOut:
                            naming_template=body.naming_template, pdf_to_cbz=body.pdf_to_cbz,
                            watch=body.watch,
                            overwrite_policy=body.overwrite_policy, rename_files=body.rename_files)
+    if body.series_json:
+        library = store.update(library.id, series_json=True)
     if body.server_id is not None:
         library = store.update(library.id, server_id=body.server_id, server_library_id=body.server_library_id)
     return library_out(library)
@@ -195,6 +202,7 @@ def update_library(library_id: int, body: LibraryPatch, request: Request) -> Lib
         library.id, name=changes.get("name"), naming_template=changes.get("naming_template"),
         source_policy=changes.get("source_policy"), pdf_to_cbz=changes.get("pdf_to_cbz"),
         overwrite_policy=changes.get("overwrite_policy"), rename_files=changes.get("rename_files"),
+        series_json=changes.get("series_json"),
         source_dir=(Path(source.strip()) if source.strip() else "") if "source_dir" in changes else None,
         watch=watch if watch != library.watch else None,
         library_dir=Path(changes["library_dir"]) if changes.get("library_dir") else None,
@@ -203,7 +211,19 @@ def update_library(library_id: int, body: LibraryPatch, request: Request) -> Lib
         server_library_id=changes["server_library_id"] if "server_library_id" in changes else (
             None if changes.get("server_id", KEEP) is None else KEEP),
     )
+    if updated.series_json and not library.series_json and updated.kind == "manga":
+        submit_series_json(request.app, updated)
     return library_out(updated)
+
+
+def submit_series_json(app, library: Library):
+    """Turned on: give every series already in the library its series.json, then have the server look again."""
+
+    def run() -> dict:
+        ids = [item.id for item in ItemStore(app.state.db).list(library.id, ItemStatus.PUBLISHED)]
+        return {"kavita": notify_published(app.state.db, ids, server_factory=app.state.server_factory)}
+
+    return app.state.jobs.submit("series_json", run, library_id=library.id)
 
 
 def submit_scan(app, library: Library, trigger: str = "manual", entries=None):

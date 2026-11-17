@@ -60,6 +60,8 @@ const en: typeof zhCN = {
     server: "Media server",
     noServer: "Don't notify a media server",
     serverLibrary: "Matching library",
+    seriesJson: "Write series.json (for Komga)",
+    seriesJsonHint: "Puts a series.json in each series folder so Komga stops adding \"(volume)\" to series names and shows the summary and status. Turning it on fills in existing series; Kavita is unaffected",
     create: "New library",
     edit: "Library settings",
     scan: "Scan",
@@ -475,7 +477,7 @@ const en: typeof zhCN = {
     cancelled: "Stopped. What was not finished continues at the next scan",
     failed: "Task failed",
     lost: "The task was lost (the service may have restarted). Refresh to see the result",
-    kind: { scan: "Scan", execute: "Add to library", confirm: "Review", reorganize: "Reorganize", retry: "Retry", reidentify: "Read again", adopt: "Adopt AI suggestions", metadata: "Edit metadata", refresh_metadata: "Refresh metadata", cover: "Set cover" },
+    kind: { scan: "Scan", execute: "Add to library", confirm: "Review", reorganize: "Reorganize", retry: "Retry", reidentify: "Read again", adopt: "Adopt AI suggestions", metadata: "Edit metadata", refresh_metadata: "Refresh metadata", cover: "Set cover", series_json: "Write series.json" },
   },
 };
 

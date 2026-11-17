@@ -9,7 +9,7 @@ vi.mock("@/composables/confirm", () => ({ ask: vi.fn().mockResolvedValue(true) }
 
 const library = {
   id: 1, name: "漫画", kind: "manga", source_dir: "/s", library_dir: "/l", naming_template: "", source_policy: "keep",
-  archive_dir: null, pdf_to_cbz: true, overwrite_policy: "never", rename_files: true, available: true, server_id: null, server_library_id: null,
+  archive_dir: null, pdf_to_cbz: true, overwrite_policy: "never", rename_files: true, series_json: false, available: true, server_id: null, server_library_id: null,
   watch: false,
 };
 
@@ -193,6 +193,34 @@ describe("LibraryCard", () => {
     await save(wrapper).trigger("click");
     await flush();
     expect(calls.find((call) => call.method === "PATCH")?.body).toEqual({ rename_files: false });
+  });
+
+  it("writes series.json for Komga when asked", async () => {
+    const { calls } = fakeApi({ "PATCH /api/libraries/1": { ...library, series_json: true } });
+    const wrapper = card();
+    await flush();
+    await wrapper.find("[data-test=series-json] input").setValue(true);
+    await save(wrapper).trigger("click");
+    await flush();
+    expect(calls.find((call) => call.method === "PATCH")?.body).toEqual({ series_json: true });
+  });
+
+  it("offers no series.json for a novel library", async () => {
+    fakeApi({});
+    const wrapper = card({ library: { ...library, kind: "novel" } });
+    await flush();
+    expect(wrapper.find("[data-test=series-json]").exists()).toBe(false);
+  });
+
+  it("turns series.json on when a Komga server is picked", async () => {
+    fakeApi({ "POST /api/servers/2/test": { ok: true, libraries: [] } });
+    const servers = [{ id: 2, kind: "komga", name: "Komga", base_url: "http://k", username: "u", enabled: true }];
+    const wrapper = card({ servers });
+    await flush();
+    const picker = wrapper.findAllComponents({ name: "VSelect" }).find((select) => select.props("placeholder") === "不通知媒体服务器");
+    await picker!.vm.$emit("update:modelValue", 2);
+    await flush();
+    expect((wrapper.find("[data-test=series-json] input").element as HTMLInputElement).checked).toBe(true);
   });
 
   it("refreshes a whole library's metadata after asking", async () => {

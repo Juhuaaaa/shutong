@@ -221,4 +221,8 @@ MIGRATIONS: tuple[str, ...] = (
     ALTER TABLE ai_calls ADD COLUMN completion_tokens INTEGER;
     ALTER TABLE ai_calls ADD COLUMN cached_tokens INTEGER;
     """,
+    # Write series.json beside each manga series for Komga, which otherwise appends the volume to the name.
+    """
+    ALTER TABLE libraries ADD COLUMN series_json INTEGER NOT NULL DEFAULT 0;
+    """,
 )
