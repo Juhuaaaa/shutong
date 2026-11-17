@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 import shutil
 import unittest
 
@@ -55,6 +56,28 @@ class LibraryRoutesTests(ApiCase):
         self.assertEqual((changed["overwrite_policy"], changed["rename_files"]), ("larger", False))
         self.assertEqual(self.client.patch("/api/libraries/{0}".format(library["id"]),
                                            json={"overwrite_policy": "maybe"}).status_code, 422)
+
+    def test_series_json_is_off_by_default_and_backfills_when_turned_on(self):
+        library = self.make_library()
+        self.assertFalse(library["series_json"])
+        self.ai = ReaderAi(series={"迷宫饭": {"title": "迷宫饭"}})
+        self.zip("迷宫饭/迷宫饭 Vol.01.zip")
+        self.client.post("/api/libraries/{0}/scan".format(library["id"]))
+        [item] = self.client.get("/api/items", params={"library_id": library["id"]}).json()["items"]
+        folder = (Path(library["library_dir"]) / item["target_path"]).parent
+        self.assertFalse((folder / "series.json").exists())
+        changed = self.client.patch("/api/libraries/{0}".format(library["id"]), json={"series_json": True}).json()
+        self.assertTrue(changed["series_json"])
+        self.assertEqual(json.loads((folder / "series.json").read_text(encoding="utf-8"))["metadata"]["name"], "迷宫饭")
+
+    def test_series_json_is_written_as_books_come_in(self):
+        library = self.client.patch("/api/libraries/{0}".format(self.make_library()["id"]),
+                                    json={"series_json": True}).json()
+        self.ai = ReaderAi(series={"迷宫饭": {"title": "迷宫饭"}})
+        self.zip("迷宫饭/迷宫饭 Vol.01.zip")
+        self.client.post("/api/libraries/{0}/scan".format(library["id"]))
+        [item] = self.client.get("/api/items", params={"library_id": library["id"]}).json()["items"]
+        self.assertTrue((Path(library["library_dir"]) / item["target_path"]).with_name("series.json").is_file())
 
     def test_bad_template_is_rejected_and_nothing_changes(self):
         library = self.make_library()

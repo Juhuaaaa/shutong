@@ -58,6 +58,8 @@ export default {
     server: "媒体服务器",
     noServer: "不通知媒体服务器",
     serverLibrary: "对应的库",
+    seriesJson: "写入 series.json（Komga 用）",
+    seriesJsonHint: "在每个系列目录里放一个 series.json，Komga 就不会在系列名后面加「(卷号)」，还能显示简介和连载状态。打开时会给已有系列补上；Kavita 不受影响",
     create: "新建库",
     edit: "库设置",
     scan: "扫描",
@@ -473,6 +475,6 @@ export default {
     cancelled: "已停止，没整理完的下次扫描会接着做",
     failed: "任务失败",
     lost: "任务已丢失（服务可能重启过），请刷新后查看结果",
-    kind: { scan: "扫描", execute: "入库", confirm: "复核确认", reorganize: "重新整理", retry: "重试", reidentify: "重新识别", adopt: "采纳 AI 建议", metadata: "编辑元数据", refresh_metadata: "刷新元数据", cover: "设置封面" },
+    kind: { scan: "扫描", execute: "入库", confirm: "复核确认", reorganize: "重新整理", retry: "重试", reidentify: "重新识别", adopt: "采纳 AI 建议", metadata: "编辑元数据", refresh_metadata: "刷新元数据", cover: "设置封面", series_json: "写入 series.json" },
   },
 };

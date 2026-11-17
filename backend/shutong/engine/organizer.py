@@ -21,6 +21,7 @@ from shutong.engine import failure
 from shutong.engine.fingerprint import fingerprint
 from shutong.engine.kinds.base import KindAdapter, ParseResult, SourceEntry
 from shutong.engine.kinds.manga.adapter import MangaAdapter
+from shutong.engine.kinds.manga.series_json import SERIES_JSON
 from shutong.engine.kinds.novel.adapter import NovelAdapter, NovelPlan
 from shutong.engine.match import find_own_entry, label_of, match_across, match_subject
 from shutong.engine import covers
@@ -1203,6 +1204,9 @@ def remove_empty_folders(folder: Path, root: Path) -> None:
     folder = Path(folder)
     while folder != root and root in folder.parents:
         try:
+            leftovers = os.listdir(folder)
+            if leftovers == [SERIES_JSON]:  # written for Komga; it only describes the books that were here
+                (folder / SERIES_JSON).unlink()
             folder.rmdir()  # only an empty folder goes; anything left in it stops here
         except OSError:
             return

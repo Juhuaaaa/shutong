@@ -1,6 +1,7 @@
 from pathlib import Path
 import tempfile
 import unittest
+import zipfile
 
 from shutong.servers.notify import notify_published
 from shutong.store.db import Database
@@ -59,6 +60,23 @@ class NotifyTests(unittest.TestCase):
         result = self.notify([item], refresh_series=[(self.manga.id, "迷宫饭")])
         self.assertEqual(self.calls(), [("scan", "3"), ("refresh", "3", "迷宫饭")])
         self.assertEqual(result["refreshed"], ["迷宫饭"])
+
+    def published(self, library, target):
+        path = library.library_dir / target
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(path, "w") as archive:
+            archive.writestr("001.jpg", b"x")
+        return self.items.import_published(library.id, Path("/s") / target, "v1:" + target, Path(target),
+                                           parsed={}, detail={}).id
+
+    def test_series_json_is_written_before_the_scan_when_the_library_asks(self):
+        libraries = LibraryStore(self.db)
+        root = Path(self._directory.name)
+        on = libraries.update(libraries.create("开", "manga", root / "s4", root / "l4").id, series_json=True)
+        off = libraries.create("关", "manga", root / "s5", root / "l5")
+        self.notify([self.published(on, "迷宫饭/Vol.01.cbz"), self.published(off, "迷宫饭/Vol.01.cbz")])
+        self.assertTrue((on.library_dir / "迷宫饭" / "series.json").is_file())
+        self.assertFalse((off.library_dir / "迷宫饭" / "series.json").exists())
 
     def test_nothing_published_contacts_nobody(self):
         self.assertEqual(self.notify([]), {"scanned": [], "refreshed": [], "errors": []})

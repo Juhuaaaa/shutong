@@ -5,6 +5,7 @@ Nothing here may fail the batch: the files are already published, so problems ar
 import logging
 from typing import Callable, Dict, Iterable, List, Sequence, Tuple
 
+from shutong.engine.kinds.manga.series_json import write_series_json
 from shutong.servers.base import MediaServer, ServerError
 from shutong.store.db import Database
 from shutong.store.records import ItemStore, LibraryStore
@@ -20,6 +21,7 @@ def notify_published(db: Database, item_ids: Sequence[int], *,
     if not item_ids:
         return result
     items, libraries, servers = ItemStore(db), LibraryStore(db), ServerStore(db)
+    result["errors"] += _write_series_json(items, libraries, item_ids)
     targets: Dict[Tuple[int, int], List[int]] = {}  # (server id, server library id) -> our library ids
     for library_id in sorted({items.get(item_id).library_id for item_id in item_ids}):
         library = libraries.get(library_id)
@@ -46,6 +48,24 @@ def notify_published(db: Database, item_ids: Sequence[int], *,
             result["errors"].append("{0}：通知失败（{1}: {2}）".format(record.name, type(error).__name__, error))
             log.exception("通知 %s 出错", record.name)
     return result
+
+
+def _write_series_json(items: ItemStore, libraries: LibraryStore, item_ids: Sequence[int]) -> List[str]:
+    """series.json for the series these items went into, before the scan so Komga reads the new one."""
+    folders = set()
+    for item_id in item_ids:
+        item = items.get(item_id)
+        library = libraries.get(item.library_id)
+        if library.kind == "manga" and library.series_json and item.target_path:
+            folders.add((library.library_dir / item.target_path).parent)
+    errors = []
+    for folder in sorted(folders):
+        try:
+            write_series_json(folder)
+        except Exception as error:
+            errors.append("写 series.json 失败：{0}（{1}）".format(folder.name, error))
+            log.warning("写 %s 的 series.json 失败：%s", folder, error)
+    return errors
 
 
 def redone_series(db: Database, item_ids: Sequence[int]) -> List[Tuple[int, str]]:

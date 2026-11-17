@@ -1022,7 +1022,7 @@ export interface components {
             logged_in: boolean;
             /**
              * Version
-             * @default 0.3.0
+             * @default 0.4.0
              */
             version: string;
         };
@@ -1337,6 +1337,11 @@ export interface components {
              * @default true
              */
             rename_files: boolean;
+            /**
+             * Series Json
+             * @default false
+             */
+            series_json: boolean;
             /** Server Id */
             server_id?: number | null;
             /** Server Library Id */
@@ -1380,6 +1385,8 @@ export interface components {
             pdf_to_cbz: boolean;
             /** Rename Files */
             rename_files: boolean;
+            /** Series Json */
+            series_json: boolean;
             /** Server Id */
             server_id: number | null;
             /** Server Library Id */
@@ -1407,6 +1414,8 @@ export interface components {
             pdf_to_cbz?: boolean | null;
             /** Rename Files */
             rename_files?: boolean | null;
+            /** Series Json */
+            series_json?: boolean | null;
             /** Server Id */
             server_id?: number | null;
             /** Server Library Id */

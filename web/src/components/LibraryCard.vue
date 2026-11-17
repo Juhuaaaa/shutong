@@ -44,6 +44,7 @@ const initial = {
   pdf_to_cbz: props.library?.pdf_to_cbz ?? true,
   overwrite_policy: props.library?.overwrite_policy ?? "never",
   rename_files: props.library?.rename_files ?? true,
+  series_json: props.library?.series_json ?? false,
   server_id: props.library?.server_id ?? null,
   server_library_id: props.library?.server_library_id ?? null,
   watch: props.library?.watch ?? false,
@@ -89,6 +90,8 @@ async function loadServerLibraries(id: number | null) {
 function pickServer(id: number | null) {
   form.server_id = id;
   form.server_library_id = null;
+  // Komga names a manga series "海贼王 (4)" without series.json, so linking one turns it on.
+  if (props.servers.find((entry) => entry.id === id)?.kind === "komga") form.series_json = true;
   loadServerLibraries(id);
 }
 
@@ -293,6 +296,8 @@ function cancel() {
             <VSelect v-if="form.server_id !== null" v-model="form.server_library_id" :label="t('library.serverLibrary')"
               :items="serverLibraries" :error-messages="serverError || undefined" />
           </div>
+          <VSwitch v-if="form.kind === 'manga'" v-model="form.series_json" :label="t('library.seriesJson')"
+            :hint="t('library.seriesJsonHint')" persistent-hint data-test="series-json" />
         </section>
         <VAlert v-if="saveError" type="error" variant="tonal" density="compact" rounded="lg">{{ saveError }}</VAlert>
         <div class="actions">

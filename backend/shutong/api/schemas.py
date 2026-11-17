@@ -60,6 +60,7 @@ class LibraryOut(BaseModel):
     pdf_to_cbz: bool
     overwrite_policy: str
     rename_files: bool
+    series_json: bool
     available: bool
     server_id: Optional[int]
     server_library_id: Optional[str]
