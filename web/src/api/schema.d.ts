@@ -939,6 +939,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/settings/bangumi-fallback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Bangumi Fallback */
+        get: operations["bangumi_fallback_api_settings_bangumi_fallback_get"];
+        put?: never;
+        post?: never;
+        /**
+         * End Bangumi Fallback
+         * @description Back to the configured address now; it switches again by itself if still unreachable.
+         */
+        delete: operations["end_bangumi_fallback_api_settings_bangumi_fallback_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/settings/proxy-test": {
         parameters: {
             query?: never;
@@ -1025,6 +1046,11 @@ export interface components {
              * @default 0.4.0
              */
             version: string;
+        };
+        /** BangumiFallbackOut */
+        BangumiFallbackOut: {
+            /** Until */
+            until: string | null;
         };
         /** Body_upload_api_libraries__library_id__upload_post */
         Body_upload_api_libraries__library_id__upload_post: {
@@ -3586,6 +3612,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AiTestResult"];
+                };
+            };
+        };
+    };
+    bangumi_fallback_api_settings_bangumi_fallback_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BangumiFallbackOut"];
+                };
+            };
+        };
+    };
+    end_bangumi_fallback_api_settings_bangumi_fallback_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BangumiFallbackOut"];
                 };
             };
         };

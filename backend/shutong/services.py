@@ -58,7 +58,8 @@ def build_services(db: Database, *, opener=None, sleep=time.sleep) -> Services:
     base_url = _address(settings.get("bangumi.base_url")) or DEFAULT_BASE_URL
     bangumi = BangumiSource(
         BangumiSettings(base_url=base_url, token=settings.get("bangumi.token") or None,
-                        image_base_url=_address(settings.get("bangumi.image_base_url"))),
+                        image_base_url=_address(settings.get("bangumi.image_base_url")),
+                        fallback_url=_address(settings.get("bangumi.fallback_url"))),
         CacheStore(db), opener=proxied, sleep=sleep,
     )
     anilist = AniListSource(CacheStore(db), opener=proxied, sleep=sleep)

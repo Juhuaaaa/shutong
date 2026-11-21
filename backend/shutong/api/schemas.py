@@ -224,6 +224,10 @@ class ProxyTestIn(BaseModel):
     proxy: Optional[str] = None
 
 
+class BangumiFallbackOut(BaseModel):
+    until: Optional[str]  # ISO time the switch to the fallback mirror ends; None: the configured address is in use
+
+
 class ProxyTestResult(BaseModel):
     ok: bool
     error: Optional[str]

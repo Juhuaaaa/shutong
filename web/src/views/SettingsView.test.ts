@@ -14,7 +14,7 @@ const settings = {
 function api(extra: Record<string, unknown> = {}) {
   return fakeApi({
     "GET /api/libraries": [{ id: 1, name: "漫画", kind: "manga" }], "GET /api/libraries/1/summary": { counts: {} }, "GET /api/settings": settings, "PATCH /api/settings": (body: object) => ({ ...settings, ...body }),
-    "GET /api/ai/calls": [], "GET /api/servers": [],
+    "GET /api/ai/calls": [], "GET /api/servers": [], "GET /api/settings/bangumi-fallback": { until: null },
     "GET /api/metadata/sources": [{ name: "bangumi", label: "Bangumi", enabled: true }, { name: "anilist", label: "AniList", enabled: false }],
     ...extra,
   });
@@ -111,6 +111,33 @@ describe("SettingsView", () => {
       { props: (name: string) => string[] }).props("items");
     expect(offered("bangumi-url")).toEqual(["https://api.bgm.tv", "https://bgmapi.anibt.net"]);
     expect(offered("bangumi-image-url")).toEqual(["https://lain.bgm.tv", "https://bgmimg.anibt.net"]);
+  });
+
+  it("saves the fallback address for Bangumi", async () => {
+    const { calls } = api({ "GET /api/settings": { ...settings, "bangumi.fallback_url": "https://bgmapi.anibt.net" } });
+    const { wrapper } = await mountView(SettingsView, "/settings/metadata");
+    await vi.waitFor(() => expect(input("bangumi-fallback-url")?.value).toBe("https://bgmapi.anibt.net"));
+    expect(document.body.textContent).toContain("12 小时");
+    expect((wrapper.findComponent("[data-test=bangumi-fallback-url]") as unknown as
+      { props: (name: string) => string[] }).props("items")).toEqual(["https://bgmapi.anibt.net"]);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    await type("bangumi-fallback-url", "https://bgm.mirror.example");
+    (document.querySelector("[data-test=save-metadata]") as HTMLElement).click();
+    await vi.waitFor(() => expect(calls.some((call) => call.method === "PATCH")).toBe(true));
+    expect(calls.find((call) => call.method === "PATCH")?.body).toEqual({ "bangumi.fallback_url": "https://bgm.mirror.example" });
+  });
+
+  it("says when Bangumi is on the fallback address and switches back on request", async () => {
+    const { calls } = api({
+      "GET /api/settings/bangumi-fallback": { until: "2026-11-21T20:00:00+00:00" },
+      "DELETE /api/settings/bangumi-fallback": { until: null },
+    });
+    await mountView(SettingsView, "/settings/metadata");
+    await vi.waitFor(() => expect(document.querySelector("[data-test=bangumi-fallback-active]")).not.toBeNull());
+    expect(document.querySelector("[data-test=bangumi-fallback-active]")?.textContent).toContain("备用地址");
+    (document.querySelector("[data-test=bangumi-fallback-end]") as HTMLElement).click();
+    await vi.waitFor(() => expect(calls.some((call) => call.method === "DELETE")).toBe(true));
+    await vi.waitFor(() => expect(document.querySelector("[data-test=bangumi-fallback-active]")).toBeNull());
   });
 
   it("still opens the metadata tab from an old Bangumi link", async () => {

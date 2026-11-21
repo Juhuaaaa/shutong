@@ -161,6 +161,9 @@ export const settings = {
   update: (changes: Settings) => request<Settings>("PATCH", "/api/settings", { body: changes }),
   testAi: () => request<S["AiTestResult"]>("POST", "/api/settings/ai-test"),
   testProxy: (proxy?: string) => request<S["ProxyTestResult"]>("POST", "/api/settings/proxy-test", { body: { proxy } }),
+  /** Whether Bangumi is on its fallback mirror for now, and until when. */
+  bangumiFallback: () => request<S["BangumiFallbackOut"]>("GET", "/api/settings/bangumi-fallback"),
+  endBangumiFallback: () => request<S["BangumiFallbackOut"]>("DELETE", "/api/settings/bangumi-fallback"),
 };
 
 export const servers = {

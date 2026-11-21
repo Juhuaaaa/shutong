@@ -10,6 +10,8 @@ DEFAULTS: Dict[str, Any] = {
     "bangumi.base_url": "https://api.bgm.tv",
     "bangumi.token": None,
     "bangumi.image_base_url": "",  # a mirror of lain.bgm.tv; empty: covers as the API names them
+    # Asked for 12 hours once bangumi.base_url is unreachable (without the token); empty: no switch.
+    "bangumi.fallback_url": "https://bgmapi.anibt.net",
     "metadata.sources": ["bangumi"],
     "metadata.translate_summaries": True,
     "network.proxy": "",

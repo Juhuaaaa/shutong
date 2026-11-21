@@ -40,6 +40,10 @@ class CacheStore:
                 (key, text, now.isoformat(), (now + timedelta(seconds=ttl_seconds)).isoformat()),
             )
 
+    def delete(self, key: str) -> None:
+        with self.db.connect() as connection:
+            connection.execute("DELETE FROM metadata_cache WHERE cache_key = ?", (key,))
+
 
 def reject_sensitive_keys(value: Any) -> None:
     """Refuse to cache anything that looks like it carries a credential."""
