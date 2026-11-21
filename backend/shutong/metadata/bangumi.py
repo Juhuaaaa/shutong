@@ -5,6 +5,7 @@ Copied from the legacy shutong.core.common.bangumi; results are cached in metada
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import timedelta
 import errno
 import http.client
 import json
@@ -28,6 +29,8 @@ _RETRY_DELAYS = (1, 2, 4)
 _MAX_ATTEMPTS = 3
 _DOWN_SECONDS = 300  # after giving up, later requests fail at once for this long (the cache still answers)
 DEFAULT_BASE_URL = "https://api.bgm.tv"
+FALLBACK_HOURS = 12  # once the official API is unreachable, the mirror answers this long before it is asked again
+_FALLBACK_KEY = "bangumi:fallback"
 _IMAGE_PATH = "/v0/subjects/{0}/image?type={1}"
 
 
@@ -43,6 +46,18 @@ class BangumiSettings:
     base_url: str = DEFAULT_BASE_URL
     token: Optional[str] = None
     image_base_url: str = ""  # a mirror of Bangumi's image host (lain.bgm.tv); empty: as the API names them
+    fallback_url: str = ""  # a mirror of the API to switch to while ``base_url`` is unreachable; empty: no switch
+
+
+def fallback_until(cache: CacheStore) -> Optional[str]:
+    """When the switch to the mirror ends (ISO time), or None while the configured address is in use."""
+    state = cache.get(_FALLBACK_KEY)
+    return state.get("until") if isinstance(state, dict) else None
+
+
+def clear_fallback(cache: CacheStore) -> None:
+    """Go back to the configured address now instead of when the switch runs out."""
+    cache.delete(_FALLBACK_KEY)
 
 
 class BangumiSource:
@@ -62,7 +77,7 @@ class BangumiSource:
         self.settings = settings
         self.cache = cache
         self._clock = clock
-        self._down_until = 0.0
+        self._down_until: Dict[str, float] = {}  # per address
         self._opener = opener
         self._sleep = sleep
 
@@ -109,6 +124,25 @@ class BangumiSource:
         return subject
 
     def _request_json(self, path: str, payload: Optional[Dict[str, Any]] = None) -> Any:
+        """From the configured address; while it is unreachable, from the fallback mirror for FALLBACK_HOURS."""
+        base = self.settings.base_url.rstrip("/")
+        fallback = (self.settings.fallback_url or "").strip().rstrip("/")
+        if not fallback or fallback == base:
+            return self._fetch(base, path, payload, token=True)
+        if fallback_until(self.cache) is not None:
+            return self._fetch(fallback, path, payload, token=False)
+        try:
+            return self._fetch(base, path, payload, token=True)
+        except MetadataUnavailable as error:
+            log.warning("Bangumi %s 连不上，改用备用地址 %s：%s", base, fallback, error)
+        response = self._fetch(fallback, path, payload, token=False)
+        until = (self.cache.clock() + timedelta(hours=FALLBACK_HOURS)).isoformat(timespec="seconds")
+        self.cache.put(_FALLBACK_KEY, {"until": until}, ttl_seconds=FALLBACK_HOURS * 3600)
+        log.warning("之后 %d 小时都用备用地址 %s，到 %s 再试 %s", FALLBACK_HOURS, fallback, until, base)
+        return response
+
+    def _fetch(self, base: str, path: str, payload: Optional[Dict[str, Any]], *, token: bool) -> Any:
+        """``token``: the Bangumi token goes to the configured address only, never to a fallback mirror."""
         body = None
         headers = {
             "Accept": "application/json",
@@ -119,18 +153,18 @@ class BangumiSource:
                 payload, ensure_ascii=False, separators=(",", ":"), allow_nan=False
             ).encode("utf-8")
             headers["Content-Type"] = "application/json"
-        if self.settings.token:
+        if token and self.settings.token:
             headers["Authorization"] = "Bearer {0}".format(
                 self.settings.token
             )
         request = Request(
-            self.settings.base_url.rstrip("/") + path,
+            base + path,
             data=body,
             headers=headers,
             method="POST" if body is not None else "GET",
         )
 
-        if self._clock() < self._down_until:
+        if self._clock() < self._down_until.get(base, 0.0):
             raise MetadataUnavailable("Bangumi 暂时无法访问（刚连不上过，稍后自动再试）")
         for attempt in range(_MAX_ATTEMPTS):
             try:
@@ -156,7 +190,7 @@ class BangumiSource:
             log.warning("Bangumi 请求失败（第 %d/%d 次）：%s %s", attempt + 1, _MAX_ATTEMPTS, path, retryable_error)
             if attempt + 1 >= _MAX_ATTEMPTS:
                 log.error("Bangumi 暂时无法访问，放弃：%s；之后 %d 秒内不再请求", path, _DOWN_SECONDS)
-                self._down_until = self._clock() + _DOWN_SECONDS
+                self._down_until[base] = self._clock() + _DOWN_SECONDS
                 raise MetadataUnavailable(
                     "Bangumi 暂时无法访问（试了 {0} 次）：{1}".format(_MAX_ATTEMPTS, retryable_error)
                 ) from retryable_error

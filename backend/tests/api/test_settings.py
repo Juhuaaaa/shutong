@@ -1,6 +1,7 @@
 import unittest
 from unittest import mock
 
+from shutong.store.cache import CacheStore
 from shutong.store.settings import SettingsStore
 
 from .helpers import ApiCase
@@ -49,7 +50,7 @@ class SettingsRoutesTests(ApiCase):
         self.assertEqual(self.client.get("/api/settings").json()["metadata.sources"], ["anilist", "bangumi"])
 
     def test_bangumi_addresses_are_web_addresses(self):
-        for key in ("bangumi.base_url", "bangumi.image_base_url"):
+        for key in ("bangumi.base_url", "bangumi.image_base_url", "bangumi.fallback_url"):
             for bad in ("bgm.mirror.example", "ftp://x", "https://"):
                 with self.subTest(key=key, bad=bad):
                     self.assertEqual(self.client.patch("/api/settings", json={key: bad}).status_code, 422)
@@ -57,6 +58,15 @@ class SettingsRoutesTests(ApiCase):
                                                        "bangumi.base_url": "http://192.168.1.2:8080"})
         self.assertEqual(ok.status_code, 200)
         self.assertEqual(self.client.patch("/api/settings", json={"bangumi.image_base_url": ""}).status_code, 200)
+
+    def test_bangumi_fallback_status_and_switching_back(self):
+        self.assertEqual(self.client.get("/api/settings/bangumi-fallback").json(), {"until": None})
+        cache = CacheStore(self.app.state.db)
+        cache.put("bangumi:fallback", {"until": "2026-11-21T20:00:00+00:00"}, ttl_seconds=3600)
+        self.assertEqual(self.client.get("/api/settings/bangumi-fallback").json(),
+                         {"until": "2026-11-21T20:00:00+00:00"})
+        self.assertEqual(self.client.delete("/api/settings/bangumi-fallback").json(), {"until": None})
+        self.assertIsNone(cache.get("bangumi:fallback"))
 
     def test_proxy_is_validated(self):
         bad = self.client.patch("/api/settings", json={"network.proxy": "192.168.1.2:7890"})

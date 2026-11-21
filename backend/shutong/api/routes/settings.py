@@ -6,11 +6,12 @@ from urllib.request import Request as HttpRequest
 from fastapi import APIRouter, Body, Depends, HTTPException, Request
 
 from shutong.api.auth import require_login
-from shutong.api.schemas import AiTestResult, ProxyTestIn, ProxyTestResult
-from shutong.metadata.bangumi import USER_AGENT
+from shutong.api.schemas import AiTestResult, BangumiFallbackOut, ProxyTestIn, ProxyTestResult
+from shutong.metadata.bangumi import USER_AGENT, clear_fallback, fallback_until
 from shutong.metadata.registry import KNOWN_SOURCES
 from shutong.logs import LEVELS, set_level
 from shutong.net import make_opener, parse_proxy
+from shutong.store.cache import CacheStore
 from shutong.store.settings import DEFAULTS, SECRET_KEYS, SettingsStore
 
 router = APIRouter(prefix="/api/settings", tags=["settings"], dependencies=[Depends(require_login)])
@@ -55,7 +56,7 @@ def _check(key: str, value: Any) -> None:
         if not value or len(set(map(repr, value))) != len(value) \
                 or not all(isinstance(name, str) and name in KNOWN_SOURCES for name in value):
             raise HTTPException(422, "数据源至少开一个，不能重复，只能是：{0}".format("、".join(KNOWN_SOURCES)))
-    if key in ("bangumi.base_url", "bangumi.image_base_url") and value:
+    if key in ("bangumi.base_url", "bangumi.image_base_url", "bangumi.fallback_url") and value:
         parsed = urlparse(value.strip())
         if parsed.scheme not in ("http", "https") or not parsed.netloc:
             raise HTTPException(422, "地址要以 http:// 或 https:// 开头，例如 https://api.bgm.tv")
@@ -83,6 +84,18 @@ def update_settings(request: Request, changes: Dict[str, Any] = Body(...)) -> Di
     if "log.level" in changes:
         set_level(changes["log.level"])
     return public(store)
+
+
+@router.get("/bangumi-fallback", response_model=BangumiFallbackOut)
+def bangumi_fallback(request: Request) -> BangumiFallbackOut:
+    return BangumiFallbackOut(until=fallback_until(CacheStore(request.app.state.db)))
+
+
+@router.delete("/bangumi-fallback", response_model=BangumiFallbackOut)
+def end_bangumi_fallback(request: Request) -> BangumiFallbackOut:
+    """Back to the configured address now; it switches again by itself if still unreachable."""
+    clear_fallback(CacheStore(request.app.state.db))
+    return BangumiFallbackOut(until=None)
 
 
 @router.post("/ai-test", response_model=AiTestResult)

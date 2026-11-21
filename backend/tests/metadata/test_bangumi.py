@@ -3,13 +3,15 @@ import http.client
 import io
 import ssl
 import json
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import socket
 import tempfile
 import unittest
 from urllib.error import HTTPError, URLError
 
-from shutong.metadata.bangumi import BangumiSettings, BangumiSource, normalize_subject
+from shutong.metadata.bangumi import (BangumiSettings, BangumiSource, clear_fallback, fallback_until,
+                                       normalize_subject)
 from shutong.net import USER_AGENT
 from shutong.metadata.base import MetadataUnavailable
 from shutong.store.cache import CacheStore
@@ -400,6 +402,97 @@ class BangumiTests(unittest.TestCase):
                         with self.assertRaises(MetadataUnavailable):
                             client.get(279379)
                     self.assertIn("放弃", logged.output[-1])
+
+
+
+class BangumiFallbackTests(unittest.TestCase):
+    """The official API unreachable: the mirror answers for the next 12 hours, then the official one again."""
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        database = Database(Path(directory.name) / "shutong.db")
+        database.migrate()
+        self.now = [datetime(2026, 11, 21, 8, tzinfo=timezone.utc)]
+        self.cache = CacheStore(database, clock=lambda: self.now[0])
+        self.requests = []
+        self.official_up = False
+
+    def opener(self, request, timeout):
+        self.requests.append(request)
+        if request.full_url.startswith("https://api.bgm.tv") and not self.official_up:
+            raise URLError(OSError(errno.ECONNREFUSED, "Connection refused"))
+        if request.full_url.startswith("https://mirror.example") and getattr(self, "mirror_down", False):
+            raise URLError(OSError(errno.ECONNREFUSED, "Connection refused"))
+        subject_id = int(request.full_url.rsplit("/", 1)[1])
+        return FakeResponse({"id": subject_id, "name": "条目"})
+
+    def client(self, fallback="https://mirror.example/", base="https://api.bgm.tv", token="bgm-token"):
+        settings = BangumiSettings(base_url=base, token=token, fallback_url=fallback)
+        return BangumiSource(settings, self.cache, opener=self.opener, sleep=lambda delay: None)
+
+    def hosts(self):
+        return [request.full_url.split("/v0")[0] for request in self.requests]
+
+    def test_an_unreachable_official_api_switches_to_the_mirror(self):
+        with self.assertLogs("shutong.bangumi", "WARNING"):
+            self.assertEqual(self.client().get(1).name, "条目")
+        self.assertEqual(self.hosts(), ["https://api.bgm.tv"] * 3 + ["https://mirror.example"])
+        self.assertIsNone(self.requests[-1].get_header("Authorization"))  # the token stays with Bangumi
+
+    def test_the_mirror_keeps_answering_for_twelve_hours(self):
+        with self.assertLogs("shutong.bangumi", "WARNING"):
+            self.client().get(1)
+        self.official_up = True
+        self.requests.clear()
+        self.now[0] += timedelta(hours=11, minutes=59)
+        self.client().get(2)  # a new job builds a new client: the switch is remembered in the database
+        self.assertEqual(self.hosts(), ["https://mirror.example"])
+        self.assertIsNotNone(fallback_until(self.cache))
+        self.requests.clear()
+        self.now[0] += timedelta(minutes=2)
+        self.client().get(3)
+        self.assertEqual(self.hosts(), ["https://api.bgm.tv"])
+        self.assertIsNone(fallback_until(self.cache))
+
+    def test_switching_back_early(self):
+        with self.assertLogs("shutong.bangumi", "WARNING"):
+            self.client().get(1)
+        self.official_up = True
+        clear_fallback(self.cache)
+        self.requests.clear()
+        self.client().get(2)
+        self.assertEqual(self.hosts(), ["https://api.bgm.tv"])
+
+    def test_no_mirror_means_no_switch(self):
+        with self.assertLogs("shutong.bangumi", "WARNING"), self.assertRaises(MetadataUnavailable):
+            self.client(fallback="").get(1)
+        self.assertEqual(self.hosts(), ["https://api.bgm.tv"] * 3)
+        self.assertIsNone(fallback_until(self.cache))
+
+    def test_a_mirror_already_in_use_has_nothing_to_switch_to(self):
+        self.mirror_down = True
+        with self.assertLogs("shutong.bangumi", "WARNING"), self.assertRaises(MetadataUnavailable):
+            self.client(base="https://mirror.example", fallback="https://mirror.example/").get(1)
+        self.assertEqual(len(self.requests), 3)
+
+    def test_a_missing_subject_is_not_a_reason_to_switch(self):
+        def not_found(request, timeout):
+            self.requests.append(request)
+            raise HTTPError(request.full_url, 404, "Not Found", {}, io.BytesIO(b""))
+
+        client = BangumiSource(BangumiSettings(fallback_url="https://mirror.example"), self.cache, opener=not_found,
+                               sleep=lambda delay: None)
+        with self.assertRaises(HTTPError):
+            client.get(1)
+        self.assertEqual(len(self.requests), 1)
+        self.assertIsNone(fallback_until(self.cache))
+
+    def test_both_unreachable_is_unavailable(self):
+        self.mirror_down = True
+        with self.assertLogs("shutong.bangumi", "WARNING"), self.assertRaises(MetadataUnavailable):
+            self.client().get(1)
+        self.assertEqual(self.hosts(), ["https://api.bgm.tv"] * 3 + ["https://mirror.example"] * 3)
 
 
 if __name__ == "__main__":

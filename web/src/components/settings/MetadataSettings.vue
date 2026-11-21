@@ -2,7 +2,7 @@
 import { mdiArrowDown, mdiArrowUp } from "@mdi/js";
 import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { metadata, type MetadataSource } from "@/api";
+import { metadata, settings, type MetadataSource } from "@/api";
 import type { ApiError } from "@/api/client";
 import { ask } from "@/composables/confirm";
 import { notify } from "@/composables/notify";
@@ -11,7 +11,10 @@ import SecretField from "./SecretField.vue";
 
 const { t, te } = useI18n();
 const form = useSettingsForm(["metadata.sources", "metadata.translate_summaries", "bangumi.base_url",
-  "bangumi.image_base_url", "bangumi.token"]);
+  "bangumi.image_base_url", "bangumi.fallback_url", "bangumi.token"]);
+const fallbackUrl = form.field<string>("bangumi.fallback_url");
+/** When the switch to the fallback mirror ends; null while the API address above is in use. */
+const fallbackUntil = ref<string | null>(null);
 const imageUrl = form.field<string>("bangumi.image_base_url");
 const translate = form.field<boolean>("metadata.translate_summaries");
 const baseUrl = form.field<string>("bangumi.base_url");
@@ -26,6 +29,19 @@ async function load() {
   await form.load();
   // What the server really asks, in its order: a stored name it no longer knows is not shown as switched on.
   sources.value = await metadata.sources();
+  fallbackUntil.value = (await settings.bangumiFallback()).until;
+}
+
+function clock(iso: string): string {
+  return new Date(iso).toLocaleString(undefined, { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+async function endFallback() {
+  try {
+    fallbackUntil.value = (await settings.endBangumiFallback()).until;
+  } catch (error) {
+    notify.error((error as ApiError).detail ?? String(error));
+  }
 }
 onMounted(() => load().catch((error: ApiError) => notify.error(error.detail)));
 
@@ -58,6 +74,7 @@ function note(name: string): string {
 
 // Known addresses to pick from; any other can still be typed in.
 const API_ADDRESSES = ["https://api.bgm.tv", "https://bgmapi.anibt.net"];
+const FALLBACK_ADDRESSES = ["https://bgmapi.anibt.net"];
 const IMAGE_ADDRESSES = ["https://lain.bgm.tv", "https://bgmimg.anibt.net"];
 const OFFICIAL = new Set(["https://api.bgm.tv", "https://lain.bgm.tv"]);
 const TOKEN_PAGE = "https://next.bgm.tv/demo/access-token";
@@ -122,6 +139,17 @@ async function clear(key: string) {
     <div class="addresses" data-test="bangumi-addresses">
       <VCombobox v-model="baseUrl" :items="API_ADDRESSES" :item-props="addressProps" :label="t('settings.bangumiUrl')"
         :hint="t('settings.bangumiUrlHint')" persistent-hint data-test="bangumi-url" />
+      <VCombobox v-model="fallbackUrl" :items="FALLBACK_ADDRESSES" :item-props="addressProps"
+        :label="t('settings.bangumiFallbackUrl')" :hint="t('settings.bangumiFallbackUrlHint')" persistent-hint
+        clearable data-test="bangumi-fallback-url" @click:clear="fallbackUrl = ''" />
+      <VAlert v-if="fallbackUntil" type="info" variant="tonal" density="compact" data-test="bangumi-fallback-active">
+        {{ t("settings.bangumiFallbackActive", { until: clock(fallbackUntil) }) }}
+        <template #append>
+          <VBtn size="small" variant="text" data-test="bangumi-fallback-end" @click="endFallback">
+            {{ t("settings.bangumiFallbackEnd") }}
+          </VBtn>
+        </template>
+      </VAlert>
       <VCombobox v-model="imageUrl" :items="IMAGE_ADDRESSES" :item-props="addressProps" :label="t('settings.bangumiImageUrl')"
         :hint="t('settings.bangumiImageUrlHint')" persistent-hint placeholder="https://lain.bgm.tv" persistent-placeholder
         clearable data-test="bangumi-image-url" @click:clear="imageUrl = ''" />

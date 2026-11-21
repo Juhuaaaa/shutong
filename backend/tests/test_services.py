@@ -80,6 +80,11 @@ class ServicesTests(unittest.TestCase):
         self.assertEqual((source.settings.base_url, source.settings.image_base_url),
                          ("https://bgm.mirror.example", "https://img.mirror.example"))
 
+    def test_bangumi_falls_back_to_the_anibt_mirror_unless_cleared(self):
+        self.assertEqual(build_services(self.db).sources.primary.settings.fallback_url, "https://bgmapi.anibt.net")
+        self.settings.set("bangumi.fallback_url", "")
+        self.assertEqual(build_services(self.db).sources.primary.settings.fallback_url, "")
+
 
 if __name__ == "__main__":
     unittest.main()

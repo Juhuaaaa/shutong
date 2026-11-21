@@ -177,6 +177,26 @@
         "title": "AuthStatus",
         "type": "object"
       },
+      "BangumiFallbackOut": {
+        "properties": {
+          "until": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Until"
+          }
+        },
+        "required": [
+          "until"
+        ],
+        "title": "BangumiFallbackOut",
+        "type": "object"
+      },
       "Body_upload_api_libraries__library_id__upload_post": {
         "properties": {
           "files": {
@@ -5255,6 +5275,47 @@
           }
         },
         "summary": "Ai Test",
+        "tags": [
+          "settings"
+        ]
+      }
+    },
+    "/api/settings/bangumi-fallback": {
+      "delete": {
+        "description": "Back to the configured address now; it switches again by itself if still unreachable.",
+        "operationId": "end_bangumi_fallback_api_settings_bangumi_fallback_delete",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BangumiFallbackOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "End Bangumi Fallback",
+        "tags": [
+          "settings"
+        ]
+      },
+      "get": {
+        "operationId": "bangumi_fallback_api_settings_bangumi_fallback_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BangumiFallbackOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Bangumi Fallback",
         "tags": [
           "settings"
         ]
