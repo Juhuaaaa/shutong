@@ -130,7 +130,6 @@ export default {
       trashed: "已把 {count} 个原文件移进回收站，可以从回收站恢复",
       failed: "{count} 个文件没能移动：{first}",
     },
-    update: { text: "有新版本 {version}", action: "去下载" },
     welcome: {
       title: "欢迎使用书童",
       next: "下一步",
@@ -466,7 +465,7 @@ export default {
     settings: "设置",
     logs: "日志",
     version: "版本 {version}",
-    newVersion: "新版本 {version} ›",
+    newVersion: "有新版本 {version}",
     logout: "退出",
     menu: "菜单",
   },

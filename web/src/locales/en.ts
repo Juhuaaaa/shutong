@@ -132,7 +132,6 @@ const en: typeof zhCN = {
       trashed: "Moved {count} originals to the trash. You can restore them from there",
       failed: "{count} files could not be moved: {first}",
     },
-    update: { text: "Version {version} is available", action: "Download" },
     welcome: {
       title: "Welcome to Shutong",
       next: "Next",
@@ -468,7 +467,7 @@ const en: typeof zhCN = {
     settings: "Settings",
     logs: "Logs",
     version: "Version {version}",
-    newVersion: "New: {version} ›",
+    newVersion: "{version} available",
     logout: "Log out",
     menu: "Menu",
   },

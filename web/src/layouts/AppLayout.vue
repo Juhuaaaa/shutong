@@ -12,7 +12,6 @@ import BrandMark from "@/components/BrandMark.vue";
 import DropOverlay from "@/components/DropOverlay.vue";
 import JobIndicator from "@/components/JobIndicator.vue";
 import OriginalsPrompt from "@/components/OriginalsPrompt.vue";
-import UpdateBanner from "@/components/UpdateBanner.vue";
 import { bridge } from "@/composables/desktop";
 import { isNewer, latestRelease, type Release } from "@/composables/update";
 import { useThemeMode } from "@/composables/themeMode";
@@ -114,11 +113,11 @@ function openUpdate(event: MouseEvent) {
     </VList>
     <template #append>
       <div class="nav-foot">
-        <span class="st-muted text-caption" data-test="app-version">{{ t("nav.version", { version: auth.version }) }}</span>
-        <a v-if="update" :href="update.url" target="_blank" rel="noopener noreferrer" class="update text-caption"
+        <a v-if="update" :href="update.url" target="_blank" rel="noopener noreferrer" class="update text-caption text-success"
           data-test="app-update" @click="openUpdate">
-          {{ t("nav.newVersion", { version: update.version }) }}
+          {{ t("nav.version", { version: auth.version }) }} · {{ t("nav.newVersion", { version: update.version }) }}
         </a>
+        <span v-else class="st-muted text-caption" data-test="app-version">{{ t("nav.version", { version: auth.version }) }}</span>
       </div>
     </template>
   </VNavigationDrawer>
@@ -137,7 +136,6 @@ function openUpdate(event: MouseEvent) {
   <VMain class="main">
     <div class="content">
       <template v-if="auth.desktop">
-        <UpdateBanner />
         <OriginalsPrompt />
       </template>
       <RouterView />
@@ -147,7 +145,7 @@ function openUpdate(event: MouseEvent) {
 
 <style scoped>
 .nav-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 24px 16px; }
-.nav-foot .update { color: rgb(var(--v-theme-primary)); font-weight: 600; text-decoration: none; }
+.nav-foot .update { font-weight: 600; text-decoration: none; }
 .nav-foot .update:hover { text-decoration: underline; }
 .nav { background: rgb(var(--v-theme-surface)); box-shadow: var(--st-shadow); }
 .brand { display: flex; align-items: center; gap: 12px; padding: 20px 20px 12px; }

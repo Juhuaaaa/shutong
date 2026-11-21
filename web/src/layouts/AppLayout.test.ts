@@ -47,10 +47,13 @@ describe("AppLayout", () => {
         tag_name: "desktop-v0.3.0", html_url: "https://github.com/Juhuaaaa/shutong/releases/tag/desktop-v0.3.0" } });
     const { wrapper, pinia } = await mountView(RouterView, "/logs");
     await useAuth(pinia).refresh();
-    await vi.waitFor(() => expect(wrapper.find("[data-test=app-version]").text()).toBe("版本 0.2.1"));
     await vi.waitFor(() => expect(wrapper.find("[data-test=app-update]").exists()).toBe(true));
-    expect(wrapper.find("[data-test=app-update]").text()).toContain("新版本 0.3.0");
+    // The version line itself turns green and says so: no second line, no banner.
+    expect(wrapper.find("[data-test=app-version]").exists()).toBe(false);
+    expect(wrapper.find("[data-test=app-update]").text()).toBe("版本 0.2.1 · 有新版本 0.3.0");
+    expect(wrapper.find("[data-test=app-update]").classes()).toContain("text-success");
     expect(wrapper.find("[data-test=app-update]").attributes("href")).toBe("https://github.com/Juhuaaaa/shutong/releases/tag/desktop-v0.3.0");
+    expect(wrapper.find("[data-test=update-banner]").exists()).toBe(false);
   });
 
   it("in the desktop app, hears of the update from the app and opens it in the browser", async () => {
@@ -63,6 +66,7 @@ describe("AppLayout", () => {
     const { wrapper, pinia } = await mountView(RouterView, "/logs");
     await useAuth(pinia).refresh();
     await vi.waitFor(() => expect(wrapper.find("[data-test=app-update]").exists()).toBe(true));
+    expect(wrapper.find("[data-test=update-banner]").exists()).toBe(false);
     await wrapper.find("[data-test=app-update]").trigger("click");
     expect(openExternal).toHaveBeenCalledWith("https://github.com/Juhuaaaa/shutong/releases/tag/desktop-v0.3.0");
     expect(calls.some((call) => call.path.includes("/releases/latest"))).toBe(false);
